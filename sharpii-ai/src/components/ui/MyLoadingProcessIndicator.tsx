@@ -72,8 +72,8 @@ export default function MyLoadingProcessIndicator({
                 <div className="flex items-center space-x-2">
                   <span className="text-white text-sm font-medium">
                     {status === 'loading' && 'Enhancing...'}
-                    {status === 'success' && 'Completed!'}
-                    {status === 'error' && 'Failed'}
+                    {status === 'success' && 'Enhancement Complete!'}
+                    {status === 'error' && 'Enhancement Failed'}
                   </span>
                   {status === 'loading' && (
                     <span className="text-white/80 text-sm font-medium">

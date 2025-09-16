@@ -34,7 +34,10 @@
       "mcp__playwright__browser_navigate",
       "Bash(turbo dev:*)",
       "Read(//private/tmp/**)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(node:*)",
+      "Bash(npm uninstall:*)",
+      "mcp__streamable-mcp-server__chrome_navigate"
     ],
     "deny": [],
     "ask": []
