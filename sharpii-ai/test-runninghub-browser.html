@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RunningHub API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .results {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #17a2b8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 RunningHub API Test</h1>
+        <p><strong>Instructions:</strong> Make sure you're logged in to the main application first!</p>
+        
+        <div class="test-section">
+            <h3>Test Enhancement API</h3>
+            <p>This will test the /api/enhance-image endpoint with RunningHub provider.</p>
+            <button onclick="testEnhanceAPI()">🚀 Test Enhancement API</button>
+            <div id="enhance-results" class="results"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test Session Status</h3>
+            <p>Check if you're properly authenticated.</p>
+            <button onclick="testSession()">🔐 Check Session</button>
+            <div id="session-results" class="results"></div>
+        </div>
+    </div>
+
+    <script>
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            element.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            element.scrollTop = element.scrollHeight;
+        }
+
+        async function testEnhanceAPI() {
+            const resultsId = 'enhance-results';
+            document.getElementById(resultsId).innerHTML = '';
+            
+            log(resultsId, '🧪 Testing RunningHub Enhancement API...', 'info');
+            
+            // Test base64 image (1x1 pixel JPEG)
+            const testBase64Image = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=';
+            
+            const testPayload = {
+                imageUrl: testBase64Image,
+                modelId: 'runninghub-flux-upscaling',
+                settings: {
+                    prompt: 'A beautiful landscape with mountains and trees',
+                    seed: 12345,
+                    steps: 20,
+                    guidance_scale: 3.5,
+                    denoise_strength: 0.3
+                }
+            };
+            
+            try {
+                log(resultsId, '📤 Sending request to /api/enhance-image...', 'info');
+                
+                const response = await fetch('/api/enhance-image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testPayload)
+                });
+                
+                log(resultsId, `📊 Response status: ${response.status}`, 'info');
+                
+                const data = await response.json();
+                log(resultsId, `📋 Response data: ${JSON.stringify(data, null, 2)}`, 'info');
+                
+                if (response.ok && data.success) {
+                    log(resultsId, '✅ Enhancement API test PASSED!', 'success');
+                    log(resultsId, `📋 Task ID: ${data.taskId}`, 'success');
+                    log(resultsId, `📋 Job ID: ${data.jobId}`, 'success');
+                } else {
+                    log(resultsId, `❌ Enhancement API test FAILED: ${data.error || 'Unknown error'}`, 'error');
+                }
+                
+            } catch (error) {
+                log(resultsId, `❌ Test failed with error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testSession() {
+            const resultsId = 'session-results';
+            document.getElementById(resultsId).innerHTML = '';
+            
+            log(resultsId, '🔐 Checking session status...', 'info');
+            
+            try {
+                const response = await fetch('/api/debug-session');
+                const data = await response.json();
+                
+                log(resultsId, `📊 Response status: ${response.status}`, 'info');
+                log(resultsId, `📋 Session data: ${JSON.stringify(data, null, 2)}`, 'info');
+                
+                if (data.token && data.session) {
+                    log(resultsId, '✅ You are logged in!', 'success');
+                } else {
+                    log(resultsId, '⚠️ You are not logged in. Please log in first.', 'error');
+                }
+                
+            } catch (error) {
+                log(resultsId, `❌ Session check failed: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

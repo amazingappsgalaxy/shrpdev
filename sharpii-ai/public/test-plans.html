@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plan Testing Page</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        .plan { border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 5px; }
+        .plan.basic { border-color: #3b82f6; }
+        .plan.creator { border-color: #10b981; }
+        .plan.professional { border-color: #f59e0b; }
+        .plan.enterprise { border-color: #8b5cf6; }
+        button { padding: 8px 16px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-purple { background: #8b5cf6; color: white; }
+        .log { margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 4px; max-height: 400px; overflow-y: auto; }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Plan Testing Dashboard</h1>
+        <p>This page tests the pricing plan checkout functionality.</p>
+        
+        <!-- Basic Plan -->
+        <div class="plan basic">
+            <h3>📦 Basic Plan</h3>
+            <button class="btn-primary" onclick="testPlan('basic', 'monthly')">Test Monthly ($9)</button>
+            <button class="btn-primary" onclick="testPlan('basic', 'yearly')">Test Yearly ($108)</button>
+        </div>
+        
+        <!-- Creator Plan -->
+        <div class="plan creator">
+            <h3>⚡ Creator Plan</h3>
+            <button class="btn-success" onclick="testPlan('creator', 'monthly')">Test Monthly ($25)</button>
+            <button class="btn-success" onclick="testPlan('creator', 'yearly')">Test Yearly ($252)</button>
+        </div>
+        
+        <!-- Professional Plan -->
+        <div class="plan professional">
+            <h3>👑 Professional Plan</h3>
+            <button class="btn-warning" onclick="testPlan('professional', 'monthly')">Test Monthly ($39)</button>
+            <button class="btn-warning" onclick="testPlan('professional', 'yearly')">Test Yearly ($408)</button>
+        </div>
+        
+        <!-- Enterprise Plan -->
+        <div class="plan enterprise">
+            <h3>🏢 Enterprise Plan</h3>
+            <button class="btn-purple" onclick="testPlan('enterprise', 'monthly')">Test Monthly ($99)</button>
+            <button class="btn-purple" onclick="testPlan('enterprise', 'yearly')">Test Yearly ($1008)</button>
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <button onclick="clearLog()" style="background: #6b7280; color: white; padding: 8px 16px; border: none; border-radius: 4px;">Clear Log</button>
+            <button onclick="testAllPlans()" style="background: #059669; color: white; padding: 8px 16px; border: none; border-radius: 4px;">Test All Plans</button>
+        </div>
+        
+        <div class="log" id="log">
+            <div>🚀 Ready to test plans. Click any button above to start.</div>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : '';
+            logDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '<div>🧹 Log cleared.</div>';
+        }
+        
+        async function testPlan(plan, billingPeriod) {
+            log(`🧪 Testing ${plan} plan (${billingPeriod})...`);
+            
+            try {
+                const response = await fetch('/api/payments/checkout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include', // Include cookies for auth
+                    body: JSON.stringify({ plan, billingPeriod })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log(`✅ ${plan} (${billingPeriod}): Success!`, 'success');
+                    if (data.checkoutUrl) {
+                        log(`🔗 Checkout URL: ${data.checkoutUrl}`, 'success');
+                        log(`📝 Opening checkout in new tab...`, 'info');
+                        window.open(data.checkoutUrl, '_blank');
+                    }
+                    return true;
+                } else {
+                    log(`❌ ${plan} (${billingPeriod}): Error ${response.status} - ${data.error || 'Unknown error'}`, 'error');
+                    if (response.status === 401) {
+                        log(`🔐 Authentication required. Redirecting to login...`, 'info');
+                        window.location.href = '/app/login';
+                    }
+                    return false;
+                }
+            } catch (error) {
+                log(`💥 ${plan} (${billingPeriod}): Exception - ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        async function testAllPlans() {
+            log(`🎯 Testing all plans systematically...`);
+            
+            const plans = ['basic', 'creator', 'professional', 'enterprise'];
+            const billingPeriods = ['monthly', 'yearly'];
+            
+            let successCount = 0;
+            let totalTests = 0;
+            
+            for (const plan of plans) {
+                for (const billingPeriod of billingPeriods) {
+                    totalTests++;
+                    const success = await testPlan(plan, billingPeriod);
+                    if (success) successCount++;
+                    // Small delay between tests
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+            
+            log(`📊 Final Results: ${successCount}/${totalTests} tests passed`, successCount === totalTests ? 'success' : 'error');
+            
+            if (successCount === totalTests) {
+                log('🎉 All plans are working correctly!', 'success');
+            } else {
+                log('⚠️ Some plans have issues that need to be fixed.', 'error');
+            }
+        }
+        
+        // Check authentication status on page load
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch('/api/auth/me', { credentials: 'include' });
+                if (response.ok) {
+                    const user = await response.json();
+                    log(`👤 Logged in as: ${user.email || user.name || 'User'}`, 'success');
+                } else {
+                    log(`🔓 Not logged in. Some tests may require authentication.`, 'error');
+                    log(`💡 Go to /app/login to sign in first.`, 'info');
+                }
+            } catch (error) {
+                log(`❓ Could not check authentication status.`, 'error');
+            }
+        });
+    </script>
+</body>
+</html>

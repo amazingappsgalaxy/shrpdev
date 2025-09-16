@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Pricing Flow</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .button { padding: 10px 20px; margin: 10px; background: #007bff; color: white; border: none; cursor: pointer; }
+        .status { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Test Pricing Flow</h1>
+    
+    <div class="status" id="status">Not logged in</div>
+    
+    <button class="button" onclick="createAccount()">1. Create Demo Account</button>
+    <button class="button" onclick="testBasicPlan()">2. Test Basic Plan</button>
+    
+    <div id="output" style="margin-top: 20px; padding: 10px; background: #f0f0f0; white-space: pre-wrap;"></div>
+
+    <script>
+        function log(message) {
+            const output = document.getElementById('output');
+            output.textContent += new Date().toLocaleTimeString() + ': ' + message + '\n';
+        }
+
+        function updateStatus(text) {
+            document.getElementById('status').textContent = text;
+        }
+
+        async function createAccount() {
+            try {
+                log('Creating demo account...');
+                const response = await fetch('/api/demo/create-account', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ email: 'test-pricing@sharpii.ai' })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('✅ Account created: ' + data.user.email);
+                    updateStatus('Logged in as: ' + data.user.email);
+                } else {
+                    log('❌ Failed to create account: ' + data.error);
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+            }
+        }
+
+        async function testBasicPlan() {
+            try {
+                log('Testing Basic plan checkout...');
+                const response = await fetch('/api/payments/checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ plan: 'basic', billingPeriod: 'monthly' })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('✅ Checkout URL created: ' + data.checkoutUrl);
+                    log('Opening checkout URL...');
+                    window.open(data.checkoutUrl, '_blank');
+                } else {
+                    log('❌ Checkout failed: ' + data.error);
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

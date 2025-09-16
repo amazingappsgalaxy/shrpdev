@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear All User Data - SharpII AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+        }
+        
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .description {
+            color: #b0b0b0;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .warning {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .warning h3 {
+            color: #ff6b6b;
+            margin-bottom: 10px;
+        }
+        
+        .warning p {
+            color: #d0d0d0;
+            font-size: 0.9rem;
+        }
+        
+        .clear-button {
+            background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+        }
+        
+        .clear-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(255, 107, 107, 0.4);
+        }
+        
+        .clear-button:active {
+            transform: translateY(0);
+        }
+        
+        .clear-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+        
+        .status.success {
+            background: rgba(76, 205, 196, 0.1);
+            border: 1px solid rgba(76, 205, 196, 0.3);
+            color: #4ecdc4;
+        }
+        
+        .status.error {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+        }
+        
+        .status.info {
+            background: rgba(74, 144, 226, 0.1);
+            border: 1px solid rgba(74, 144, 226, 0.3);
+            color: #4a90e2;
+        }
+        
+        .details {
+            margin-top: 20px;
+            text-align: left;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .details h4 {
+            margin-bottom: 10px;
+            color: #4ecdc4;
+        }
+        
+        .details ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .details li {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        
+        .details li:last-child {
+            border-bottom: none;
+        }
+        
+        .refresh-button {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .refresh-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(76, 205, 196, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🧹</div>
+        <h1>Clear All User Data</h1>
+        <p class="description">
+            This will completely clear all your data from SharpII AI, including:
+            enhancement results, uploaded images, user preferences, and all stored information.
+        </p>
+        
+        <div class="warning">
+            <h3>⚠️ Warning</h3>
+            <p>This action cannot be undone. All your data will be permanently deleted.</p>
+        </div>
+        
+        <button class="clear-button" onclick="clearAllData()">
+            🗑️ Clear All Data
+        </button>
+        
+        <div id="status" class="status" style="display: none;"></div>
+        
+        <div id="details" class="details" style="display: none;">
+            <h4>Cleared Data:</h4>
+            <ul id="clearedItems"></ul>
+        </div>
+        
+        <button id="refreshButton" class="refresh-button" onclick="refreshPage()">
+            🔄 Refresh Page
+        </button>
+    </div>
+
+    <script>
+        let clearedItems = [];
+        
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+        }
+        
+        function addClearedItem(item) {
+            clearedItems.push(item);
+            const list = document.getElementById('clearedItems');
+            const li = document.createElement('li');
+            li.textContent = `✅ ${item}`;
+            list.appendChild(li);
+        }
+        
+        function showDetails() {
+            const details = document.getElementById('details');
+            details.style.display = 'block';
+        }
+        
+        function showRefreshButton() {
+            const refreshButton = document.getElementById('refreshButton');
+            refreshButton.style.display = 'inline-block';
+        }
+        
+        async function clearAllData() {
+            const button = document.querySelector('.clear-button');
+            button.disabled = true;
+            button.textContent = '🔄 Clearing...';
+            
+            try {
+                console.log('🧹 Starting data cleanup...');
+                
+                // Clear localStorage
+                try {
+                    const beforeCount = Object.keys(localStorage).length;
+                    localStorage.clear();
+                    const afterCount = Object.keys(localStorage).length;
+                    addClearedItem(`localStorage: ${beforeCount} items cleared`);
+                    console.log('✅ localStorage cleared');
+                } catch (error) {
+                    addClearedItem(`localStorage: Error - ${error.message}`);
+                    console.error('❌ Error clearing localStorage:', error);
+                }
+                
+                // Clear sessionStorage
+                try {
+                    const beforeCount = Object.keys(sessionStorage).length;
+                    sessionStorage.clear();
+                    const afterCount = Object.keys(sessionStorage).length;
+                    addClearedItem(`sessionStorage: ${beforeCount} items cleared`);
+                    console.log('✅ sessionStorage cleared');
+                } catch (error) {
+                    addClearedItem(`sessionStorage: Error - ${error.message}`);
+                    console.error('❌ Error clearing sessionStorage:', error);
+                }
+                
+                // Clear specific keys that might exist
+                const keysToRemove = [
+                    'enhancementResults',
+                    'userImages',
+                    'userActivity',
+                    'enhancementLogs',
+                    'selectedImage',
+                    'enhancementResult',
+                    'modelSettings',
+                    'preservedFeatures',
+                    'uploadProgress',
+                    'isProcessing',
+                    'isPopupOpen',
+                    'selectedModel',
+                    'enhancementType',
+                    'enhancementMode',
+                    'skinTexture',
+                    'skinRealism',
+                    'attribution_source',
+                    'attribution_detail',
+                    'attribution_timestamp',
+                    '21st_anon_id',
+                    'preferredPackageManager',
+                    'hasSubscribedToNewsletter',
+                    'hasDeclinedNewsletter',
+                    'loops-form-timestamp',
+                    'template_draft',
+                    'magic_onboarding_state',
+                    'hiddenWidgetNodeTypes',
+                    'Comfy.Settings.Comfy.CustomColorPalettes',
+                    'Comfy.Settings.Comfy.ColorPalette',
+                    'Comfy.Settings.Comfy.WidgetControlMode',
+                    'Comfy.NodeTemplates',
+                    'litegrapheditor_clipboard'
+                ];
+                
+                keysToRemove.forEach(key => {
+                    try {
+                        localStorage.removeItem(key);
+                        sessionStorage.removeItem(key);
+                    } catch (error) {
+                        // Ignore errors for non-existent keys
+                    }
+                });
+                
+                addClearedItem(`Specific keys: ${keysToRemove.length} keys removed`);
+                
+                // Clear cookies
+                try {
+                    const beforeCount = document.cookie.split(';').length;
+                    document.cookie.split(";").forEach(function(c) { 
+                        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                    });
+                    addClearedItem(`Cookies: ${beforeCount} cookies cleared`);
+                    console.log('✅ Cookies cleared');
+                } catch (error) {
+                    addClearedItem(`Cookies: Error - ${error.message}`);
+                    console.error('❌ Error clearing cookies:', error);
+                }
+                
+                // Clear IndexedDB
+                if ('indexedDB' in window) {
+                    try {
+                        const databases = await indexedDB.databases();
+                        if (databases.length > 0) {
+                            for (const db of databases) {
+                                await indexedDB.deleteDatabase(db.name);
+                            }
+                            addClearedItem(`IndexedDB: ${databases.length} databases cleared`);
+                            console.log('✅ IndexedDB cleared');
+                        } else {
+                            addClearedItem('IndexedDB: No databases found');
+                        }
+                    } catch (error) {
+                        addClearedItem(`IndexedDB: Error - ${error.message}`);
+                        console.error('❌ Error clearing IndexedDB:', error);
+                    }
+                } else {
+                    addClearedItem('IndexedDB: Not supported');
+                }
+                
+                // Clear WebSQL (if supported)
+                if ('openDatabase' in window) {
+                    try {
+                        // WebSQL doesn't have a clear all method, but we can try to delete known databases
+                        addClearedItem('WebSQL: Not supported for bulk clearing');
+                    } catch (error) {
+                        addClearedItem(`WebSQL: Error - ${error.message}`);
+                    }
+                } else {
+                    addClearedItem('WebSQL: Not supported');
+                }
+                
+                // Clear Cache API
+                if ('caches' in window) {
+                    try {
+                        const cacheNames = await caches.keys();
+                        await Promise.all(cacheNames.map(name => caches.delete(name)));
+                        addClearedItem(`Cache API: ${cacheNames.length} caches cleared`);
+                        console.log('✅ Cache API cleared');
+                    } catch (error) {
+                        addClearedItem(`Cache API: Error - ${error.message}`);
+                        console.error('❌ Error clearing Cache API:', error);
+                    }
+                } else {
+                    addClearedItem('Cache API: Not supported');
+                }
+                
+                showStatus('🎉 All user data cleared successfully!', 'success');
+                showDetails();
+                showRefreshButton();
+                
+                console.log('🎉 All user data cleared successfully!');
+                
+            } catch (error) {
+                showStatus(`❌ Error during cleanup: ${error.message}`, 'error');
+                console.error('❌ Error during cleanup:', error);
+            } finally {
+                button.disabled = false;
+                button.textContent = '🗑️ Clear All Data';
+            }
+        }
+        
+        function refreshPage() {
+            window.location.reload();
+        }
+        
+        // Show initial status
+        showStatus('Ready to clear all user data. Click the button above to proceed.', 'info');
+    </script>
+</body>
+</html>
+
