@@ -31,7 +31,10 @@
       "mcp__playwright__browser_install",
       "Bash(npx playwright:*)",
       "Read(//Applications/**)",
-      "mcp__playwright__browser_navigate"
+      "mcp__playwright__browser_navigate",
+      "Bash(turbo dev:*)",
+      "Read(//private/tmp/**)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []
