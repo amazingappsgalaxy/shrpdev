@@ -1,0 +1,3 @@
+[submodule "sharpii-ai"]
+	path = sharpii-ai
+	url = https://github.com/amazingappsgalaxy/shrp.git
