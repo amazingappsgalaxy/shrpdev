@@ -1,0 +1,147 @@
+
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-debug.log*
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Testing
+coverage/
+.nyc_output/
+
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# AI Assistant Rules (existing)
+.clinerules/byterover-rules.md
+.kilocode/rules/byterover-rules.md
+.roo/rules/byterover-rules.md
+.windsurf/rules/byterover-rules.md
+.cursor/rules/byterover-rules.mdc
+.kiro/steering/byterover-rules.md
+.qoder/rules/byterover-rules.md
+.augment/rules/byterover-rules.md
+
+# Supabase
+supabase/.temp/
+supabase/.env
+
+# Turbo
+.turbo/
+
+# Stripe
+stripe_*.json
+
+# ComfyUI specific
+models/
+checkpoints/
+*.ckpt
+*.safetensors
+*.pt
+*.pth
+
+# Large files and binaries
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Test results
+test-results/
+playwright-report/
+test-results.xml
+
+# Cache directories
+.cache/
+.tmp/
+
+# Backup files
+*.backup
+*.bak
+*.orig
+
+# Package manager lock files (keep only pnpm-lock.yaml)
+package-lock.json
+yarn.lock
+
+# Netlify
+.netlify/
+
+# Python (for ComfyUI)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Cookies and session files
+cookies.txt
+cookie.txt
+
+# Server logs
+server.log

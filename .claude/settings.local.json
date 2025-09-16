@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run type-check:*)",
+      "Bash(npm ls:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(curl:*)",
+      "WebFetch(domain:checkout.dodopayments.com)",
+      "WebFetch(domain:test.checkout.dodopayments.com)",
+      "Bash(cloudflared tunnel:*)",
+      "Bash(supabase db push:*)",
+      "Bash(supabase db reset:*)",
+      "Bash(supabase db diff:*)",
+      "Bash(supabase db query:*)",
+      "Bash(psql:*)",
+      "Bash(cat:*)",
+      "Bash(supabase migration:*)",
+      "Bash(supabase db:*)",
+      "Bash(echo:*)",
+      "Bash(rm:*)",
+      "Bash(PORT=3005 npm run dev)",
+      "Bash(kill:*)",
+      "Bash(npx next dev:*)",
+      "WebFetch(domain:localhost)",
+      "Bash(grep:*)",
+      "Read(//Users/dheer/**)",
+      "mcp__playwright__browser_install",
+      "Bash(npx playwright:*)",
+      "Read(//Applications/**)",
+      "mcp__playwright__browser_navigate"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
