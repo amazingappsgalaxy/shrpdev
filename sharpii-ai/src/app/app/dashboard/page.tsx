@@ -4,12 +4,11 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-client-simple'
 import UserHeader from '@/components/app/UserHeader'
-import SimpleUsageSection from '@/components/app/dashboard/SimpleUsageSection'
+import CreditsSection from '@/components/app/dashboard/CreditsSection'
+import OptimizedUsageSection from '@/components/app/dashboard/OptimizedUsageSection'
 import BillingSection from '@/components/app/dashboard/BillingSection'
 import { ElegantLoading } from '@/components/ui/elegant-loading'
 import {
-  BarChart3,
-  CreditCard,
   Menu,
   X
 } from 'lucide-react'
@@ -17,7 +16,7 @@ import {
 export default function DashboardPage() {
   const router = useRouter()
   const { user, isLoading } = useAuth()
-  const [activeSection, setActiveSection] = useState('usage')
+  const [activeSection, setActiveSection] = useState('credits')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   if (isLoading) {
@@ -31,6 +30,10 @@ export default function DashboardPage() {
 
   const menuItems = [
     {
+      id: 'credits',
+      label: 'Credits'
+    },
+    {
       id: 'usage',
       label: 'Usage'
     },
@@ -42,12 +45,14 @@ export default function DashboardPage() {
 
   const renderContent = () => {
     switch (activeSection) {
+      case 'credits':
+        return <CreditsSection />
       case 'usage':
-        return <SimpleUsageSection className="" />
+        return <OptimizedUsageSection />
       case 'billing':
         return <BillingSection />
       default:
-        return <SimpleUsageSection className="" />
+        return <CreditsSection />
     }
   }
 
@@ -68,22 +73,22 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex gap-8 lg:gap-12">
-            {/* Left Sidebar - iOS Style */}
+            {/* Left Sidebar - Minimal Design */}
             <aside className={`
               fixed inset-0 bg-black/95 backdrop-blur-xl z-40 lg:bg-white/[0.02] lg:backdrop-blur-none lg:border-r lg:border-white/10
-              lg:relative lg:w-72 transform transition-all duration-300 ease-in-out
+              lg:relative lg:w-64 transform transition-all duration-300 ease-in-out
               ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
               pt-24 lg:pt-0 lg:rounded-lg
             `}>
-              <div className="px-6 lg:px-6 lg:py-8 h-full">
+              <div className="px-4 lg:px-4 lg:py-6 h-full">
                 {/* Header */}
-                <div className="mb-8">
-                  <h1 className="text-xl font-semibold text-white mb-2">Dashboard</h1>
+                <div className="mb-6">
+                  <h1 className="text-lg font-medium text-white mb-1">Dashboard</h1>
                   <p className="text-white/40 text-xs">Manage your account</p>
                 </div>
 
-                {/* Menu Items - Minimal Text Only */}
-                <nav className="space-y-1">
+                {/* Menu Items - Minimal Design */}
+                <nav className="space-y-0.5">
                   {menuItems.map((item) => (
                     <button
                       key={item.id}
@@ -92,32 +97,22 @@ export default function DashboardPage() {
                         setMobileMenuOpen(false)
                       }}
                       className={`
-                        w-full py-3 px-4 text-left transition-all duration-200 rounded-xl
+                        w-full text-left px-3 py-2.5 text-sm transition-colors duration-150
                         ${activeSection === item.id
-                          ? 'bg-white/10 text-white shadow-lg border border-white/20'
-                          : 'text-white/70 hover:text-white hover:bg-white/5'
+                          ? 'text-white font-medium'
+                          : 'text-white/50 hover:text-white/80'
                         }
                       `}
                     >
-                      <div className={`text-sm font-medium ${activeSection === item.id ? 'text-white' : 'text-white/80'}`}>
-                        {item.label}
-                      </div>
+                      {item.label}
                     </button>
                   ))}
                 </nav>
               </div>
             </aside>
 
-            {/* Mobile Overlay */}
-            {mobileMenuOpen && (
-              <div
-                className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-                onClick={() => setMobileMenuOpen(false)}
-              />
-            )}
-
-            {/* Right Content */}
-            <main className="flex-1 min-h-screen lg:ml-0">
+            {/* Main Content */}
+            <main className="flex-1 min-w-0">
               {renderContent()}
             </main>
           </div>
