@@ -200,20 +200,32 @@ export class RunningHubProvider extends BaseAIProvider {
         denoise: request.settings.strength || request.settings.denoise || 0.3,
         sampler_name: this.mapSamplerName(request.settings.sampler_name) || 'dpmpp_2m',
         scheduler: this.mapSchedulerName(request.settings.scheduler) || 'sgm_uniform',
-        seed: request.settings.seed
+        seed: request.settings.seed,
+        enable_upscale: request.settings.enable_upscale !== undefined ? request.settings.enable_upscale : true,
+        upscaler: request.settings.upscaler || '4xRealWebPhoto_v4_dat2.pth'
       }
       
       // Validate parameter ranges
       if (settings.steps && (settings.steps < 1 || settings.steps > 50)) {
         return this.createErrorResponse('Steps must be between 1 and 50')
       }
-      
+
       if (settings.guidance_scale && (settings.guidance_scale < 1 || settings.guidance_scale > 20)) {
         return this.createErrorResponse('Guidance scale must be between 1 and 20')
       }
-      
+
       if (settings.seed && isNaN(parseInt(String(settings.seed)))) {
         return this.createErrorResponse('Seed must be a valid number')
+      }
+
+      if (settings.denoise && (settings.denoise < 0.1 || settings.denoise > 1)) {
+        return this.createErrorResponse('Denoise strength must be between 0.1 and 1')
+      }
+
+      // Validate upscaler model selection
+      const validUpscalers = ['4xRealWebPhoto_v4_dat2.pth', '4x_NMKD-Siax_200k.pth', '4x-UltraSharp.pth', 'RealESRGAN_x4plus.pth']
+      if (settings.upscaler && !validUpscalers.includes(settings.upscaler)) {
+        return this.createErrorResponse(`Invalid upscaler model. Must be one of: ${validUpscalers.join(', ')}`)
       }
 
       // Create ComfyUI task with RunningHub API

@@ -772,8 +772,9 @@ export default function EditorPage() {
 
               <div className="rounded-xl md:rounded-2xl border border-[#1c1c1e] bg-[#0a0a0a] shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
                 <div className="space-y-2 md:space-y-3 px-3 md:px-6 py-3">
-                  <div className="flex gap-4 items-start">
-                    <div className="flex-shrink-0">
+                  <div className="space-y-4">
+                    {/* Image Upload Section */}
+                    <div className="flex items-center justify-center">
                       <input
                         type="file"
                         id="image-upload-input"
@@ -784,37 +785,55 @@ export default function EditorPage() {
                       />
                       {!uploadedImage ? (
                         <div
-                          className="w-28 h-28 md:w-32 md:h-32 rounded-lg overflow-hidden relative group cursor-pointer border border-[#282828] flex items-center justify-center"
+                          className="w-40 h-40 md:w-48 md:h-48 rounded-xl overflow-hidden relative group cursor-pointer border border-[#282828] flex items-center justify-center"
                           onClick={() => fileInputRef.current?.click()}
                           onDrop={handleDrop}
                           onDragOver={(e) => e.preventDefault()}
                         >
                           <div className="text-center">
-                            <Upload className="w-8 h-8 mx-auto mb-2 text-gray-600" />
-                            <p className="text-[8px] md:text-[9px] font-medium text-gray-300">Upload Image</p>
+                            <Upload className="w-12 h-12 mx-auto mb-3 text-gray-600" />
+                            <p className="text-sm font-medium text-gray-300">Upload Image</p>
+                            <p className="text-xs text-gray-500 mt-1">Click or drag to upload</p>
                           </div>
                         </div>
                       ) : (
-                        <div className="w-28 h-28 md:w-32 md:h-32 rounded-lg overflow-hidden relative group cursor-pointer border border-[#282828]">
+                        <div className="w-40 h-40 md:w-48 md:h-48 rounded-xl overflow-hidden relative group border border-[#282828]">
                           <img
                             src={uploadedImage}
                             alt="Input"
                             className="w-full h-full object-cover"
-                            onClick={() => fileInputRef.current?.click()}
                           />
                           <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                            <div className="text-center">
-                              <Upload className="w-6 h-6 mx-auto mb-1 text-white" />
-                              <p className="text-[8px] md:text-[9px] font-medium text-gray-300">Change Image</p>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => fileInputRef.current?.click()}
+                                className="p-2 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors"
+                                title="Replace image"
+                              >
+                                <Upload className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setUploadedImage(null)
+                                  setEnhancedImage(null)
+                                  if (fileInputRef.current) {
+                                    fileInputRef.current.value = ''
+                                  }
+                                }}
+                                className="p-2 rounded-full bg-red-500/80 backdrop-blur-sm text-white hover:bg-red-500 transition-colors"
+                                title="Delete image"
+                              >
+                                <X className="w-5 h-5" />
+                              </button>
                             </div>
                           </div>
                         </div>
                       )}
                     </div>
 
-                    <div className="flex-1">
-                      <div className="space-y-3">
-                        {/* Model Selection */}
+                    {/* Controls Section */}
+                    <div className="space-y-3">
+                        {/* Model Selection - iOS Style Segmented Control */}
                         <div>
                           <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                             <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[hsl(199,100%,50%)] to-[hsl(258,90%,66%)] flex items-center justify-center">
@@ -822,65 +841,45 @@ export default function EditorPage() {
                             </div>
                             AI Enhancement Model
                           </h3>
-                          <div className="space-y-3">
-                            {AVAILABLE_MODELS.map((model) => (
-                              <button
-                                key={model.id}
-                                onClick={() => setSelectedModel(model.id)}
-                                className={cn(
-                                  "group w-full p-4 rounded-xl border transition-all duration-300 text-left relative overflow-hidden",
-                                  selectedModel === model.id
-                                    ? "border-transparent text-white shadow-lg"
-                                    : "bg-[#0a0a0a] border-[#1c1c1e] text-gray-300 hover:border-[hsl(199,100%,50%)]/30 hover:bg-[#0d0d0d]"
-                                )}
-                                style={selectedModel === model.id ? {
-                                  background: 'linear-gradient(135deg, hsl(199, 100%, 50%) 0%, hsl(258, 90%, 66%) 100%)',
-                                } : undefined}
-                              >
-                                {selectedModel === model.id && (
-                                  <div className="absolute inset-0 bg-gradient-to-r from-[hsl(199,100%,50%)]/10 to-[hsl(258,90%,66%)]/10 backdrop-blur-sm"></div>
-                                )}
-                                <div className="relative flex items-center gap-4">
-                                  <div className={cn(
-                                    "text-2xl transition-transform duration-300",
-                                    selectedModel === model.id ? "scale-110" : "group-hover:scale-105"
-                                  )}>
-                                    {model.icon}
+
+                          {/* iOS-style Segmented Control */}
+                          <div className="relative bg-[#1c1c1e] rounded-xl p-1">
+                            <div className="grid grid-cols-2 gap-0 relative">
+                              {/* Sliding Background */}
+                              <div
+                                className="absolute top-1 bottom-1 bg-gradient-to-r from-[hsl(199,100%,50%)] to-[hsl(258,90%,66%)] rounded-lg transition-all duration-300 ease-out"
+                                style={{
+                                  left: selectedModel === AVAILABLE_MODELS[0].id ? '4px' : '50%',
+                                  right: selectedModel === AVAILABLE_MODELS[0].id ? '50%' : '4px',
+                                }}
+                              />
+
+                              {AVAILABLE_MODELS.map((model, index) => (
+                                <button
+                                  key={model.id}
+                                  onClick={() => setSelectedModel(model.id)}
+                                  className={cn(
+                                    "relative z-10 px-4 py-3 text-sm font-semibold rounded-lg transition-all duration-300 flex items-center justify-center gap-2",
+                                    selectedModel === model.id
+                                      ? "text-white"
+                                      : "text-gray-400 hover:text-gray-300"
+                                  )}
+                                >
+                                  <span className="text-lg">{model.icon}</span>
+                                  <div className="text-left">
+                                    <div className="font-semibold text-xs">{model.name.split(' ')[0]}</div>
+                                    <div className="text-xs opacity-80">{model.category}</div>
                                   </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className={cn(
-                                        "font-semibold text-base transition-colors",
-                                        selectedModel === model.id ? "text-white" : "text-gray-200 group-hover:text-white"
-                                      )}>
-                                        {model.name}
-                                      </span>
-                                      <span className={cn(
-                                        "text-xs px-2 py-1 rounded-full font-medium transition-all duration-300",
-                                        selectedModel === model.id
-                                          ? "bg-white/20 text-white border border-white/30"
-                                          : "bg-[hsl(199,100%,50%)]/10 text-[hsl(199,100%,50%)] border border-[hsl(199,100%,50%)]/20 group-hover:bg-[hsl(199,100%,50%)]/20"
-                                      )}>
-                                        {model.category}
-                                      </span>
-                                    </div>
-                                    <p className={cn(
-                                      "text-sm leading-relaxed transition-colors",
-                                      selectedModel === model.id ? "text-white/90" : "text-gray-400 group-hover:text-gray-300"
-                                    )}>
-                                      {model.description}
-                                    </p>
-                                  </div>
-                                  <div className="flex-shrink-0 flex items-center">
-                                    {selectedModel === model.id ? (
-                                      <CheckCircle2 className="w-6 h-6 text-white animate-pulse" />
-                                    ) : (
-                                      <div className="w-6 h-6 rounded-full border-2 border-gray-600 group-hover:border-[hsl(199,100%,50%)] transition-colors"></div>
-                                    )}
-                                  </div>
-                                </div>
-                              </button>
-                            ))}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Selected Model Description */}
+                          <div className="mt-3 p-3 bg-[#0a0a0a] rounded-lg border border-[#1c1c1e]">
+                            <p className="text-sm text-gray-400 leading-relaxed">
+                              {AVAILABLE_MODELS.find(m => m.id === selectedModel)?.description}
+                            </p>
                           </div>
                         </div>
 
@@ -914,7 +913,6 @@ export default function EditorPage() {
                         </div>
                       </div>
                     </div>
-                  </div>
 
 
                   <div className="space-y-1.5">
@@ -986,6 +984,24 @@ export default function EditorPage() {
                       </div>
                     </div>
 
+                    {/* Advanced Model Settings */}
+                    <div className="border-t border-[#1c1c1e] pt-3">
+                      <details className="group">
+                        <summary className="cursor-pointer text-sm font-medium text-gray-300 hover:text-white transition-colors flex items-center justify-between">
+                          <span>Advanced Model Settings</span>
+                          <div className="transform group-open:rotate-180 transition-transform">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
+                        </summary>
+
+                        <div className="mt-3 space-y-3 pl-2">
+                          {renderModelControls()}
+                        </div>
+                      </details>
+                    </div>
+
                     <div className="mt-2 space-y-1">
                       <div className="flex items-center justify-between px-0.5">
                         <div className="flex items-center gap-1">
@@ -1024,23 +1040,6 @@ export default function EditorPage() {
                     </div>
                   </div>
 
-                  {/* Advanced Model Settings */}
-                  <div className="border-t border-[#1c1c1e] pt-3">
-                    <details className="group">
-                      <summary className="cursor-pointer text-sm font-medium text-gray-300 hover:text-white transition-colors flex items-center justify-between">
-                        <span>Advanced Model Settings</span>
-                        <div className="transform group-open:rotate-180 transition-transform">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </div>
-                      </summary>
-
-                      <div className="mt-3 space-y-3 pl-2">
-                        {renderModelControls()}
-                      </div>
-                    </details>
-                  </div>
                 </div>
               </div>
 
