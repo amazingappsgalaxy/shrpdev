@@ -107,13 +107,13 @@ export async function POST(request: NextRequest) {
       console.log('📋 [CHECKOUT API] Request data:', { plan, billingPeriod })
       console.log('💰 [CHECKOUT API] Plan amount:', amount, 'cents:', amount * 100)
 
-      // Use request origin as fallback to avoid port mismatch in dev
+      // Use tunnel URL or request origin as fallback
       const origin = new URL(request.url).origin
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || origin
       const successUrl = process.env.DODO_PAYMENTS_RETURN_URL || `${baseUrl}/app/dashboard?payment=success`
       const cancelUrl = process.env.DODO_PAYMENTS_CANCEL_URL || `${baseUrl}/?payment=cancelled#pricing-section`
 
-      // Create subscription with Dodo API
+      // Create subscription with Dodo API with timeout
       const subscriptionData = {
         billing: {
           city: 'San Francisco',
@@ -143,12 +143,24 @@ export async function POST(request: NextRequest) {
       }
 
       console.log('📤 [CHECKOUT API] Creating subscription with data:', JSON.stringify(subscriptionData, null, 2))
-      const subscription = await dodo.subscriptions.create(subscriptionData)
+
+      // Add timeout wrapper for Dodo API call
+      const createSubscriptionWithTimeout = () => {
+        return Promise.race([
+          dodo.subscriptions.create(subscriptionData),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Dodo API call timed out after 15 seconds')), 15000)
+          )
+        ])
+      }
+
+      const subscription = await createSubscriptionWithTimeout()
       console.log('✅ [CHECKOUT API] Created subscription:', subscription)
 
       // Store user mapping in memory (temporary solution)
       try {
-        const mappingResponse = await fetch('http://localhost:3003/api/payments/user-mapping', {
+        const localPort = new URL(request.url).port || '3004'
+        const mappingResponse = await fetch(`http://localhost:${localPort}/api/payments/user-mapping`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -212,14 +224,14 @@ export async function POST(request: NextRequest) {
       
       if (error?.status === 401) {
         return NextResponse.json(
-          { 
+          {
             error: 'Payment system configuration error',
             message: 'Invalid Dodo Payments API key. Please contact support or check the API configuration.'
           },
           { status: 500 }
         )
       }
-      
+
       if (error?.status === 404) {
         return NextResponse.json(
           {
@@ -231,8 +243,20 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         )
       }
-      
+
+      // Handle timeout error specifically
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      if (errorMessage.includes('timed out')) {
+        return NextResponse.json(
+          {
+            error: 'Payment service timeout',
+            message: 'The payment service is currently slow to respond. Please try again in a moment.',
+            details: errorMessage
+          },
+          { status: 408 }
+        )
+      }
+
       return NextResponse.json(
         { error: `Failed to create subscription: ${errorMessage}` },
         { status: 500 }

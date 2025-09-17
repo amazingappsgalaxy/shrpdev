@@ -342,7 +342,14 @@ export function MyPricingPlans2({
     setIsLoading(plan.name)
 
     try {
+      console.log('📋 Auth data:', {
+        sessionLoading,
+        hasUser: !!authData?.user,
+        userEmail: authData?.user?.email
+      })
+
       if (sessionLoading) {
+        console.log('⏳ Session still loading, retrying in 300ms...')
         setTimeout(() => {
           setIsLoading(null)
           handlePlanSelect(plan)
@@ -351,6 +358,7 @@ export function MyPricingPlans2({
       }
 
       if (!authData?.user) {
+        console.log('🔒 User not authenticated, redirecting to login')
         const planData = {
           plan: plan.name.toLowerCase().replace(/\s+/g, '_'),
           billingPeriod: frequency
@@ -360,10 +368,16 @@ export function MyPricingPlans2({
         return
       }
 
+      console.log('✅ User authenticated, proceeding with checkout')
+
       const requestBody = {
         plan: plan.name.toLowerCase().replace(/\s+/g, '_'),
         billingPeriod: frequency
       }
+
+      // Add timeout to prevent hanging indefinitely
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 20000) // 20 second timeout
 
       const response = await fetch('/api/payments/checkout', {
         method: 'POST',
@@ -371,13 +385,18 @@ export function MyPricingPlans2({
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
       })
+
+      clearTimeout(timeoutId)
 
       let data: any = null
       try {
         data = await response.json()
+        console.log('📤 Response data:', data)
       } catch (e) {
+        console.error('❌ Failed to parse response JSON:', e)
         toast.error('Invalid response from server')
         return
       }
@@ -399,13 +418,27 @@ export function MyPricingPlans2({
       }
 
       if (data && data.checkoutUrl) {
-        window.location.href = data.checkoutUrl
+        console.log('✅ Checkout URL received:', data.checkoutUrl)
+        toast.success('Redirecting to payment...')
+
+        // Use window.open as fallback if location.href fails
+        try {
+          window.location.href = data.checkoutUrl
+        } catch (redirectError) {
+          console.error('Primary redirect failed, trying window.open:', redirectError)
+          window.open(data.checkoutUrl, '_self')
+        }
       } else {
+        console.error('❌ No checkout URL in response:', data)
         toast.error('No checkout URL received')
       }
 
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Checkout failed')
+      if (error instanceof Error && error.name === 'AbortError') {
+        toast.error('Payment service is taking too long to respond. Please try again.')
+      } else {
+        toast.error(error instanceof Error ? error.message : 'Checkout failed')
+      }
     } finally {
       setIsLoading(null)
     }
