@@ -80,13 +80,39 @@ start_dev_server() {
     exit 1
 }
 
+# Function to validate tunnel URL accessibility
+validate_tunnel_url() {
+    local url=$1
+    local max_attempts=10
+    
+    echo "🔍 Validating tunnel URL accessibility..."
+    for i in $(seq 1 $max_attempts); do
+        echo "   Attempt $i/$max_attempts: Testing $url"
+        
+        # Test with curl - check if we get a response
+        if curl -s --max-time 10 --head "$url" >/dev/null 2>&1; then
+            echo "✅ Tunnel URL is accessible!"
+            return 0
+        fi
+        
+        if [ $i -lt $max_attempts ]; then
+            echo "   ⏳ Waiting 3 seconds before retry..."
+            sleep 3
+        fi
+    done
+    
+    echo "⚠️  Tunnel URL validation failed after $max_attempts attempts"
+    echo "   The tunnel may still be initializing. Please wait a moment and try again."
+    return 1
+}
+
 # Function to start Cloudflare tunnel
 start_tunnel() {
     echo "🌐 Starting Cloudflare tunnel..."
     
     # Kill any existing cloudflared processes
     pkill -f "cloudflared tunnel" 2>/dev/null || true
-    sleep 2
+    sleep 3
     
     # Start new tunnel in background
     cloudflared tunnel --url http://localhost:$PORT > tunnel_output.log 2>&1 &
@@ -94,27 +120,47 @@ start_tunnel() {
     
     # Wait for tunnel URL to be generated
     echo "⏳ Waiting for tunnel URL..."
-    for i in {1..30}; do
+    for i in {1..45}; do
         if [ -f "tunnel_output.log" ]; then
             TUNNEL_URL=$(grep -o 'https://[^[:space:]]*\.trycloudflare\.com' tunnel_output.log | head -1)
             if [ ! -z "$TUNNEL_URL" ]; then
-                echo "✅ Tunnel created successfully!"
-                echo "🌍 Public URL: $TUNNEL_URL"
+                echo "✅ Tunnel URL found: $TUNNEL_URL"
                 echo "🏠 Local URL: http://localhost:$PORT"
                 
-                # Save tunnel info to file
-                echo "TUNNEL_URL=$TUNNEL_URL" > .tunnel_info
-                echo "LOCAL_PORT=$PORT" >> .tunnel_info
-                echo "TUNNEL_PID=$TUNNEL_PID" >> .tunnel_info
-                echo "DEV_SERVER_PID=$DEV_SERVER_PID" >> .tunnel_info
+                # Wait a bit more for tunnel to fully initialize
+                echo "⏳ Waiting for tunnel to fully initialize..."
+                sleep 5
                 
-                return 0
+                # Validate tunnel accessibility
+                if validate_tunnel_url "$TUNNEL_URL"; then
+                    echo "🌍 Public URL: $TUNNEL_URL"
+                    
+                    # Save tunnel info to file
+                    echo "TUNNEL_URL=$TUNNEL_URL" > .tunnel_info
+                    echo "LOCAL_PORT=$PORT" >> .tunnel_info
+                    echo "TUNNEL_PID=$TUNNEL_PID" >> .tunnel_info
+                    echo "DEV_SERVER_PID=$DEV_SERVER_PID" >> .tunnel_info
+                    
+                    return 0
+                else
+                    echo "⚠️  Tunnel created but not yet accessible. Continuing anyway..."
+                    echo "🌍 Public URL: $TUNNEL_URL"
+                    
+                    # Save tunnel info to file even if validation failed
+                    echo "TUNNEL_URL=$TUNNEL_URL" > .tunnel_info
+                    echo "LOCAL_PORT=$PORT" >> .tunnel_info
+                    echo "TUNNEL_PID=$TUNNEL_PID" >> .tunnel_info
+                    echo "DEV_SERVER_PID=$DEV_SERVER_PID" >> .tunnel_info
+                    
+                    return 0
+                fi
             fi
         fi
-        sleep 1
+        sleep 2
     done
     
     echo "❌ Failed to get tunnel URL"
+    echo "📋 Cloudflared output:"
     cat tunnel_output.log 2>/dev/null || echo "No tunnel output available"
     exit 1
 }
