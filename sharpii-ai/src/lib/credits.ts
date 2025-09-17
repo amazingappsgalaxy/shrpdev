@@ -46,7 +46,7 @@ export class CreditManager {
     userId: string
     amount: number
     type?: 'purchase' | 'bonus' | 'admin_grant'
-    source?: 'credit_purchase' | 'admin_grant' | 'bonus'
+    source?: 'credit_purchase' | 'admin_grant' | 'bonus' | 'subscription_renewal'
     description?: string
     transactionId?: string
     expiresAt?: number | null
@@ -254,13 +254,90 @@ export class CreditManager {
     }
   }
 
+  /**
+   * Grant subscription credits (monthly expiry)
+   */
+  static async grantSubscriptionCredits({
+    userId,
+    amount,
+    plan,
+    subscriptionId,
+    transactionId,
+    monthsToExpire = 1
+  }: {
+    userId: string
+    amount: number
+    plan: string
+    subscriptionId?: string
+    transactionId?: string
+    monthsToExpire?: number
+  }) {
+    // Set expiry date to end of month
+    const expiresAt = new Date()
+    expiresAt.setMonth(expiresAt.getMonth() + monthsToExpire)
+    expiresAt.setDate(expiresAt.getDate() - 1) // End of month
+    expiresAt.setHours(23, 59, 59, 999)
+
+    const metadata = {
+      plan,
+      subscription_id: subscriptionId,
+      type: 'subscription_credits',
+      expires_monthly: true
+    }
+
+    return this.grantCredits({
+      userId,
+      amount,
+      type: 'purchase',
+      source: 'subscription_renewal',
+      description: `${plan} Plan monthly credits`,
+      transactionId,
+      expiresAt: expiresAt.getTime(),
+      metadata
+    })
+  }
+
+  /**
+   * Grant permanent credits (no expiry)
+   */
+  static async grantPermanentCredits({
+    userId,
+    amount,
+    packageType,
+    transactionId,
+    description
+  }: {
+    userId: string
+    amount: number
+    packageType?: string
+    transactionId?: string
+    description?: string
+  }) {
+    const metadata = {
+      package_type: packageType,
+      type: 'permanent_credits',
+      expires_monthly: false
+    }
+
+    return this.grantCredits({
+      userId,
+      amount,
+      type: 'purchase',
+      source: 'credit_purchase',
+      description: description || `Permanent credits purchase`,
+      transactionId,
+      expiresAt: null, // No expiry - will be set to max date
+      metadata
+    })
+  }
+
   // Simplified placeholder methods for compatibility
   static async addCredits(params: any) {
     return this.grantCredits(params)
   }
 
   static async grantMonthlyCredits(params: any) {
-    return this.grantCredits(params)
+    return this.grantSubscriptionCredits(params)
   }
 
   static async expireOldCredits() {

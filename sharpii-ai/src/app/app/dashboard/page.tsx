@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-client-simple'
 import UserHeader from '@/components/app/UserHeader'
 import CreditsSection from '@/components/app/dashboard/CreditsSection'
@@ -15,9 +15,18 @@ import {
 
 export default function DashboardPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, isLoading } = useAuth()
   const [activeSection, setActiveSection] = useState('credits')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  // Read tab parameter from URL
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab && ['credits', 'usage', 'billing'].includes(tab)) {
+      setActiveSection(tab)
+    }
+  }, [searchParams])
 
   if (isLoading) {
     return <ElegantLoading message="Loading your dashboard..." />

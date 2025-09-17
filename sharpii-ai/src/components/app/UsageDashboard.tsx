@@ -31,6 +31,11 @@ interface CreditTransaction {
   balanceBefore?: number
   balanceAfter?: number
   enhancementTaskId?: string
+  expiryInfo?: {
+    expires: string
+  }
+  isPermanent?: boolean
+  isSubscription?: boolean
 }
 
 interface CreditBalance {
@@ -72,87 +77,74 @@ export function UsageDashboard() {
         return
       }
 
-      if (isSupabaseConfigured) {
-        // Use the new CreditsService for more accurate data
-        const creditBalance = await CreditsService.getUserCredits(user.id)
-        const history = await CreditsService.getCreditHistory(user.id, 20)
+      // Use our new API endpoints - handle each API independently
+      let balanceData = null
+      let historyData = null
 
-        // Calculate expiring soon credits (within 7 days)
-        const now = new Date()
-        const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
-
-        // Get detailed credit information using legacy CreditManager for additional data
-        let expiringSoon = 0
-        try {
-          const activeCredits = await CreditManager.getActiveCredits(user.id)
-          expiringSoon = activeCredits
-            .filter((credit: any) => {
-              const expiration = new Date(credit.expires_at)
-              return expiration <= sevenDaysFromNow && expiration > now
-            })
-            .reduce((sum: number, credit: any) => sum + (credit.amount || 0), 0)
-        } catch (err) {
-          console.warn('Could not fetch detailed credit info:', err)
+      try {
+        const balanceRes = await fetch('/api/credits/balance', { credentials: 'include' })
+        if (balanceRes.ok) {
+          balanceData = await balanceRes.json()
         }
-
-        setCreditBalance({
-          total: creditBalance.total,
-          active: creditBalance.remaining,
-          expiring: expiringSoon,
-          expired: 0
-        })
-
-        const typedHistory: CreditTransaction[] = (history || []).map((h: any) => ({
-          id: h.id,
-          amount: h.amount,
-          type: (h.amount ?? 0) >= 0 ? 'credit' : 'debit',
-          reason: h.reason || 'unknown',
-          description: h.description,
-          createdAt: new Date(h.created_at).getTime(),
-          balanceBefore: h.balance_before,
-          balanceAfter: h.balance_after,
-          enhancementTaskId: h.enhancement_task_id
-        }))
-        setTransactions(typedHistory)
-      } else {
-        // Fallback path: call our API which handles auth and server-side data access
-        const res = await fetch('/api/debug/credits', { credentials: 'include' })
-        if (!res.ok) {
-          throw new Error(`API error ${res.status}`)
-        }
-        const data = await res.json()
-
-        const balance = data?.credits?.balance ?? 0
-        const details = data?.credits?.creditDetails ?? []
-
-        const now = Date.now()
-        const msDay = 24 * 60 * 60 * 1000
-        const expiringSoon = details
-          .filter((c: any) => {
-            const raw = c.expiresAt ?? c.expires_at
-            if (!raw) return false
-            const expiration = typeof raw === 'number' ? raw : new Date(raw).getTime()
-            const daysUntilExpiration = Math.ceil((expiration - now) / msDay)
-            return daysUntilExpiration <= 7 && daysUntilExpiration > 0
-          })
-          .reduce((sum: number, c: any) => sum + (c.amount || 0), 0)
-
-        setCreditBalance({ total: balance, active: balance, expiring: expiringSoon, expired: 0 })
-
-        const history = Array.isArray(data?.recentHistory) ? data.recentHistory : []
-        const typedHistory: CreditTransaction[] = history.map((h: any) => ({
-          id: h.id,
-          amount: h.amount,
-          type: (h.amount ?? 0) >= 0 ? 'credit' : 'debit',
-          reason: h.reason || h.source || 'unknown',
-          description: h.description,
-          createdAt: h.createdAt ?? (h.created_at ? new Date(h.created_at).getTime() : Date.now()),
-          balanceBefore: h.balanceBefore,
-          balanceAfter: h.balanceAfter,
-          enhancementTaskId: h.enhancementTaskId || h.enhancement_task_id
-        }))
-        setTransactions(typedHistory)
+      } catch (error) {
+        console.error('Failed to fetch balance data:', error)
       }
+
+      try {
+        const historyRes = await fetch('/api/credits/history?limit=20', { credentials: 'include' })
+        if (historyRes.ok) {
+          historyData = await historyRes.json()
+          console.log('History API response:', historyData)
+        } else {
+          console.error('History API failed with status:', historyRes.status)
+        }
+      } catch (error) {
+        console.error('Failed to fetch history data:', error)
+      }
+
+      // Calculate expiring soon credits (within 7 days)
+      const now = new Date()
+      const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+
+      let expiringSoon = 0
+      if (balanceData?.breakdown?.expiring) {
+        expiringSoon = balanceData.breakdown.expiring
+          .filter((credit: any) => {
+            const expiration = new Date(credit.expires_at)
+            return expiration <= sevenDaysFromNow && expiration > now
+          })
+          .reduce((sum: number, credit: any) => sum + (credit.amount || 0), 0)
+      }
+
+      setCreditBalance({
+        total: balanceData?.remaining || 0,
+        active: balanceData?.remaining || 0,
+        expiring: expiringSoon,
+        expired: 0
+      })
+
+      // Transform history data - use new API data if available
+      if (historyData?.history) {
+        const typedHistory: CreditTransaction[] = historyData.history.map((h: any) => ({
+          id: h.id,
+          amount: h.amount,
+          type: h.type,
+          reason: h.source || h.reason || 'unknown',
+          description: h.displayName || h.description,
+          createdAt: h.createdAt,
+          balanceBefore: undefined,
+          balanceAfter: undefined,
+          enhancementTaskId: h.metadata?.enhancement_task_id,
+          expiryInfo: h.expiryInfo,
+          isPermanent: h.isPermanent,
+          isSubscription: h.isSubscription
+        }))
+        setTransactions(typedHistory)
+        console.log('✅ Using new history API data with', typedHistory.length, 'transactions')
+      } else {
+        console.log('❌ History API failed, keeping existing transactions')
+      }
+
     } catch (err) {
       console.error('Error loading usage data:', err)
       setError('Failed to load usage data')
@@ -330,13 +322,28 @@ export function UsageDashboard() {
                       {/* Show expiration info for credit transactions */}
                       {transaction.type === 'credit' && (
                         <div className="flex items-center gap-2 mt-1">
-                          <Clock className="h-3 w-3 text-blue-500" />
-                          <p className="text-xs text-blue-600">
-                            {transaction.reason === 'subscription_renewal' ? (
-                              `Subscription credits (monthly) • Expires: ${formatDate(transaction.createdAt + (30 * 24 * 60 * 60 * 1000))}`
-                            ) : transaction.reason === 'credit_purchase' ? 'One-time purchase credits' :
-                             transaction.reason === 'bonus' ? 'Bonus credits' : 'Credits allocated'}
-                          </p>
+                          {transaction.isSubscription ? (
+                            <>
+                              <Calendar className="h-3 w-3 text-blue-500" />
+                              <p className="text-xs text-blue-600">
+                                Subscription credits • {transaction.expiryInfo ? `Expires ${transaction.expiryInfo.expires}` : 'Monthly expiry'}
+                              </p>
+                            </>
+                          ) : transaction.isPermanent ? (
+                            <>
+                              <Coins className="h-3 w-3 text-green-500" />
+                              <p className="text-xs text-green-600">
+                                Permanent credits • No expiration
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="h-3 w-3 text-blue-500" />
+                              <p className="text-xs text-blue-600">
+                                Credits allocated
+                              </p>
+                            </>
+                          )}
                         </div>
                       )}
                       {/* Show task info for debit transactions */}

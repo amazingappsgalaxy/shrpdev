@@ -64,19 +64,37 @@ export default function OptimizedUsageSection({ className }: OptimizedUsageSecti
     try {
       setIsLoading(true)
 
-      // Load both tasks and credit balance for comprehensive usage info
-      const [tasksResponse, creditsResponse] = await Promise.all([
-        fetch('/api/tasks/list?limit=50'),
-        fetch('/api/credits/balance', {
+      // Load tasks, credit balance, and credit history independently to avoid cascade failures
+      let tasksResponse, creditsResponse, historyResponse
+
+      try {
+        tasksResponse = await fetch('/api/tasks/list?limit=50')
+      } catch (error) {
+        console.error('Failed to fetch tasks:', error)
+      }
+
+      try {
+        creditsResponse = await fetch('/api/credits/balance', {
           method: 'GET',
           credentials: 'include',
         })
-      ])
+      } catch (error) {
+        console.error('Failed to fetch credits balance:', error)
+      }
+
+      try {
+        historyResponse = await fetch('/api/credits/history?limit=20', {
+          method: 'GET',
+          credentials: 'include',
+        })
+      } catch (error) {
+        console.error('Failed to fetch credits history:', error)
+      }
 
       let recentTransactions: Transaction[] = []
 
       // Process tasks data
-      if (tasksResponse.ok) {
+      if (tasksResponse && tasksResponse.ok) {
         const tasksData = await tasksResponse.json()
         const tasks = tasksData.tasks || []
 
@@ -95,7 +113,7 @@ export default function OptimizedUsageSection({ className }: OptimizedUsageSecti
       }
 
       // Process credits data
-      if (creditsResponse.ok) {
+      if (creditsResponse && creditsResponse.ok) {
         const creditsData = await creditsResponse.json()
         setCreditBalance(creditsData)
 
@@ -131,9 +149,40 @@ export default function OptimizedUsageSection({ className }: OptimizedUsageSecti
             })
           }
         }
-      } else {
+      } else if (creditsResponse) {
         console.error('Failed to fetch credit balance:', creditsResponse.status)
       }
+
+      // Process credit history data (additions and deductions)
+      if (historyResponse && historyResponse.ok) {
+        const historyData = await historyResponse.json()
+        if (historyData.history) {
+          const creditTransactions = historyData.history.map((h: any) => ({
+            id: h.id,
+            type: h.type,
+            amount: h.amount,
+            description: h.displayName || h.description || 'Credit transaction',
+            timestamp: h.createdAt,
+            balanceAfter: 0
+          }))
+
+          // Add credit history to transactions (but avoid duplicating task-based deductions)
+          recentTransactions = [
+            ...recentTransactions,
+            ...creditTransactions.filter((ct: Transaction) =>
+              ct.type === 'credit' || // Always include credit additions
+              !recentTransactions.some(rt =>
+                Math.abs(rt.timestamp - ct.timestamp) < 60000 && rt.amount === ct.amount
+              ) // Avoid duplicate deductions
+            )
+          ]
+        }
+      } else if (historyResponse) {
+        console.error('Failed to fetch credit history:', historyResponse.status)
+      }
+
+      // Sort all transactions by timestamp (most recent first)
+      recentTransactions.sort((a, b) => b.timestamp - a.timestamp)
 
       setTransactions(recentTransactions)
     } catch (error) {

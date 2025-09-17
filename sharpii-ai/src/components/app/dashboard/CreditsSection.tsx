@@ -113,7 +113,7 @@ export default function CreditsSection({ className }: CreditsSectionProps) {
         return
       }
       
-      // Load only essential data - remove heavy UnifiedCreditsService call
+      // Load credit balance and packages data
       const [balanceResponse, packagesResponse] = await Promise.all([
         fetch('/api/credits/balance', {
           method: 'GET',
@@ -124,25 +124,32 @@ export default function CreditsSection({ className }: CreditsSectionProps) {
           credentials: 'include',
         })
       ])
-      
+
       let balance = null
       if (balanceResponse.ok) {
-        balance = await balanceResponse.json()
-      } else {
-        // Fallback to basic balance structure with actual values
+        const balanceData = await balanceResponse.json()
         balance = {
-          totalCredits: 1250,
-          remaining: 1250,
-          expiringCredits: 500,
-          permanentCredits: 750,
+          totalCredits: balanceData.remaining || 0,
+          remaining: balanceData.remaining || 0,
+          subscriptionCredits: balanceData.subscriptionCredits || 0,
+          permanentCredits: balanceData.permanentCredits || 0,
+          expiringCredits: balanceData.subscriptionCredits || 0,
+          breakdown: balanceData.breakdown || {
+            expiring: [],
+            permanent: 0
+          }
+        }
+      } else {
+        // Fallback to zero balance for new users
+        balance = {
+          totalCredits: 0,
+          remaining: 0,
+          subscriptionCredits: 0,
+          permanentCredits: 0,
+          expiringCredits: 0,
           breakdown: {
-            expiring: [
-              {
-                amount: 500,
-                expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-              }
-            ],
-            permanent: 750
+            expiring: [],
+            permanent: 0
           }
         }
       }
@@ -340,8 +347,7 @@ export default function CreditsSection({ className }: CreditsSectionProps) {
                   <span className="text-xs font-medium text-white/80">Subscription Credits</span>
                 </div>
                 <div className="text-lg font-semibold text-white">
-                  {(creditBalance.breakdown?.expiring?.reduce((sum: number, exp: any) => sum + exp.amount, 0) ||
-                    creditBalance.expiringCredits || 0).toLocaleString()}
+                  {(creditBalance.subscriptionCredits || 0).toLocaleString()}
                 </div>
                 {/* Show expiration date for subscription credits */}
                 {creditBalance.breakdown?.expiring?.length > 0 && (
@@ -353,6 +359,11 @@ export default function CreditsSection({ className }: CreditsSectionProps) {
                     })}
                   </div>
                 )}
+                {creditBalance.subscriptionCredits === 0 && (
+                  <div className="text-xs text-white/50 mt-1">
+                    No active subscription
+                  </div>
+                )}
               </div>
 
               <div className="bg-white/5 rounded-lg p-3">
@@ -361,7 +372,7 @@ export default function CreditsSection({ className }: CreditsSectionProps) {
                   <span className="text-xs font-medium text-white/80">Permanent Credits</span>
                 </div>
                 <div className="text-lg font-semibold text-white">
-                  {(creditBalance.breakdown?.permanent || creditBalance.permanentCredits || 0).toLocaleString()}
+                  {(creditBalance.permanentCredits || 0).toLocaleString()}
                 </div>
                 <div className="text-xs text-white/50 mt-1">
                   No expiration
