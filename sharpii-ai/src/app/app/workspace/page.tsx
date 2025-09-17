@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/auth-client-simple'
 import UserHeader from '@/components/app/UserHeader'
 import { ElegantLoading } from '@/components/ui/elegant-loading'
 import TaskInfoModal from '@/components/app/workspace/TaskInfoModal'
-import { Info, Download, Calendar, Settings, Image as ImageIcon } from 'lucide-react'
+import { Info, Download, Calendar, Settings, Image as ImageIcon, RefreshCw } from 'lucide-react'
 
 interface TaskItem {
   id: string
@@ -17,6 +17,7 @@ interface TaskItem {
   modelName?: string | null
   provider?: string | null
   createdAt: string
+  creditsConsumed?: number | null
 }
 
 export default function WorkspacePage() {
@@ -26,25 +27,68 @@ export default function WorkspacePage() {
   const [loadingTasks, setLoadingTasks] = useState(true)
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isPolling, setIsPolling] = useState(false)
 
   useEffect(() => {
-    if (!isLoading && user) {
-      loadTasks()
+    console.log('Auth state:', { isLoading, user: !!user })
+    if (!isLoading) {
+      if (user) {
+        console.log('User authenticated, loading tasks')
+        loadTasks()
+      } else {
+        console.log('No user, stopping task loading')
+        setLoadingTasks(false)
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, user])
 
-  const loadTasks = async () => {
+  // Smart polling for real-time updates
+  useEffect(() => {
+    if (!user || loadingTasks) return
+
+    const hasProcessingTasks = tasks.some(task => task.status === 'processing' || task.status === 'pending')
+
+    if (!hasProcessingTasks) return
+
+    const pollInterval = setInterval(() => {
+      setIsPolling(true)
+      loadTasks(true) // Silent refresh
+    }, 3000) // Poll every 3 seconds when there are processing tasks
+
+    return () => clearInterval(pollInterval)
+  }, [user, tasks, loadingTasks])
+
+  const loadTasks = async (silent = false) => {
     try {
-      const res = await fetch('/api/tasks/list?limit=20', { cache: 'no-store' })
-      if (!res.ok) throw new Error('Failed to load tasks')
+      if (!silent) {
+        console.log('Loading tasks...')
+      }
+      const res = await fetch('/api/tasks/list?limit=20', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
+      if (!silent) {
+        console.log('Tasks API response:', res.status)
+      }
+      if (!res.ok) {
+        const errorData = await res.json()
+        console.error('Tasks API error:', errorData)
+        throw new Error(`Failed to load tasks: ${res.status}`)
+      }
       const data = await res.json()
+      if (!silent) {
+        console.log('Tasks data received:', data)
+      }
       setTasks(data.tasks || [])
     } catch (err) {
       console.error('Workspace: failed to load tasks', err)
       setTasks([])
     } finally {
       setLoadingTasks(false)
+      setIsPolling(false)
     }
   }
 
@@ -84,9 +128,22 @@ export default function WorkspacePage() {
       <UserHeader />
       <div className="pt-24">
         <div className="max-w-7xl mx-auto px-6 lg:px-12">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Workspace</h1>
-            <p className="text-white/60">Your image enhancement results and history</p>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Workspace</h1>
+              <p className="text-white/60">Your image enhancement results and history</p>
+            </div>
+            <button
+              onClick={() => {
+                setLoadingTasks(true)
+                loadTasks()
+              }}
+              disabled={loadingTasks}
+              className="p-3 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl border border-white/20 backdrop-blur-md transition-all duration-200"
+              title={isPolling ? "Auto-refreshing..." : "Refresh tasks"}
+            >
+              <RefreshCw className={`w-5 h-5 ${loadingTasks || isPolling ? 'animate-spin' : ''}`} />
+            </button>
           </div>
 
           {loadingTasks ? (
@@ -110,7 +167,8 @@ export default function WorkspacePage() {
               {tasks.map((task) => (
                 <div
                   key={task.id}
-                  className="group bg-white/5 border border-white/10 rounded-xl overflow-hidden hover:bg-white/10 transition-all duration-300"
+                  className="group bg-white/5 border border-white/10 rounded-xl overflow-hidden hover:bg-white/10 transition-all duration-300 cursor-pointer"
+                  onClick={() => handleTaskInfo(task)}
                 >
                   {/* Image Display */}
                   <div className="relative aspect-square bg-white/5">
@@ -118,7 +176,9 @@ export default function WorkspacePage() {
                       <img
                         src={task.enhancedImageUrl || task.originalImageUrl!}
                         alt="Enhancement result"
-                        className="w-full h-full object-cover"
+                        className={`w-full h-full object-cover ${
+                          task.status === 'processing' ? 'blur-sm' : ''
+                        }`}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
@@ -126,37 +186,16 @@ export default function WorkspacePage() {
                       </div>
                     )}
 
-                    {/* Overlay with action buttons */}
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                      <button
-                        onClick={() => handleTaskInfo(task)}
-                        className="p-3 bg-white/20 hover:bg-white/30 rounded-full backdrop-blur-sm transition-colors"
-                        title="View Details"
-                      >
-                        <Info className="w-5 h-5" />
-                      </button>
-                      {task.enhancedImageUrl && (
-                        <button
-                          onClick={() => handleDownload(task.enhancedImageUrl!, `enhanced_${task.id}.jpg`)}
-                          className="p-3 bg-white/20 hover:bg-white/30 rounded-full backdrop-blur-sm transition-colors"
-                          title="Download Image"
-                        >
-                          <Download className="w-5 h-5" />
-                        </button>
-                      )}
-                    </div>
+                    {/* Loading indicator for processing tasks */}
+                    {task.status === 'processing' && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      </div>
+                    )}
 
-                    {/* Status badge */}
+                    {/* Status badge with glassmorphism */}
                     <div className="absolute top-3 left-3">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        task.status === 'completed'
-                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                          : task.status === 'processing'
-                            ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                            : task.status === 'failed'
-                              ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                              : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                      }`}>
+                      <span className="px-3 py-1.5 text-xs font-medium rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white/90">
                         {task.status}
                       </span>
                     </div>
@@ -179,25 +218,7 @@ export default function WorkspacePage() {
 
                   {/* Card Content */}
                   <div className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-semibold text-white truncate">
-                        {task.modelName || 'Enhancement Task'}
-                      </h3>
-                      <button
-                        onClick={() => handleTaskInfo(task)}
-                        className="p-1 hover:bg-white/10 rounded transition-colors flex-shrink-0 ml-2"
-                      >
-                        <Info className="w-4 h-4 text-white/60" />
-                      </button>
-                    </div>
-
                     <div className="space-y-2 text-sm text-white/60">
-                      {task.provider && (
-                        <p className="flex items-center gap-1">
-                          <Settings className="w-3 h-3" />
-                          {task.provider}
-                        </p>
-                      )}
                       <p className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
                         {new Date(task.createdAt).toLocaleDateString()}
@@ -206,18 +227,16 @@ export default function WorkspacePage() {
 
                     {/* Action buttons */}
                     <div className="flex gap-2 mt-4">
-                      <button
-                        onClick={() => handleTaskInfo(task)}
-                        className="flex-1 py-2 px-3 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors"
-                      >
-                        View Details
-                      </button>
                       {task.enhancedImageUrl && (
                         <button
-                          onClick={() => handleDownload(task.enhancedImageUrl!, `enhanced_${task.id}.jpg`)}
-                          className="py-2 px-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-lg transition-all"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDownload(task.enhancedImageUrl!, `enhanced_${task.id}.jpg`)
+                          }}
+                          className="flex-1 py-2 px-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-lg transition-all flex items-center justify-center gap-2"
                         >
                           <Download className="w-4 h-4" />
+                          Download
                         </button>
                       )}
                     </div>

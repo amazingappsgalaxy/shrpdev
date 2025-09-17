@@ -37,7 +37,16 @@
       "Bash(tree:*)",
       "Bash(node:*)",
       "Bash(npm uninstall:*)",
-      "mcp__streamable-mcp-server__chrome_navigate"
+      "mcp__streamable-mcp-server__chrome_navigate",
+      "Bash(npx tsc:*)",
+      "Bash(pkill:*)",
+      "mcp__streamable-mcp-server__chrome_get_web_content",
+      "mcp__streamable-mcp-server__chrome_get_interactive_elements",
+      "mcp__streamable-mcp-server__chrome_click_element",
+      "mcp__streamable-mcp-server__chrome_screenshot",
+      "mcp__streamable-mcp-server__get_windows_and_tabs",
+      "mcp__streamable-mcp-server__chrome_network_request",
+      "mcp__streamable-mcp-server__chrome_close_tabs"
     ],
     "deny": [],
     "ask": []

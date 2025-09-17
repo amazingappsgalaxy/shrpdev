@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef, useCallback } from "react"
+import React, { useState, useRef, useCallback, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Upload,
@@ -72,22 +72,34 @@ const AVAILABLE_MODELS = [
     icon: '⚡'
   },
   {
-    id: 'replicate/magic-image-refiner',
+    id: 'fermatresearch/magic-image-refiner',
     name: 'Magic Image Refiner',
     provider: 'replicate',
     category: 'Standard',
     description: 'Refines image quality and details',
     icon: '✨'
-  },
-  {
-    id: 'replicate/batoure-face-enhancer',
-    name: 'Batoure Face Enhancer',
-    provider: 'replicate',
-    category: 'Portrait',
-    description: 'Specialized facial enhancement',
-    icon: '👤'
   }
 ]
+
+// Model-specific control configurations
+const MODEL_CONTROLS = {
+  'runninghub-flux-upscaling': {
+    prompt: { type: 'text', default: 'high quality, detailed, enhanced', label: 'Prompt' },
+    steps: { type: 'number', default: 10, min: 5, max: 50, label: 'Processing Steps' },
+    guidance_scale: { type: 'number', default: 3.5, min: 1, max: 20, step: 0.1, label: 'Guidance Scale' },
+    strength: { type: 'number', default: 0.3, min: 0.1, max: 1, step: 0.1, label: 'Denoise Strength' },
+    scheduler: { type: 'select', default: 'sgm_uniform', options: ['simple', 'sgm_uniform', 'karras', 'exponential', 'ddim_uniform', 'beta', 'normal', 'ays', 'ays+'], label: 'Scheduler' },
+    enable_upscale: { type: 'boolean', default: true, label: 'Enable Upscaling' },
+    upscaler: { type: 'select', default: '4xRealWebPhoto_v4_dat2.pth', options: ['4xRealWebPhoto_v4_dat2.pth', '4x_NMKD-Siax_200k.pth', '4x-UltraSharp.pth', 'RealESRGAN_x4plus.pth'], label: 'Upscaler Model' },
+    sampler_name: { type: 'select', default: 'dpmpp_2m', options: ['dpmpp_2m', 'euler', 'euler_ancestral', 'heun', 'dpm_2', 'dpm_2_ancestral', 'lms', 'dpmpp_sde', 'dpmpp_2s_ancestral'], label: 'Sampling Method' },
+    seed: { type: 'number', default: 0, min: 0, max: 999999999, label: 'Seed (0 for random)' }
+  },
+  'fermatresearch/magic-image-refiner': {
+    creativity: { type: 'number', default: 0.5, min: 0, max: 1, step: 0.1, label: 'Creativity Level' },
+    hdr: { type: 'boolean', default: false, label: 'HDR Enhancement' },
+    resemblance: { type: 'number', default: 0.8, min: 0, max: 1, step: 0.1, label: 'Resemblance to Original' }
+  }
+}
 
 // iOS-style Task Loader Component
 function MyTaskLoader({ isVisible, progress, status, message }: {
@@ -96,64 +108,343 @@ function MyTaskLoader({ isVisible, progress, status, message }: {
   status: 'loading' | 'success' | 'error'
   message: string
 }) {
+  const [simulatedProgress, setSimulatedProgress] = useState(0)
+  const [displayProgress, setDisplayProgress] = useState(0)
+
+  // Simulate progress when loading starts
+  useEffect(() => {
+    if (status === 'loading' && isVisible) {
+      setSimulatedProgress(0)
+      const interval = setInterval(() => {
+        setSimulatedProgress(prev => {
+          // Slow down as we approach 90%
+          const increment = prev < 30 ? 2 : prev < 60 ? 1 : prev < 85 ? 0.5 : 0.1
+          const newProgress = Math.min(prev + increment, 90)
+          return newProgress
+        })
+      }, 200)
+
+      return () => clearInterval(interval)
+    } else if (status === 'success') {
+      setSimulatedProgress(100)
+    }
+
+    return () => {} // Ensure all code paths return a cleanup function
+  }, [status, isVisible])
+
+  // Use API progress if available and > simulated, otherwise use simulated
+  useEffect(() => {
+    const finalProgress = Math.max(progress, simulatedProgress)
+    setDisplayProgress(finalProgress)
+  }, [progress, simulatedProgress])
+
   if (!isVisible) return null
 
   return (
     <AnimatePresence>
       <motion.div
+        key={status}
         initial={{ opacity: 0, y: 50, scale: 0.9 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 50, scale: 0.9 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
         className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-[9999]"
-        style={{ transform: 'translate(-50%, 0)' }}
       >
-        <div className="backdrop-blur-xl bg-black/70 border border-white/20 rounded-full px-4 py-2.5 shadow-2xl flex items-center gap-3 min-w-[280px]">
-          {/* Circular Progress Indicator */}
-          <div className="relative w-6 h-6 flex-shrink-0">
+        <motion.div
+          layout
+          className={cn(
+            "backdrop-blur-2xl border shadow-2xl flex items-center gap-4 transition-all duration-500",
+            status === 'loading' && "bg-black/80 border-white/30 rounded-full px-6 py-4 min-w-[360px]",
+            status === 'success' && "bg-green-900/80 border-green-400/50 rounded-2xl px-8 py-6 min-w-[300px]",
+            status === 'error' && "bg-red-900/80 border-red-400/50 rounded-2xl px-8 py-6 min-w-[300px]"
+          )}
+        >
+          {/* Icon/Progress Indicator */}
+          <div className="relative flex-shrink-0">
             {status === 'loading' && (
-              <>
-                <div className="absolute inset-0 rounded-full border-2 border-white/20" />
-                <svg className="absolute inset-0 w-6 h-6 transform -rotate-90" viewBox="0 0 24 24">
+              <div className="relative w-10 h-10">
+                <div className="absolute inset-0 rounded-full border-3 border-white/20" />
+                <svg className="absolute inset-0 w-10 h-10 transform -rotate-90" viewBox="0 0 40 40">
                   <circle
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="url(#progressGradient)"
-                    strokeWidth="2"
+                    cx="20"
+                    cy="20"
+                    r="16"
+                    stroke="url(#websiteGradient)"
+                    strokeWidth="3"
                     fill="none"
-                    strokeDasharray={`${2 * Math.PI * 10}`}
-                    strokeDashoffset={`${2 * Math.PI * 10 * (1 - progress / 100)}`}
-                    className="transition-all duration-300 ease-out"
+                    strokeDasharray={`${2 * Math.PI * 16}`}
+                    strokeDashoffset={`${2 * Math.PI * 16 * (1 - displayProgress / 100)}`}
+                    className="transition-all duration-700 ease-out"
                   />
                   <defs>
-                    <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#3B82F6" />
-                      <stop offset="100%" stopColor="#8B5CF6" />
+                    <linearGradient id="websiteGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="hsl(199, 100%, 50%)" />
+                      <stop offset="100%" stopColor="hsl(258, 90%, 66%)" />
                     </linearGradient>
                   </defs>
                 </svg>
-              </>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-xs font-bold text-white">{Math.round(displayProgress)}</span>
+                </div>
+              </div>
             )}
-            {status === 'success' && <CheckCircle2 className="w-6 h-6 text-green-400" />}
-            {status === 'error' && <AlertCircle className="w-6 h-6 text-red-400" />}
+            {status === 'success' && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", delay: 0.2 }}
+              >
+                <CheckCircle2 className="w-10 h-10 text-green-400" />
+              </motion.div>
+            )}
+            {status === 'error' && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", delay: 0.2 }}
+              >
+                <AlertCircle className="w-10 h-10 text-red-400" />
+              </motion.div>
+            )}
           </div>
 
-          {/* Loading Text */}
-          <span className="text-sm font-medium text-white flex-1 truncate">{message}</span>
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <span className={cn(
+                "font-semibold block truncate",
+                status === 'loading' && "text-white text-sm",
+                status === 'success' && "text-green-100 text-base",
+                status === 'error' && "text-red-100 text-base"
+              )}>
+                {status === 'loading' && 'Enhancing Image...'}
+                {status === 'success' && 'Enhancement Complete!'}
+                {status === 'error' && 'Enhancement Failed'}
+              </span>
+              <span className={cn(
+                "text-xs mt-1 block truncate",
+                status === 'loading' && "text-gray-300",
+                status === 'success' && "text-green-200",
+                status === 'error' && "text-red-200"
+              )}>
+                {status === 'loading' && `${Math.round(displayProgress)}% complete`}
+                {status === 'success' && 'Your enhanced image is ready'}
+                {status === 'error' && (message || 'Please try again')}
+              </span>
+            </motion.div>
+          </div>
 
-          {/* Linear Progress Indicator */}
+          {/* Additional Elements */}
           {status === 'loading' && (
-            <div className="w-16 bg-white/10 rounded-full h-1 overflow-hidden flex-shrink-0">
-              <div
-                className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300 ease-out rounded-full"
-                style={{ width: `${progress}%` }}
+            <div className="w-24 bg-white/10 rounded-full h-2 overflow-hidden flex-shrink-0">
+              <motion.div
+                className="h-full rounded-full"
+                style={{
+                  background: 'linear-gradient(135deg, hsl(199, 100%, 50%), hsl(258, 90%, 66%))'
+                }}
+                initial={{ width: 0 }}
+                animate={{ width: `${displayProgress}%` }}
+                transition={{ duration: 0.7, ease: "easeOut" }}
               />
             </div>
           )}
-        </div>
+
+          {status === 'success' && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 }}
+              className="text-green-400"
+            >
+              <TrendingUp className="w-6 h-6" />
+            </motion.div>
+          )}
+        </motion.div>
       </motion.div>
     </AnimatePresence>
+  )
+}
+
+// Image Comparison Slider Component
+function ImageComparisonSlider({
+  originalImage,
+  enhancedImage,
+  onExpand,
+  onDownload
+}: {
+  originalImage: string
+  enhancedImage: string
+  onExpand?: () => void
+  onDownload?: () => void
+}) {
+  const [sliderPosition, setSliderPosition] = useState(50)
+  const [isDragging, setIsDragging] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    setIsDragging(true)
+    e.preventDefault()
+  }, [])
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false)
+  }, [])
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDragging || !containerRef.current) return
+
+    const rect = containerRef.current.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const percentage = Math.min(Math.max((x / rect.width) * 100, 0), 100)
+    setSliderPosition(percentage)
+  }, [isDragging])
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    setIsDragging(true)
+    e.preventDefault()
+  }, [])
+
+  const handleTouchEnd = useCallback(() => {
+    setIsDragging(false)
+  }, [])
+
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    if (!isDragging || !containerRef.current) return
+
+    const rect = containerRef.current.getBoundingClientRect()
+    const x = e.touches[0].clientX - rect.left
+    const percentage = Math.min(Math.max((x / rect.width) * 100, 0), 100)
+    setSliderPosition(percentage)
+  }, [isDragging])
+
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    if (!containerRef.current) return
+
+    const rect = containerRef.current.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const percentage = Math.min(Math.max((x / rect.width) * 100, 0), 100)
+    setSliderPosition(percentage)
+  }, [])
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      document.addEventListener('touchmove', handleTouchMove)
+      document.addEventListener('touchend', handleTouchEnd)
+    } else {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.removeEventListener('touchmove', handleTouchMove)
+      document.removeEventListener('touchend', handleTouchEnd)
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.removeEventListener('touchmove', handleTouchMove)
+      document.removeEventListener('touchend', handleTouchEnd)
+    }
+  }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd])
+
+  return (
+    <div className="relative w-full h-full">
+      <div
+        ref={containerRef}
+        className="relative w-full h-full cursor-pointer select-none overflow-hidden rounded-2xl"
+        onClick={handleClick}
+      >
+        {/* Original Image (Background) */}
+        <div className="absolute inset-0">
+          <img
+            src={originalImage}
+            alt="Original"
+            className="w-full h-full object-contain"
+            draggable={false}
+          />
+          <div className="absolute top-4 left-4">
+            <div className="bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full border border-white/20">
+              Original
+            </div>
+          </div>
+        </div>
+
+        {/* Enhanced Image (Overlay) */}
+        <div
+          className="absolute inset-0 overflow-hidden"
+          style={{ clipPath: `polygon(${sliderPosition}% 0%, 100% 0%, 100% 100%, ${sliderPosition}% 100%)` }}
+        >
+          <img
+            src={enhancedImage}
+            alt="Enhanced"
+            className="w-full h-full object-contain"
+            draggable={false}
+          />
+          <div className="absolute top-4 right-4">
+            <div className="bg-gradient-to-r from-green-500/80 to-emerald-500/80 text-white text-xs px-3 py-1.5 rounded-full border border-green-400/30 backdrop-blur-sm">
+              ✨ Enhanced
+            </div>
+          </div>
+        </div>
+
+        {/* Slider Handle */}
+        <div
+          className="absolute top-0 bottom-0 w-1 bg-white shadow-2xl cursor-col-resize z-10"
+          style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+        >
+          {/* Handle Circle */}
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+            <div className="w-12 h-12 bg-white rounded-full shadow-2xl flex items-center justify-center cursor-col-resize border-4 border-black/20">
+              <div className="flex items-center gap-1">
+                <div className="w-1 h-4 bg-gray-400 rounded-full"></div>
+                <div className="w-1 h-4 bg-gray-400 rounded-full"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Comparison Line */}
+        <div
+          className="absolute top-0 bottom-0 w-0.5 bg-white/60 pointer-events-none"
+          style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+        />
+      </div>
+
+      {/* Action Buttons */}
+      <div className="absolute bottom-4 right-4 flex space-x-2">
+        {onExpand && (
+          <button
+            onClick={onExpand}
+            className="p-2 rounded-full transition-colors bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/20"
+            title="Expand view"
+          >
+            <Expand className="w-4 h-4" />
+          </button>
+        )}
+        {onDownload && (
+          <button
+            onClick={onDownload}
+            className="p-2 rounded-full transition-colors bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/20"
+            title="Download enhanced image"
+          >
+            <Download className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Progress Indicator */}
+      <div className="absolute bottom-4 left-4">
+        <div className="bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full border border-white/20">
+          {Math.round(sliderPosition)}% Enhanced View
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -179,25 +470,8 @@ export default function EditorPage() {
   const [showPopup, setShowPopup] = useState(false)
   const [estimatedCredits, setEstimatedCredits] = useState(0)
 
-  // Advanced model settings - based on actual API parameters
-  const [modelSettings, setModelSettings] = useState({
-    // RunningHub FLUX parameters
-    prompt: 'high quality, detailed, enhanced',
-    seed: 0,
-    steps: 10,
-    guidance_scale: 3.5,
-    denoise: 0.3,
-    sampler_name: 'dpmpp_2m',
-    scheduler: 'sgm_uniform',
-    upscale_model: '4xRealWebPhoto_v4_dat2.pth',
-    upscale_method: 'lanczos',
-    megapixels: 5,
-    enable_upscale: true,
-
-    // Basic enhancement settings for all models
-    enhancementStrength: 0.75,
-    preserveDetails: true
-  })
+  // Model settings - start with defaults for first model
+  const [modelSettings, setModelSettings] = useState<Record<string, any>>({})
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -235,8 +509,13 @@ export default function EditorPage() {
         selectedModel,
         {
           ...modelSettings,
-          imageWidth: imageSize.width,
-          imageHeight: imageSize.height
+          enable_upscale: modelSettings.enable_upscale,
+          steps: modelSettings.steps,
+          guidance_scale: modelSettings.guidance_scale,
+          denoise: modelSettings.strength || modelSettings.denoise,
+          scheduler: modelSettings.scheduler,
+          sampler_name: modelSettings.sampler_name,
+          upscale_model: modelSettings.upscaler
         }
       )
       setEstimatedCredits(result.totalCredits)
@@ -246,9 +525,21 @@ export default function EditorPage() {
     }
   }, [imageSize, selectedModel, modelSettings])
 
-  React.useEffect(() => {
+  useEffect(() => {
     updateEstimatedCredits()
   }, [updateEstimatedCredits])
+
+  // Reset model settings when model changes
+  useEffect(() => {
+    const controls = MODEL_CONTROLS[selectedModel as keyof typeof MODEL_CONTROLS]
+    if (controls) {
+      const newSettings = {}
+      Object.entries(controls).forEach(([key, config]) => {
+        newSettings[key] = config.default
+      })
+      setModelSettings(prev => ({ ...prev, ...newSettings }))
+    }
+  }, [selectedModel])
 
   const handleEnhancement = async () => {
     if (!uploadedImage || !user) return
@@ -294,6 +585,12 @@ export default function EditorPage() {
 
       const result = await response.json()
 
+      console.log('API Response:', result)
+
+      if (!response.ok) {
+        throw new Error(result.error || result.message || `API Error: ${response.status}`)
+      }
+
       if (result.success && result.enhancedUrl) {
         setEnhancedImage(result.enhancedUrl)
         setEnhancementStatus('success')
@@ -304,8 +601,18 @@ export default function EditorPage() {
         setTimeout(() => {
           setIsEnhancing(false)
         }, 3000)
+      } else if (result.enhancedUrl) {
+        // Handle case where API returns enhancedUrl without explicit success flag
+        setEnhancedImage(result.enhancedUrl)
+        setEnhancementStatus('success')
+        setEnhancementMessage('Enhancement completed successfully!')
+        setEnhancementProgress(100)
+
+        setTimeout(() => {
+          setIsEnhancing(false)
+        }, 3000)
       } else {
-        throw new Error(result.error || 'Enhancement failed')
+        throw new Error(result.error || result.message || 'Enhancement failed - no enhanced image returned')
       }
     } catch (error) {
       console.error('Enhancement failed:', error)
@@ -327,6 +634,106 @@ export default function EditorPage() {
         [key]: value
       }
     }))
+  }
+
+  // Helper function to render model-specific controls
+  const renderModelControls = () => {
+    const controls = MODEL_CONTROLS[selectedModel as keyof typeof MODEL_CONTROLS]
+    if (!controls) return null
+
+    return Object.entries(controls).map(([key, config]) => {
+      const currentValue = modelSettings[key] || config.default
+
+      switch (config.type) {
+        case 'text':
+          return (
+            <div key={key}>
+              <label className="text-xs font-light text-gray-300 mb-1 block">{config.label}</label>
+              <input
+                type="text"
+                value={currentValue}
+                onChange={(e) => setModelSettings(prev => ({ ...prev, [key]: e.target.value }))}
+                placeholder={config.default}
+                className="w-full px-2 py-1 text-xs bg-[#151515] border border-[#282828] rounded text-gray-300 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+          )
+
+        case 'number':
+          return (
+            <div key={key}>
+              <label className="text-xs font-light text-gray-300 flex justify-between">
+                <span>{config.label}</span>
+                <span className="text-gray-400">{currentValue}</span>
+              </label>
+              <input
+                type="range"
+                min={config.min}
+                max={config.max}
+                step={config.step || 1}
+                value={currentValue}
+                onChange={(e) => setModelSettings(prev => ({ ...prev, [key]: Number(e.target.value) }))}
+                className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-[#282828] [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#282828]"
+              />
+              {config.min !== undefined && (
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>{config.label.includes('Steps') ? `Fast (${config.min})` : config.label.includes('Scale') ? `Flexible (${config.min})` : `Min (${config.min})`}</span>
+                  <span>{config.label.includes('Steps') ? `Quality (${config.max})` : config.label.includes('Scale') ? `Strict (${config.max})` : `Max (${config.max})`}</span>
+                </div>
+              )}
+            </div>
+          )
+
+        case 'boolean':
+          return (
+            <div key={key}>
+              <label className="flex items-center justify-between cursor-pointer">
+                <span className="text-xs font-light text-gray-300">{config.label}</span>
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={currentValue}
+                    onChange={(e) => setModelSettings(prev => ({ ...prev, [key]: e.target.checked }))}
+                  />
+                  <div className={cn(
+                    "w-10 h-5 rounded-full transition-all duration-300 flex items-center",
+                    currentValue
+                      ? "bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm shadow-blue-500/20"
+                      : "bg-gradient-to-r from-[#1c1c1e] to-[#1c1c1e]/80"
+                  )}>
+                    <div className={cn(
+                      "w-4 h-4 rounded-full transition-all duration-300 shadow-sm",
+                      currentValue
+                        ? "bg-white translate-x-[22px]"
+                        : "bg-gray-400 translate-x-[2px]"
+                    )} />
+                  </div>
+                </div>
+              </label>
+            </div>
+          )
+
+        case 'select':
+          return (
+            <div key={key}>
+              <label className="text-xs font-light text-gray-300 mb-1 block">{config.label}</label>
+              <select
+                value={currentValue}
+                onChange={(e) => setModelSettings(prev => ({ ...prev, [key]: e.target.value }))}
+                className="w-full px-2 py-1 text-xs bg-[#151515] border border-[#282828] rounded text-gray-300 focus:border-blue-500 focus:outline-none"
+              >
+                {config.options?.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
+          )
+
+        default:
+          return null
+      }
+    })
   }
 
   if (isLoading) {
@@ -409,38 +816,68 @@ export default function EditorPage() {
                       <div className="space-y-3">
                         {/* Model Selection */}
                         <div>
-                          <h3 className="text-sm font-medium text-gray-300 mb-3">AI Enhancement Model</h3>
-                          <div className="space-y-2">
+                          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[hsl(199,100%,50%)] to-[hsl(258,90%,66%)] flex items-center justify-center">
+                              <TrendingUp className="w-4 h-4 text-white" />
+                            </div>
+                            AI Enhancement Model
+                          </h3>
+                          <div className="space-y-3">
                             {AVAILABLE_MODELS.map((model) => (
                               <button
                                 key={model.id}
                                 onClick={() => setSelectedModel(model.id)}
                                 className={cn(
-                                  "w-full p-3 rounded-lg border transition-all duration-200 text-left",
+                                  "group w-full p-4 rounded-xl border transition-all duration-300 text-left relative overflow-hidden",
                                   selectedModel === model.id
-                                    ? "bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-blue-500/50 text-white"
-                                    : "bg-[#151515] border-[#282828] text-gray-300 hover:border-blue-500/30 hover:bg-[#1c1c1e]"
+                                    ? "border-transparent text-white shadow-lg"
+                                    : "bg-[#0a0a0a] border-[#1c1c1e] text-gray-300 hover:border-[hsl(199,100%,50%)]/30 hover:bg-[#0d0d0d]"
                                 )}
+                                style={selectedModel === model.id ? {
+                                  background: 'linear-gradient(135deg, hsl(199, 100%, 50%) 0%, hsl(258, 90%, 66%) 100%)',
+                                } : undefined}
                               >
-                                <div className="flex items-center gap-3">
-                                  <span className="text-lg">{model.icon}</span>
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-medium text-sm">{model.name}</span>
+                                {selectedModel === model.id && (
+                                  <div className="absolute inset-0 bg-gradient-to-r from-[hsl(199,100%,50%)]/10 to-[hsl(258,90%,66%)]/10 backdrop-blur-sm"></div>
+                                )}
+                                <div className="relative flex items-center gap-4">
+                                  <div className={cn(
+                                    "text-2xl transition-transform duration-300",
+                                    selectedModel === model.id ? "scale-110" : "group-hover:scale-105"
+                                  )}>
+                                    {model.icon}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
                                       <span className={cn(
-                                        "text-xs px-2 py-0.5 rounded-full",
+                                        "font-semibold text-base transition-colors",
+                                        selectedModel === model.id ? "text-white" : "text-gray-200 group-hover:text-white"
+                                      )}>
+                                        {model.name}
+                                      </span>
+                                      <span className={cn(
+                                        "text-xs px-2 py-1 rounded-full font-medium transition-all duration-300",
                                         selectedModel === model.id
-                                          ? "bg-blue-500/30 text-blue-200"
-                                          : "bg-gray-700 text-gray-400"
+                                          ? "bg-white/20 text-white border border-white/30"
+                                          : "bg-[hsl(199,100%,50%)]/10 text-[hsl(199,100%,50%)] border border-[hsl(199,100%,50%)]/20 group-hover:bg-[hsl(199,100%,50%)]/20"
                                       )}>
                                         {model.category}
                                       </span>
                                     </div>
-                                    <p className="text-xs text-gray-400 mt-0.5">{model.description}</p>
+                                    <p className={cn(
+                                      "text-sm leading-relaxed transition-colors",
+                                      selectedModel === model.id ? "text-white/90" : "text-gray-400 group-hover:text-gray-300"
+                                    )}>
+                                      {model.description}
+                                    </p>
                                   </div>
-                                  {selectedModel === model.id && (
-                                    <CheckCircle2 className="w-4 h-4 text-blue-400" />
-                                  )}
+                                  <div className="flex-shrink-0 flex items-center">
+                                    {selectedModel === model.id ? (
+                                      <CheckCircle2 className="w-6 h-6 text-white animate-pulse" />
+                                    ) : (
+                                      <div className="w-6 h-6 rounded-full border-2 border-gray-600 group-hover:border-[hsl(199,100%,50%)] transition-colors"></div>
+                                    )}
+                                  </div>
                                 </div>
                               </button>
                             ))}
@@ -552,30 +989,36 @@ export default function EditorPage() {
                     <div className="mt-2 space-y-1">
                       <div className="flex items-center justify-between px-0.5">
                         <div className="flex items-center gap-1">
-                          <DollarSign className="w-4 h-4 text-blue-400" />
-                          <span className="text-xs font-medium text-gray-300">Cost: {estimatedCredits} Credits</span>
+                          <DollarSign className="w-4 h-4" style={{ color: 'hsl(199, 100%, 50%)' }} />
+                          <span className="text-xs font-medium text-gray-200">Cost: <span style={{ color: 'hsl(199, 100%, 50%)' }} className="font-bold">{estimatedCredits}</span> Credits</span>
                         </div>
                         <div className="text-[10px] font-medium text-gray-400">{imageSize.width} × {imageSize.height} px</div>
                       </div>
 
 
-                      <div className="relative overflow-hidden rounded-xl shadow-lg border border-gradient-to-r from-blue-500 to-purple-500">
+                      <div className="relative overflow-hidden rounded-2xl shadow-2xl">
                         <button
                           onClick={handleEnhancement}
                           disabled={!uploadedImage || isEnhancing}
-                          className="w-full px-8 py-2.5 text-base font-bold rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
+                          className="group relative w-full px-8 py-4 text-lg font-bold rounded-2xl text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-3 overflow-hidden"
+                          style={{
+                            background: 'linear-gradient(135deg, hsl(199, 100%, 50%) 0%, hsl(258, 90%, 66%) 100%)',
+                            boxShadow: '0 8px 32px hsl(199, 100%, 50%)/0.3, 0 0 0 1px hsl(199, 100%, 50%)/0.2'
+                          }}
                         >
-                          {isEnhancing ? (
-                            <>
-                              <Loader2 className="w-5 h-5 animate-spin" />
-                              Enhancing...
-                            </>
-                          ) : (
-                            <>
-                              <Play className="w-5 h-5" />
-                              Enhance {enhancementType === 'face' ? 'Face' : 'Body'}
-                            </>
-                          )}
+                          <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                          <div className="relative flex items-center justify-center gap-3">
+                            {isEnhancing ? (
+                              <>
+                                <Loader2 className="w-6 h-6 animate-spin" />
+                                Enhancing...
+                              </>
+                            ) : (
+                              <>
+                                Enhance
+                              </>
+                            )}
+                          </div>
                         </button>
                       </div>
                     </div>
@@ -594,252 +1037,7 @@ export default function EditorPage() {
                       </summary>
 
                       <div className="mt-3 space-y-3 pl-2">
-                        {selectedModel === 'runninghub-flux-upscaling' && (
-                          <>
-                            {/* Prompt */}
-                            <div>
-                              <label className="text-xs font-light text-gray-300 mb-1 block">Enhancement Prompt</label>
-                              <input
-                                type="text"
-                                value={modelSettings.prompt}
-                                onChange={(e) => setModelSettings(prev => ({ ...prev, prompt: e.target.value }))}
-                                placeholder="high quality, detailed, enhanced"
-                                className="w-full px-2 py-1 text-xs bg-[#151515] border border-[#282828] rounded text-gray-300 focus:border-blue-500 focus:outline-none"
-                              />
-                            </div>
-
-                            {/* Steps */}
-                            <div>
-                              <label className="text-xs font-light text-gray-300 flex justify-between">
-                                <span>Denoising Steps</span>
-                                <span className="text-gray-400">{modelSettings.steps}</span>
-                              </label>
-                              <input
-                                type="range"
-                                min="1"
-                                max="50"
-                                step="1"
-                                value={modelSettings.steps}
-                                onChange={(e) => setModelSettings(prev => ({ ...prev, steps: Number(e.target.value) }))}
-                                className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-[#282828] [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#282828]"
-                              />
-                              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                                <span>Fast (1)</span>
-                                <span>Quality (50)</span>
-                              </div>
-                            </div>
-
-                            {/* Guidance Scale */}
-                            <div>
-                              <label className="text-xs font-light text-gray-300 flex justify-between">
-                                <span>Guidance Scale</span>
-                                <span className="text-gray-400">{modelSettings.guidance_scale}</span>
-                              </label>
-                              <input
-                                type="range"
-                                min="1"
-                                max="20"
-                                step="0.1"
-                                value={modelSettings.guidance_scale}
-                                onChange={(e) => setModelSettings(prev => ({ ...prev, guidance_scale: Number(e.target.value) }))}
-                                className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-[#282828] [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#282828]"
-                              />
-                              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                                <span>Flexible (1)</span>
-                                <span>Strict (20)</span>
-                              </div>
-                            </div>
-
-                            {/* Denoise Strength */}
-                            <div>
-                              <label className="text-xs font-light text-gray-300 flex justify-between">
-                                <span>Denoise Strength</span>
-                                <span className="text-gray-400">{modelSettings.denoise}</span>
-                              </label>
-                              <input
-                                type="range"
-                                min="0"
-                                max="1"
-                                step="0.01"
-                                value={modelSettings.denoise}
-                                onChange={(e) => setModelSettings(prev => ({ ...prev, denoise: Number(e.target.value) }))}
-                                className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-[#282828] [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#282828]"
-                              />
-                              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                                <span>Preserve Original</span>
-                                <span>Full Enhancement</span>
-                              </div>
-                            </div>
-
-                            {/* Target Megapixels */}
-                            <div>
-                              <label className="text-xs font-light text-gray-300 flex justify-between">
-                                <span>Target Megapixels</span>
-                                <span className="text-gray-400">{modelSettings.megapixels}MP</span>
-                              </label>
-                              <input
-                                type="range"
-                                min="1"
-                                max="20"
-                                step="0.1"
-                                value={modelSettings.megapixels}
-                                onChange={(e) => setModelSettings(prev => ({ ...prev, megapixels: Number(e.target.value) }))}
-                                className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-[#282828] [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#282828]"
-                              />
-                            </div>
-
-                            {/* Enable Upscaling Toggle */}
-                            <div>
-                              <label className="flex items-center justify-between cursor-pointer">
-                                <span className="text-xs font-light text-gray-300">Enable Upscaling</span>
-                                <div className="relative">
-                                  <input
-                                    type="checkbox"
-                                    className="sr-only"
-                                    checked={modelSettings.enable_upscale}
-                                    onChange={(e) => setModelSettings(prev => ({ ...prev, enable_upscale: e.target.checked }))}
-                                  />
-                                  <div className={cn(
-                                    "w-10 h-5 rounded-full transition-all duration-300 flex items-center",
-                                    modelSettings.enable_upscale
-                                      ? "bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm shadow-blue-500/20"
-                                      : "bg-gradient-to-r from-[#1c1c1e] to-[#1c1c1e]/80"
-                                  )}>
-                                    <div className={cn(
-                                      "w-4 h-4 rounded-full transition-all duration-300 shadow-sm",
-                                      modelSettings.enable_upscale
-                                        ? "bg-white translate-x-[22px]"
-                                        : "bg-gray-400 translate-x-[2px]"
-                                    )} />
-                                  </div>
-                                </div>
-                              </label>
-                            </div>
-
-                            {/* Upscale Model Selection */}
-                            {modelSettings.enable_upscale && (
-                              <div>
-                                <label className="text-xs font-light text-gray-300 mb-1 block">Upscale Model</label>
-                                <select
-                                  value={modelSettings.upscale_model}
-                                  onChange={(e) => setModelSettings(prev => ({ ...prev, upscale_model: e.target.value }))}
-                                  className="w-full px-2 py-1 text-xs bg-[#151515] border border-[#282828] rounded text-gray-300 focus:border-blue-500 focus:outline-none"
-                                >
-                                  <option value="4xRealWebPhoto_v4_dat2.pth">4x RealWebPhoto v4</option>
-                                  <option value="4x_NMKD-Siax_200k.pth">4x NMKD-Siax 200k</option>
-                                  <option value="4x-UltraSharp.pth">4x UltraSharp</option>
-                                  <option value="RealESRGAN_x4plus.pth">RealESRGAN x4+</option>
-                                </select>
-                              </div>
-                            )}
-
-                            {/* Sampling Method */}
-                            <div>
-                              <label className="text-xs font-light text-gray-300 mb-1 block">Sampling Method</label>
-                              <select
-                                value={modelSettings.sampler_name}
-                                onChange={(e) => setModelSettings(prev => ({ ...prev, sampler_name: e.target.value }))}
-                                className="w-full px-2 py-1 text-xs bg-[#151515] border border-[#282828] rounded text-gray-300 focus:border-blue-500 focus:outline-none"
-                              >
-                                <option value="dpmpp_2m">DPM++ 2M</option>
-                                <option value="euler">Euler</option>
-                                <option value="euler_ancestral">Euler Ancestral</option>
-                                <option value="heun">Heun</option>
-                                <option value="dpm_2">DPM 2</option>
-                                <option value="dpm_2_ancestral">DPM 2 Ancestral</option>
-                                <option value="lms">LMS</option>
-                                <option value="dpmpp_sde">DPM++ SDE</option>
-                                <option value="dpmpp_2s_ancestral">DPM++ 2S Ancestral</option>
-                              </select>
-                            </div>
-
-                            {/* Scheduler */}
-                            <div>
-                              <label className="text-xs font-light text-gray-300 mb-1 block">Noise Scheduler</label>
-                              <select
-                                value={modelSettings.scheduler}
-                                onChange={(e) => setModelSettings(prev => ({ ...prev, scheduler: e.target.value }))}
-                                className="w-full px-2 py-1 text-xs bg-[#151515] border border-[#282828] rounded text-gray-300 focus:border-blue-500 focus:outline-none"
-                              >
-                                <option value="simple">Simple</option>
-                                <option value="sgm_uniform">SGM Uniform</option>
-                                <option value="karras">Karras</option>
-                                <option value="exponential">Exponential</option>
-                                <option value="ddim_uniform">DDIM Uniform</option>
-                                <option value="beta">Beta</option>
-                                <option value="normal">Normal</option>
-                                <option value="ays">AYS</option>
-                              </select>
-                            </div>
-
-                            {/* Seed */}
-                            <div>
-                              <label className="text-xs font-light text-gray-300 mb-1 block">Seed (0 = Random)</label>
-                              <input
-                                type="number"
-                                min="0"
-                                max="2147483647"
-                                value={modelSettings.seed}
-                                onChange={(e) => setModelSettings(prev => ({ ...prev, seed: Number(e.target.value) }))}
-                                placeholder="0 for random"
-                                className="w-full px-2 py-1 text-xs bg-[#151515] border border-[#282828] rounded text-gray-300 focus:border-blue-500 focus:outline-none"
-                              />
-                            </div>
-                          </>
-                        )}
-
-                        {(selectedModel === 'fermatresearch/magic-image-refiner' || selectedModel.includes('replicate/')) && (
-                          <>
-                            {/* Enhancement Strength */}
-                            <div>
-                              <label className="text-xs font-light text-gray-300 flex justify-between">
-                                <span>Enhancement Strength</span>
-                                <span className="text-gray-400">{modelSettings.enhancementStrength}</span>
-                              </label>
-                              <input
-                                type="range"
-                                min="0"
-                                max="1"
-                                step="0.05"
-                                value={modelSettings.enhancementStrength}
-                                onChange={(e) => setModelSettings(prev => ({ ...prev, enhancementStrength: Number(e.target.value) }))}
-                                className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-[#282828] [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#282828]"
-                              />
-                              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                                <span>Subtle</span>
-                                <span>Strong</span>
-                              </div>
-                            </div>
-
-                            {/* Preserve Details */}
-                            <div>
-                              <label className="flex items-center justify-between cursor-pointer">
-                                <span className="text-xs font-light text-gray-300">Preserve Fine Details</span>
-                                <div className="relative">
-                                  <input
-                                    type="checkbox"
-                                    className="sr-only"
-                                    checked={modelSettings.preserveDetails}
-                                    onChange={(e) => setModelSettings(prev => ({ ...prev, preserveDetails: e.target.checked }))}
-                                  />
-                                  <div className={cn(
-                                    "w-10 h-5 rounded-full transition-all duration-300 flex items-center",
-                                    modelSettings.preserveDetails
-                                      ? "bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm shadow-blue-500/20"
-                                      : "bg-gradient-to-r from-[#1c1c1e] to-[#1c1c1e]/80"
-                                  )}>
-                                    <div className={cn(
-                                      "w-4 h-4 rounded-full transition-all duration-300 shadow-sm",
-                                      modelSettings.preserveDetails
-                                        ? "bg-white translate-x-[22px]"
-                                        : "bg-gray-400 translate-x-[2px]"
-                                    )} />
-                                  </div>
-                                </div>
-                              </label>
-                            </div>
-                          </>
-                        )}
+                        {renderModelControls()}
                       </div>
                     </details>
                   </div>
@@ -888,33 +1086,17 @@ export default function EditorPage() {
                             </div>
                           </div>
                         ) : (
-                          <div className="relative w-full h-full">
-                            <img src={enhancedImage} alt="Enhanced" className="w-full h-full object-contain" />
-                            <div className="absolute bottom-4 right-4 flex space-x-2">
-                              <button
-                                onClick={() => setShowPopup(true)}
-                                className="p-2 rounded-full transition-colors bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/20"
-                                title="Expand view"
-                              >
-                                <Expand className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  const link = document.createElement('a')
-                                  link.href = enhancedImage
-                                  link.download = `enhanced-image-${Date.now()}.jpg`
-                                  link.click()
-                                }}
-                                className="p-2 rounded-full transition-colors bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/20"
-                                title="Download image"
-                              >
-                                <Download className="w-4 h-4" />
-                              </button>
-                            </div>
-                            <div className="absolute bottom-4 left-4 text-sm font-light text-white bg-gradient-to-r from-green-500/80 to-emerald-500/80 px-3 py-1.5 rounded-full backdrop-blur-sm border border-green-400/30">
-                              ✨ Enhancement complete
-                            </div>
-                          </div>
+                          <ImageComparisonSlider
+                            originalImage={uploadedImage}
+                            enhancedImage={enhancedImage}
+                            onExpand={() => setShowPopup(true)}
+                            onDownload={() => {
+                              const link = document.createElement('a')
+                              link.href = enhancedImage
+                              link.download = `enhanced-image-${Date.now()}.jpg`
+                              link.click()
+                            }}
+                          />
                         )}
                       </div>
                     </div>
@@ -939,100 +1121,113 @@ export default function EditorPage() {
                 </div>
               </div>
 
-              {/* Area Protection Controls */}
-              <div className="rounded-2xl border border-[#1c1c1e] bg-[#0a0a0a] shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
-                <div className="px-5 pt-3 pb-3 border-b border-[#1c1c1e]">
-                  <h3 className="text-lg font-normal tracking-wide text-white">Keep Certain Areas Unchanged</h3>
-                </div>
-                <div className="px-5 pt-4 pb-3">
-                  <p className="text-xs font-light text-gray-400 mb-4 leading-tight">
-                    These options control which facial features will be preserved during enhancement. By default, mouth, lips and eyes are already selected to maintain natural expressions.
-                  </p>
-
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="text-xs font-light px-3 py-1 bg-[#151515] text-gray-400 rounded-full">7 selected</div>
-                    <button type="button" className="text-xs font-light px-3 py-1 bg-[#151515] text-gray-400 rounded-full hover:bg-[#1c1c1e] hover:text-white transition-colors duration-200">Reset all</button>
+              {/* Area Protection Controls - Only show for RunningHub */}
+              {selectedModel === 'runninghub-flux-upscaling' && (
+                <div className="rounded-2xl border border-[#1c1c1e] bg-[#0a0a0a] shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
+                  <div className="px-5 pt-3 pb-3 border-b border-[#1c1c1e]">
+                    <h3 className="text-lg font-normal tracking-wide text-white">Keep Certain Areas Unchanged</h3>
                   </div>
+                  <div className="px-5 pt-4 pb-3">
+                    <p className="text-xs font-light text-gray-400 mb-4 leading-tight">
+                      These options control which facial features will be preserved during enhancement. By default, mouth, lips and eyes are already selected to maintain natural expressions.
+                    </p>
 
-                  <div className="bg-[#151515] rounded-xl border border-[#282828] p-4">
-                    <div className="space-y-4">
-                      {/* FACE */}
-                      <div className="backdrop-blur-sm bg-gradient-to-b from-[#0a0a0a]/95 to-[#0a0a0a]/90 rounded-lg p-3 border border-[#1c1c1e]/30">
-                        <h4 className="text-xs font-medium tracking-wider text-gray-400 uppercase mb-3">Face</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {Object.entries(areaProtection.face).map(([key, value]) => (
-                            <label key={key} className="group flex items-center cursor-pointer justify-between bg-gradient-to-r from-[#111111] to-[#0d0d0d] rounded-md border border-[#1c1c1e]/50 px-3 py-2 transition-all duration-300 hover:border-[#282828]">
-                              <span className="text-xs font-light text-gray-300 tracking-wide group-hover:text-white transition-colors duration-200 capitalize">
-                                {key.replace(/([A-Z])/g, ' $1').trim()}
-                              </span>
-                              <div className="flex-shrink-0">
-                                <input
-                                  type="checkbox"
-                                  className="sr-only"
-                                  checked={value}
-                                  onChange={() => updateAreaProtection('face', key, !value)}
-                                />
-                                <div className={cn(
-                                  "w-8 h-5 rounded-full transition-all duration-300 flex items-center",
-                                  value
-                                    ? "bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm shadow-blue-500/20"
-                                    : "bg-gradient-to-r from-[#1c1c1e] to-[#1c1c1e]/80"
-                                )}>
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="text-xs font-light px-3 py-1 bg-[#151515] text-gray-400 rounded-full">7 selected</div>
+                      <button
+                        type="button"
+                        className="text-xs font-light px-3 py-1 bg-[#151515] text-gray-400 rounded-full hover:bg-[#1c1c1e] hover:text-white transition-colors duration-200"
+                        onClick={() => {
+                          setAreaProtection(prev => ({
+                            face: Object.keys(prev.face).reduce((acc, key) => ({ ...acc, [key]: false }), {} as any),
+                            eyes: Object.keys(prev.eyes).reduce((acc, key) => ({ ...acc, [key]: false }), {} as any)
+                          }))
+                        }}
+                      >
+                        Reset all
+                      </button>
+                    </div>
+
+                    <div className="bg-[#151515] rounded-xl border border-[#282828] p-4">
+                      <div className="space-y-4">
+                        {/* FACE */}
+                        <div className="backdrop-blur-sm bg-gradient-to-b from-[#0a0a0a]/95 to-[#0a0a0a]/90 rounded-lg p-3 border border-[#1c1c1e]/30">
+                          <h4 className="text-xs font-medium tracking-wider text-gray-400 uppercase mb-3">Face</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {Object.entries(areaProtection.face).map(([key, value]) => (
+                              <label key={key} className="group flex items-center cursor-pointer justify-between bg-gradient-to-r from-[#111111] to-[#0d0d0d] rounded-md border border-[#1c1c1e]/50 px-3 py-2 transition-all duration-300 hover:border-[#282828]">
+                                <span className="text-xs font-light text-gray-300 tracking-wide group-hover:text-white transition-colors duration-200 capitalize">
+                                  {key.replace(/([A-Z])/g, ' $1').trim()}
+                                </span>
+                                <div className="flex-shrink-0">
+                                  <input
+                                    type="checkbox"
+                                    className="sr-only"
+                                    checked={value}
+                                    onChange={() => updateAreaProtection('face', key, !value)}
+                                  />
                                   <div className={cn(
-                                    "w-3.5 h-3.5 rounded-full transition-all duration-300 shadow-sm",
+                                    "w-8 h-5 rounded-full transition-all duration-300 flex items-center",
                                     value
-                                      ? "bg-white translate-x-[18px]"
-                                      : "bg-gray-400 translate-x-[2px]"
-                                  )} />
+                                      ? "bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm shadow-blue-500/20"
+                                      : "bg-gradient-to-r from-[#1c1c1e] to-[#1c1c1e]/80"
+                                  )}>
+                                    <div className={cn(
+                                      "w-3.5 h-3.5 rounded-full transition-all duration-300 shadow-sm",
+                                      value
+                                        ? "bg-white translate-x-[18px]"
+                                        : "bg-gray-400 translate-x-[2px]"
+                                    )} />
+                                  </div>
                                 </div>
-                              </div>
-                            </label>
-                          ))}
+                              </label>
+                            ))}
+                          </div>
                         </div>
-                      </div>
 
-                      {/* EYES */}
-                      <div className="backdrop-blur-sm bg-gradient-to-b from-[#0a0a0a]/95 to-[#0a0a0a]/90 rounded-lg p-3 border border-[#1c1c1e]/30">
-                        <h4 className="text-xs font-medium tracking-wider text-gray-400 uppercase mb-3">Eyes</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {Object.entries(areaProtection.eyes).map(([key, value]) => (
-                            <label key={key} className="group flex items-center cursor-pointer justify-between bg-gradient-to-r from-[#111111] to-[#0d0d0d] rounded-md border border-[#1c1c1e]/50 px-3 py-2 transition-all duration-300 hover:border-[#282828]">
-                              <span className="text-xs font-light text-gray-300 tracking-wide group-hover:text-white transition-colors duration-200">
-                                {key === 'eyeGeneral' ? 'Eye General'
-                                 : key === 'rightEye' ? 'Right Eye'
-                                 : key === 'leftBrow' ? 'Left Brow'
-                                 : key === 'rightBrow' ? 'Right Brow'
-                                 : 'Left Eye'}
-                              </span>
-                              <div className="flex-shrink-0">
-                                <input
-                                  type="checkbox"
-                                  className="sr-only"
-                                  checked={value}
-                                  onChange={() => updateAreaProtection('eyes', key, !value)}
-                                />
-                                <div className={cn(
-                                  "w-8 h-5 rounded-full transition-all duration-300 flex items-center",
-                                  value
-                                    ? "bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm shadow-blue-500/20"
-                                    : "bg-gradient-to-r from-[#1c1c1e] to-[#1c1c1e]/80"
-                                )}>
+                        {/* EYES */}
+                        <div className="backdrop-blur-sm bg-gradient-to-b from-[#0a0a0a]/95 to-[#0a0a0a]/90 rounded-lg p-3 border border-[#1c1c1e]/30">
+                          <h4 className="text-xs font-medium tracking-wider text-gray-400 uppercase mb-3">Eyes</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {Object.entries(areaProtection.eyes).map(([key, value]) => (
+                              <label key={key} className="group flex items-center cursor-pointer justify-between bg-gradient-to-r from-[#111111] to-[#0d0d0d] rounded-md border border-[#1c1c1e]/50 px-3 py-2 transition-all duration-300 hover:border-[#282828]">
+                                <span className="text-xs font-light text-gray-300 tracking-wide group-hover:text-white transition-colors duration-200">
+                                  {key === 'eyeGeneral' ? 'Eye General'
+                                   : key === 'rightEye' ? 'Right Eye'
+                                   : key === 'leftBrow' ? 'Left Brow'
+                                   : key === 'rightBrow' ? 'Right Brow'
+                                   : 'Left Eye'}
+                                </span>
+                                <div className="flex-shrink-0">
+                                  <input
+                                    type="checkbox"
+                                    className="sr-only"
+                                    checked={value}
+                                    onChange={() => updateAreaProtection('eyes', key, !value)}
+                                  />
                                   <div className={cn(
-                                    "w-3.5 h-3.5 rounded-full transition-all duration-300 shadow-sm",
+                                    "w-8 h-5 rounded-full transition-all duration-300 flex items-center",
                                     value
-                                      ? "bg-white translate-x-[18px]"
-                                      : "bg-gray-400 translate-x-[2px]"
-                                  )} />
+                                      ? "bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm shadow-blue-500/20"
+                                      : "bg-gradient-to-r from-[#1c1c1e] to-[#1c1c1e]/80"
+                                  )}>
+                                    <div className={cn(
+                                      "w-3.5 h-3.5 rounded-full transition-all duration-300 shadow-sm",
+                                      value
+                                        ? "bg-white translate-x-[18px]"
+                                        : "bg-gray-400 translate-x-[2px]"
+                                    )} />
+                                  </div>
                                 </div>
-                              </div>
-                            </label>
-                          ))}
+                              </label>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
