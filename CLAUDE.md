@@ -335,3 +335,13 @@ Based on user request, you **MUST** follow these sequences of tool calls
 4. You **MUST** include phrases like **"According to Byterover memory layer"**, **"Based on memory extracted from Byterover"**, **"From Byterover memomry tools"**, ... to explictly showcase that these sources are from **Byterover**.
 5. **Implementation & Progress Tracking** → Execute implementation following saved plan → Mark tasks complete as you go → Mark entire plan done when all tasks finished.
 6. You **MUST** use **byterover-update-module** **IMMEDIATELY** on changes to the module's purposes, technical details, or critical insights that essential for future implementations.
+
+
+## UI/UX Guidelines
+For detailed design standards, please refer to [UI_UX_GUIDELINES.md](/Users/dheer/Documents/sharpcode/UI_UX_GUIDELINES.md).
+
+**Quick Summary (ui-ux-pro-max):**
+- **Design System**: Hero-Centric + Social Proof
+- **Style**: Soft UI Evolution (Soft shadows, organic shapes)
+- **Colors**: Soft Pink (#E8B4B8), Sage Green (#A8D5BA), Gold (#D4AF37)
+- **Typography**: Cormorant Garamond / Montserrat

@@ -181,3 +181,13 @@ To run from source:
 # Go >= 1.22
 go run . help
 ```
+
+
+## UI/UX Guidelines
+For detailed design standards, please refer to [UI_UX_GUIDELINES.md](/Users/dheer/Documents/sharpcode/UI_UX_GUIDELINES.md).
+
+**Quick Summary (ui-ux-pro-max):**
+- **Design System**: Hero-Centric + Social Proof
+- **Style**: Soft UI Evolution (Soft shadows, organic shapes)
+- **Colors**: Soft Pink (#E8B4B8), Sage Green (#A8D5BA), Gold (#D4AF37)
+- **Typography**: Cormorant Garamond / Montserrat
