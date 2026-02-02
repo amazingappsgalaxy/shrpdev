@@ -31,6 +31,46 @@ const galleryItems: GalleryItem[] = IMAGE_ASSETS.beforeAfterPairs.map((pair, ind
 
 const categories = ["All", "Portrait", "Professional", "Artistic"]
 
+interface MediaItemProps {
+  item: GalleryItem
+  onClick: () => void
+  className?: string
+}
+
+const MediaItem = ({ item, onClick, className }: MediaItemProps) => {
+  const [isHovered, setIsHovered] = useState(false)
+
+  return (
+    <div
+      className={cn("relative overflow-hidden rounded-2xl cursor-pointer group", className)}
+      onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="aspect-[4/5] relative">
+        <Image
+          src={item.after}
+          alt={item.title}
+          fill
+          className="object-cover transition-transform duration-700 group-hover:scale-110"
+        />
+
+        {/* Simple Hover Overlay */}
+        <div className={`absolute inset-0 bg-black/40 transition-opacity duration-300 flex items-center justify-center ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+          <div className="bg-white/10 backdrop-blur-md p-3 rounded-full border border-white/20">
+            <Maximize2 className="w-6 h-6 text-white" />
+          </div>
+        </div>
+
+        {/* Corner badge */}
+        <div className="absolute top-3 right-3 px-2 py-1 bg-black/50 backdrop-blur-md rounded-lg border border-white/10">
+          <Sparkles className="w-3 h-3 text-accent-neon" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function InteractiveBentoGallery() {
   return <InteractiveBentoGallerySecond />
 }
@@ -120,46 +160,30 @@ export function InteractiveBentoGallerySecond() {
 
         {/* Simplified Grid Gallery */}
         <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8"
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[400px]"
           layout
         >
           <AnimatePresence mode="popLayout">
-            {filteredItems.slice(0, 4).map((item, index) => (
+            {filteredItems.slice(0, 6).map((item, index) => (
               <motion.div
-                key={`${item.title}-${index}`}
+                key={`${item.title}-${index}`} // Using item.title and index for a unique key
                 layout
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.4, delay: index * 0.1 }}
-                className="group cursor-pointer"
-                onMouseEnter={() => setHoveredIndex(index)}
-                onMouseLeave={() => setHoveredIndex(null)}
-                onClick={() => handleImageClick(index)}
+                className={cn(
+                  "group",
+                  index === 0 || index === 3 ? "md:col-span-2" : "" // Apply span complexity as per instruction
+                )}
               >
-                {/* Image Container - Clean, No Text Overlay */}
-                <div className="relative aspect-[3/4] rounded-2xl overflow-hidden glass-card border border-white/10 mb-5 shadow-2xl">
-                  <Image
-                    src={hoveredIndex === index ? item.after : item.before}
-                    alt={item.title}
-                    fill
-                    className="object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
+                <MediaItem
+                  item={item}
+                  onClick={() => handleImageClick(index)}
+                  className="mb-5 shadow-2xl" // Apply existing styling to MediaItem
+                />
 
-                  {/* Subtle Badge - Top Right */}
-                  <div className="absolute top-4 right-4 z-20">
-                    <div className="px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-2 group-hover:translate-y-0">
-                      <span className="text-xs font-bold text-accent-neon flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" /> Enhanced
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Slider Hint Gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                </div>
-
-                {/* Content Below Image */}
+                {/* Content Below Image - Kept for context/description */}
                 <div className="px-2">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold text-accent-blue uppercase tracking-wider">{item.category}</span>

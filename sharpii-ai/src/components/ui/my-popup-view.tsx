@@ -113,13 +113,18 @@ export default function MyPopupView({
     }
 
     // Prevent body scroll
-    const originalStyle = window.getComputedStyle(document.body).overflow
+    const originalBodyStyle = window.getComputedStyle(document.body).overflow
+    const originalHtmlStyle = window.getComputedStyle(document.documentElement).overflow
+
     document.body.style.overflow = 'hidden'
+    document.documentElement.style.overflow = 'hidden' // Force lock on HTML tag too
+
     document.addEventListener('keydown', handleKeyDown)
     document.addEventListener('keyup', handleKeyUp)
 
     return () => {
-      document.body.style.overflow = originalStyle
+      document.body.style.overflow = originalBodyStyle
+      document.documentElement.style.overflow = originalHtmlStyle
       document.removeEventListener('keydown', handleKeyDown)
       document.removeEventListener('keyup', handleKeyUp)
     }
@@ -186,7 +191,8 @@ export default function MyPopupView({
           top: 0,
           left: 0,
           right: 0,
-          bottom: 0
+          bottom: 0,
+          touchAction: 'none' // Prevent touch scrolling on mobile
         }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -211,22 +217,9 @@ export default function MyPopupView({
           transition={{ duration: 0.3, ease: "easeOut" }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Close Button - Top Right */}
-          <AnimatePresence>
-            {showControls && (
-              <motion.button
-                onClick={onClose}
-                className="absolute top-4 right-4 z-[100] p-2 rounded-lg bg-white/10 backdrop-blur-md hover:bg-white/20 text-white transition-all duration-200 border border-white/20"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-                title="Close (Esc)"
-              >
-                <X className="w-4 h-4" />
-              </motion.button>
-            )}
-          </AnimatePresence>
+          {/* Close Button - REMOVED as per user request */}
+
+          {/* Main Image Display Area */}
 
           {/* Main Image Display Area */}
           <div

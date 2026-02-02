@@ -76,7 +76,7 @@ export function NavigationHero4() {
               <Button
                 asChild
                 size="sm"
-                className="btn-premium text-sm font-bold text-white shadow-neon hover:shadow-neon-strong transition-all duration-300 transform hover:-translate-y-0.5"
+                className="btn-premium text-sm font-bold text-black shadow-neon hover:shadow-neon-strong transition-all duration-300 transform hover:-translate-y-0.5"
               >
                 <Link href="/app/signup">
                   Sign Up
@@ -100,7 +100,7 @@ export function NavigationHero4() {
 
         {/* Mobile Menu Overlay */}
         <div
-          className={`absolute inset-x-0 top-full mt-4 p-4 glass-card-elevated rounded-2xl transform transition-all duration-300 origin-top lg:hidden ${menuState
+          className={`absolute inset-x-0 top-full mt-4 p-4 bg-black/90 backdrop-blur-3xl border border-white/10 rounded-2xl transform transition-all duration-300 origin-top lg:hidden ${menuState
             ? 'opacity-100 scale-100 translate-y-0 visible'
             : 'opacity-0 scale-95 -translate-y-4 invisible'
             }`}
@@ -110,7 +110,7 @@ export function NavigationHero4() {
               <li key={index}>
                 <Link
                   href={item.href}
-                  className="block px-4 py-3 text-base font-medium text-white/80 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                  className="block px-4 py-3 text-base font-bold text-white/80 hover:text-accent-neon hover:bg-white/5 rounded-xl transition-all"
                   onClick={(e) => handleNavigation(item.href, e)}
                 >
                   {item.name}
@@ -121,7 +121,7 @@ export function NavigationHero4() {
               <Button
                 asChild
                 variant="ghost"
-                className="w-full justify-start text-white/80 hover:text-white hover:bg-white/5"
+                className="w-full justify-start text-white/80 hover:text-white hover:bg-white/5 font-bold"
               >
                 <Link href={loginHref}>
                   {loginText}
@@ -129,7 +129,7 @@ export function NavigationHero4() {
               </Button>
               <Button
                 asChild
-                className="w-full btn-premium justify-center"
+                className="w-full btn-premium justify-center text-black font-extrabold"
               >
                 <Link href="/app/signup">
                   Sign Up
@@ -148,7 +148,7 @@ const Logo = ({ className }: { className?: string }) => {
     <div className="flex items-center gap-3 group">
       <div className="relative">
         <div className="absolute inset-0 bg-accent-neon/30 blur-lg rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        <span className="relative font-heading text-xl md:text-2xl font-extrabold tracking-tight text-white group-hover:text-accent-neon transition-colors duration-300 cursor-pointer drop-shadow-neon">
+        <span className="relative font-heading text-2xl md:text-3xl font-extrabold tracking-tight text-white group-hover:text-accent-neon transition-colors duration-300 cursor-pointer drop-shadow-neon">
           Sharpii.ai
         </span>
       </div>

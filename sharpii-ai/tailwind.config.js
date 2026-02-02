@@ -32,13 +32,10 @@ module.exports = {
     'gap-4',
     'border',
     'transition-colors',
-    'hover:bg-blue-700',
-    'bg-blue-600',
-    'bg-red-500',
-    'bg-green-500',
-    'bg-purple-500',
+    'hover:bg-yellow-400',
+    'bg-yellow-400',
+    'text-yellow-400',
     'bg-gray-800',
-    'text-blue-500',
     'text-gray-300',
     'border-gray-600',
   ],
@@ -72,10 +69,10 @@ module.exports = {
           foreground: "hsl(var(--popover-foreground))",
         },
 
-        // Primary colors
+        // Primary colors - NEON YELLOW
         primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
+          DEFAULT: "hsl(var(--primary))", // #FFFF00
+          foreground: "hsl(var(--primary-foreground))", // #000000
           muted: "hsl(var(--primary-muted))",
           hover: "hsl(var(--primary-hover))",
         },
@@ -99,7 +96,7 @@ module.exports = {
           foreground: "hsl(var(--accent-foreground))",
           blue: "hsl(var(--accent-blue))",
           purple: "hsl(var(--accent-purple))",
-          neon: "hsl(var(--accent-neon))",
+          neon: "hsl(var(--accent-neon))", // #FFFF00
           pink: "hsl(var(--accent-pink))",
         },
 
@@ -219,10 +216,10 @@ module.exports = {
         },
         logoGlow: {
           "0%, 100%": {
-            filter: "drop-shadow(0 0 10px hsl(var(--accent-blue) / 0.3))"
+            filter: "drop-shadow(0 0 10px hsl(var(--accent-neon) / 0.3))"
           },
           "50%": {
-            filter: "drop-shadow(0 0 20px hsl(var(--accent-blue) / 0.6))"
+            filter: "drop-shadow(0 0 20px hsl(var(--accent-neon) / 0.6))"
           },
         },
       },

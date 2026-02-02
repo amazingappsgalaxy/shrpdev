@@ -15,7 +15,10 @@ import { IncrediblePowerSection } from "@/components/sections/IncrediblePowerSec
 import { UnifiedEnhancementSection } from "@/components/sections/UnifiedEnhancementSection"
 import { AIInfluencerSection } from "@/components/sections/AIInfluencerSection"
 import { CostOptimizationSection } from "@/components/sections/CostOptimizationSection"
-import MagicalPortraitSection from "@/components/sections/MagicalPortraitSection"
+import { MagicalPortraitSection } from "@/components/sections/MagicalPortraitSection"
+import AIImageGenSection from "@/components/sections/AIImageGenSection"
+import AIMotionTransferSection from "@/components/sections/AIMotionTransferSection"
+import AILipSyncSection from "@/components/sections/AILipSyncSection"
 
 export default function Home() {
   return (
@@ -25,10 +28,16 @@ export default function Home() {
       <InteractiveBentoGallerySecond />
       <ComparisonSection />
       <MagicalPortraitSection />
+
+      {/* New AI Creative Suite Sections */}
+      <AIImageGenSection />
+      <AIMotionTransferSection />
+      <AILipSyncSection />
+
       <GridMotion />
+      <UnifiedEnhancementSection />
       <SkinRealismSection />
       <IncrediblePowerSection />
-      <UnifiedEnhancementSection />
       <AIInfluencerSection />
       <CostOptimizationSection />
       <WorkflowSection />

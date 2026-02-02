@@ -376,14 +376,14 @@
 
   /* Premium Button Styles */
   .btn-premium {
-    @apply relative overflow-hidden rounded-xl px-6 py-3 sm:px-8 sm:py-4 font-semibold transition-all duration-300;
-    background: linear-gradient(135deg, hsl(var(--accent-blue)), hsl(var(--accent-purple)));
-    box-shadow: 0 4px 15px hsl(var(--accent-blue) / 0.3);
+    @apply relative overflow-hidden rounded-xl px-6 py-3 sm:px-8 sm:py-4 font-bold text-black transition-all duration-300;
+    background: linear-gradient(135deg, hsl(var(--accent-neon)), #ffd700);
+    box-shadow: 0 0 20px hsl(var(--accent-neon) / 0.4);
   }
 
   .btn-premium:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px hsl(var(--accent-blue) / 0.4);
+    box-shadow: 0 0 35px hsl(var(--accent-neon) / 0.6);
   }
 
   .btn-premium::before {
@@ -393,7 +393,7 @@
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
     transition: left 0.5s;
   }
 
