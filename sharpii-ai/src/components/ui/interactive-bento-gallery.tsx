@@ -1,130 +1,64 @@
 "use client"
 
-import { motion, useInView, AnimatePresence } from "framer-motion"
-import { useRef, useState, useEffect } from "react"
+import { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Zap, Sparkles, Grid3X3, Maximize2, Image as ImageIcon, ArrowRight, Eye } from "lucide-react"
+import { SimpleImageViewer } from "../ui/simple-image-viewer"
+import { EnhancementGalleryModal } from "../ui/enhancement-gallery-modal"
+import { IMAGE_ASSETS } from "@/lib/constants"
 import Image from "next/image"
-import MyPopupView from "./my-popup-view"
-import { Maximize2, Eye, Download, Sparkles } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface GalleryItem {
-  id: number
+  before: string
+  after: string
   title: string
   description: string
-  beforeImage: string
-  afterImage: string
   category: string
-  size: "small" | "medium" | "large"
+  improvement: string
 }
 
-const galleryItems: GalleryItem[] = [
-  {
-    id: 1,
-    title: "Portrait Enhancement",
-    description: "Professional skin smoothing and detail enhancement",
-    beforeImage: "https://s3.tebi.io/sharpiiweb/sharpiiweb/home/before-after/Girl+1+Before.jpg",
-    afterImage: "https://s3.tebi.io/sharpiiweb/sharpiiweb/home/before-after/Girl+1+After.png",
-    category: "Portrait",
-    size: "large"
-  },
-  {
-    id: 2,
-    title: "Asian Portrait",
-    description: "Advanced texture recovery and sharpening",
-    beforeImage: "https://s3.tebi.io/sharpiiweb/sharpiiweb/home/before-after/Asian+Girl+7+before.jpg",
-    afterImage: "https://s3.tebi.io/sharpiiweb/sharpiiweb/home/before-after/Asian+Girl+7+after.png",
-    category: "Portrait",
-    size: "medium"
-  },
-  {
-    id: 3,
-    title: "Professional Male",
-    description: "AI-powered skin enhancement and detail boost",
-    beforeImage: "https://s3.tebi.io/sharpiiweb/sharpiiweb/home/before-after/Asian+Man+1+Before.jpg",
-    afterImage: "https://s3.tebi.io/sharpiiweb/sharpiiweb/home/before-after/Asian+Man+1+After.png",
-    category: "Professional",
-    size: "medium"
-  },
-  {
-    id: 4,
-    title: "Detail Enhancement",
-    description: "Micro-detail recovery and clarity boost",
-    beforeImage: "https://s3.tebi.io/sharpiiweb/sharpiiweb/home/before-after/Face+1+Before.jpg",
-    afterImage: "https://s3.tebi.io/sharpiiweb/sharpiiweb/home/before-after/Face+1+After.png",
-    category: "Detail",
-    size: "small"
-  },
-  {
-    id: 5,
-    title: "Skin Perfection",
-    description: "Advanced skin smoothing while preserving natural texture",
-    beforeImage: "https://s3.tebi.io/sharpiiweb/sharpiiweb/home/before-after/White+Girl+6+before.jpg",
-    afterImage: "https://s3.tebi.io/sharpiiweb/sharpiiweb/home/before-after/White+Girl+6+after.jpg",
-    category: "Beauty",
-    size: "small"
-  },
-  {
-    id: 6,
-    title: "Professional Headshot",
-    description: "Studio-quality enhancement for business portraits",
-    beforeImage: "https://s3.tebi.io/sharpiiweb/sharpiiweb/home/before-after/White+Man+1+Before.jpg",
-    afterImage: "https://s3.tebi.io/sharpiiweb/sharpiiweb/home/before-after/White+Man+1+After.png",
-    category: "Business",
-    size: "large"
-  }
-]
+const staticImprovements = ["94%", "91%", "96%", "89%", "92%", "95%", "93%", "97%", "88%", "90%"]
+
+const galleryItems: GalleryItem[] = IMAGE_ASSETS.beforeAfterPairs.map((pair, index) => ({
+  before: pair.before,
+  after: pair.after,
+  title: pair.title,
+  description: "AI-powered image enhancement with professional results",
+  category: index < 3 ? 'Portrait' : index < 6 ? 'Professional' : 'Artistic',
+  improvement: staticImprovements[index] || "93%",
+}))
+
+const categories = ["All", "Portrait", "Professional", "Artistic"]
 
 export function InteractiveBentoGallery() {
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, margin: "-100px" })
-  const [hoveredItem, setHoveredItem] = useState<number | null>(null)
-  const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null)
+  return <InteractiveBentoGallerySecond />
+}
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.3
-      }
-    }
-  }
+export function InteractiveBentoGallerySecond() {
+  const [selectedCategory, setSelectedCategory] = useState("All")
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [modalIndex, setModalIndex] = useState(0)
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
-  const itemVariants = {
-    hidden: { 
-      opacity: 0, 
-      y: 60,
-      scale: 0.8
-    },
-    visible: {
-      opacity: 1,
-      y: 0,
-      scale: 1,
-      transition: {
-        duration: 0.8,
-        ease: [0, 0, 0.2, 1] as const
-      }
-    }
-  }
+  const filteredItems = selectedCategory === "All"
+    ? galleryItems
+    : galleryItems.filter(item => item.category === selectedCategory)
 
-  const getSizeClasses = (size: string) => {
-    switch (size) {
-      case "large":
-        return "md:col-span-3 md:row-span-3 h-96 md:h-full"
-      case "medium":
-        return "md:col-span-2 md:row-span-2 h-80 md:h-full"
-      case "small":
-        return "md:col-span-1 md:row-span-1 h-64"
-      default:
-        return "h-64"
-    }
+  const handleImageClick = (index: number) => {
+    // Find the original index if filtered
+    const originalIndex = galleryItems.findIndex(item => item === filteredItems[index])
+    setModalIndex(originalIndex !== -1 ? originalIndex : index)
+    setIsModalOpen(true)
   }
 
   return (
-    <section className="content-section py-24 relative overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-accent-blue/10 via-transparent to-accent-purple/10" />
+    <section className="py-32 relative overflow-hidden bg-black">
+      {/* Premium Background Ambience */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        <div className="absolute top-1/4 right-0 w-[600px] h-[600px] bg-accent-blue/10 rounded-full blur-[120px] mix-blend-screen opacity-50" />
+        <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-accent-purple/5 rounded-full blur-[100px] mix-blend-screen opacity-40" />
       </div>
 
       <div className="container mx-auto px-4 lg:px-6 relative z-10">
@@ -132,306 +66,151 @@ export function InteractiveBentoGallery() {
         <motion.div
           className="text-center mb-16"
           initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
         >
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
-            <span className="text-gradient-purple">Enhancement Gallery</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-elevated border border-white/10 mb-8">
+            <ImageIcon className="h-4 w-4 text-accent-neon" />
+            <span className="text-sm font-bold text-white uppercase tracking-widest">Enhanced Gallery</span>
+          </div>
+
+          <h2 className="font-heading text-5xl md:text-7xl font-bold text-center mb-8 leading-tight">
+            <span className="text-white">Masterpiece</span>
+            <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-blue via-accent-purple to-accent-pink">Collection</span>
           </h2>
-          <p className="text-lg text-text-secondary max-w-2xl mx-auto">
-            Explore real examples of our AI-powered image enhancement technology in action.
+
+          <p className="text-xl text-white/60 text-center max-w-3xl mx-auto mb-12 leading-relaxed">
+            Explore a curated selection of stunning transformations powered by our advanced AI engine.
           </p>
         </motion.div>
 
-        {/* Bento Grid */}
+        {/* Filter Controls */}
         <motion.div
-          ref={ref}
-          className="grid grid-cols-1 md:grid-cols-6 md:grid-rows-6 gap-6 max-w-7xl mx-auto"
-          variants={containerVariants}
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
+          className="flex justify-center mb-16"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.2 }}
         >
-          {galleryItems.map((item) => (
-            <motion.div
-              key={item.id}
-              variants={itemVariants}
-              className={`group relative overflow-hidden rounded-2xl glass cursor-pointer ${getSizeClasses(item.size)}`}
-              onMouseEnter={() => setHoveredItem(item.id)}
-              onMouseLeave={() => setHoveredItem(null)}
-              onClick={() => setSelectedItem(item)}
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.3 }}
-            >
-              {/* Before/After Images */}
-              <div className="relative w-full h-full overflow-hidden">
-                {/* Before Image */}
-                <Image
-                  src={item.beforeImage}
-                  alt={`${item.title} - Before`}
-                  fill
-                  className="object-cover transition-opacity duration-500"
-                  style={{
-                    opacity: hoveredItem === item.id ? 0 : 1
-                  }}
-                />
-                
-                {/* After Image */}
-                <Image
-                  src={item.afterImage}
-                  alt={`${item.title} - After`}
-                  fill
-                  className="object-cover transition-opacity duration-500"
-                  style={{
-                    opacity: hoveredItem === item.id ? 1 : 0
-                  }}
-                />
-
-                {/* Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </div>
-
-              {/* Content */}
-              <div className="absolute inset-0 p-6 flex flex-col justify-end">
-                <motion.div
-                  className="transform translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300"
-                >
-                  {/* Category Badge */}
-                  <div className="inline-block px-3 py-1 rounded-full bg-accent-neon/20 border border-accent-neon/30 mb-3">
-                    <span className="text-xs font-medium text-accent-neon">
-                      {item.category}
-                    </span>
-                  </div>
-
-                  {/* Title & Description */}
-                  <h3 className="text-lg font-semibold text-white mb-2">
-                    {item.title}
-                  </h3>
-                  <p className="text-sm text-gray-300 mb-4">
-                    {item.description}
-                  </p>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-2">
-                    <button className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
-                      <Eye className="h-4 w-4 text-white" />
-                    </button>
-                    <button className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
-                      <Maximize2 className="h-4 w-4 text-white" />
-                    </button>
-                    <button className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
-                      <Download className="h-4 w-4 text-white" />
-                    </button>
-                  </div>
-                </motion.div>
-
-                {/* Hover Indicator */}
-                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="px-3 py-1 rounded-full bg-accent-neon/20 border border-accent-neon/30">
-                    <span className="text-xs font-medium text-accent-neon">
-                      {hoveredItem === item.id ? "After" : "Before"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Glow Effect */}
-              <div className="absolute inset-0 bg-gradient-to-br from-accent-neon/20 to-accent-purple/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl -z-10" />
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {/* MyPopupView for Selected Item */}
-        <MyPopupView
-          beforeImage={selectedItem?.beforeImage || ""}
-          afterImage={selectedItem?.afterImage || ""}
-          title={selectedItem?.title || ""}
-          description={selectedItem?.description || ""}
-          onClose={() => setSelectedItem(null)}
-          isOpen={!!selectedItem}
-        />
-      </div>
-    </section>
-  )
-}
-
-export function InteractiveBentoGallerySecond() {
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, margin: "-100px" })
-  const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null)
-  const [hoveredItem, setHoveredItem] = useState<number | null>(null)
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2,
-        delayChildren: 0.3
-      }
-    }
-  }
-
-  const itemVariants = {
-    hidden: { 
-      opacity: 0, 
-      y: 60,
-      scale: 0.9
-    },
-    visible: {
-      opacity: 1,
-      y: 0,
-      scale: 1,
-      transition: {
-        duration: 0.8,
-        ease: [0, 0, 0.2, 1] as const
-      }
-    }
-  }
-
-  // Mock processing data for each item
-  const getProcessingInfo = (itemId: number) => {
-    const processingTimes = ["23s", "19s", "27s", "21s", "25s", "29s"]
-    const resolutions = ["4K", "2K", "4K", "HD", "2K", "4K"]
-    const improvements = ["85%", "92%", "78%", "88%", "91%", "87%"]
-    
-    return {
-      time: processingTimes[itemId - 1] || "22s",
-      resolution: resolutions[itemId - 1] || "HD",
-      improvement: improvements[itemId - 1] || "85%"
-    }
-  }
-
-  return (
-    <section className="content-section py-24 relative overflow-hidden">
-      {/* Glassmorphism Background */}
-      <div className="absolute inset-0 opacity-30">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-accent-neon/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent-purple/20 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-accent-blue/10 rounded-full blur-3xl" />
-      </div>
-
-      <div className="container mx-auto px-4 lg:px-6 relative z-10">
-        {/* Section Header */}
-        <motion.div
-          className="text-center mb-20"
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-        >
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
-            <span className="text-gradient-neon">AI Enhanced Gallery</span>
-          </h2>
-          <p className="text-lg text-text-secondary max-w-2xl mx-auto">
-            Hover to see the AI enhancement results. Crystal clear quality with no distractions.
-          </p>
-        </motion.div>
-
-        {/* 2x2 Grid - Only 4 Photos */}
-        <motion.div
-          ref={ref}
-          className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto"
-          variants={containerVariants}
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-        >
-          {galleryItems.slice(0, 4).map((item) => {
-            const processingInfo = getProcessingInfo(item.id)
-            
-            return (
-              <motion.div
-                key={item.id}
-                variants={itemVariants}
-                className="group relative overflow-hidden rounded-3xl glass-card cursor-pointer"
-                style={{ aspectRatio: '3/4' }}
-                onMouseEnter={() => setHoveredItem(item.id)}
-                onMouseLeave={() => setHoveredItem(null)}
-                onClick={() => setSelectedItem(item)}
-              >
-                {/* Image Container - NO OVERLAYS */}
-                <div className="relative w-full h-full overflow-hidden rounded-3xl">
-                  {/* Before Image */}
-                  <div className="absolute inset-0">
-                    <Image
-                      src={item.beforeImage}
-                      alt={`${item.title} - Before`}
-                      fill
-                      className="object-cover transition-opacity duration-300"
-                      style={{ opacity: hoveredItem === item.id ? 0 : 1 }}
-                      sizes="(max-width: 1024px) 100vw, 50vw"
-                      priority={item.id <= 2}
-                      placeholder="blur"
-                      blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
-                    />
-                  </div>
-
-                  {/* After Image */}
-                  <div className="absolute inset-0">
-                    <Image
-                      src={item.afterImage}
-                      alt={`${item.title} - After`}
-                      fill
-                      className="object-cover transition-opacity duration-300"
-                      style={{ opacity: hoveredItem === item.id ? 1 : 0 }}
-                      sizes="(max-width: 1024px) 100vw, 50vw"
-                      priority={item.id <= 2}
-                      placeholder="blur"
-                      blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
-                    />
-                  </div>
-
-                  {/* AI Enhanced Tag - Only on Hover */}
-                  {hoveredItem === item.id && (
-                    <div className="absolute top-4 right-4 z-30">
-                      <div className="px-3 py-1 rounded-full glass-subtle flex items-center gap-1">
-                        <Sparkles className="h-3 w-3 text-accent-neon" />
-                        <span className="text-xs font-medium text-accent-neon">AI Enhanced</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Minimal Processing Info Dock - Only on Hover */}
-                {hoveredItem === item.id && (
-                  <div className="absolute bottom-3 left-3 right-3 z-30">
-                    <div className="glass-card rounded-xl p-3">
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-4">
-                          <div className="text-center">
-                            <div className="text-gray-400 mb-1">Time</div>
-                            <div className="text-white font-medium">{processingInfo.time}</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-gray-400 mb-1">Quality</div>
-                            <div className="text-white font-medium">{processingInfo.resolution}</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-gray-400 mb-1">Enhanced</div>
-                            <div className="text-accent-neon font-medium">+{processingInfo.improvement}</div>
-                          </div>
-                        </div>
-                        <button className="px-3 py-1 rounded-md glass-subtle hover:border-accent-neon/50 transition-all duration-300 text-white hover:text-accent-neon text-xs font-medium">
-                          Open
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+          <div className="p-1.5 glass-card rounded-2xl flex items-center gap-1 overflow-x-auto max-w-full">
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={cn(
+                  "px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 relative whitespace-nowrap",
+                  selectedCategory === category ? "text-white" : "text-white/40 hover:text-white/70"
                 )}
-
-
-              </motion.div>
-            )
-          })}
+              >
+                {selectedCategory === category && (
+                  <motion.div
+                    layoutId="activeCategory"
+                    className="absolute inset-0 bg-white/10 rounded-xl border border-white/10 shadow-lg"
+                    style={{ borderRadius: "0.75rem" }}
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+                <span className="relative z-10">{category}</span>
+              </button>
+            ))}
+          </div>
         </motion.div>
 
-        {/* Popup for Selected Item */}
-        <MyPopupView
-          beforeImage={selectedItem?.beforeImage || ""}
-          afterImage={selectedItem?.afterImage || ""}
-          title={selectedItem?.title || ""}
-          description={selectedItem?.description || ""}
-          onClose={() => setSelectedItem(null)}
-          isOpen={!!selectedItem}
+        {/* Bento Grid Gallery */}
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[300px]"
+          layout
+        >
+          <AnimatePresence mode="popLayout">
+            {filteredItems.map((item, index) => (
+              <motion.div
+                key={`${item.title}-${index}`}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.4 }}
+                className={cn(
+                  "group relative rounded-3xl overflow-hidden cursor-pointer glass-card border border-white/10",
+                  // Create a bento-like irregular grid
+                  index === 0 ? "lg:col-span-2 lg:row-span-2" : "",
+                  index === 3 ? "lg:col-span-2" : "",
+                  index === 6 ? "md:col-span-2" : ""
+                )}
+                onMouseEnter={() => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(null)}
+                onClick={() => handleImageClick(index)}
+              >
+                {/* Image Container */}
+                <div className="absolute inset-0 w-full h-full">
+                  <Image
+                    src={hoveredIndex === index ? item.after : item.before}
+                    alt={item.title}
+                    fill
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  {/* Hint Badge */}
+                  <div className="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <span className="text-xs font-bold text-accent-neon flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" /> Enhanced View
+                    </span>
+                  </div>
+
+                  {/* Comparison Slider Hint (Visual Only) */}
+                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-100 transition-opacity duration-300" />
+                </div>
+
+                {/* Content Overlay */}
+                <div className="absolute inset-0 p-6 flex flex-col justify-end z-10">
+                  <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                    <div className="flex items-center gap-3 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
+                      <div className="px-2 py-1 rounded-md bg-white/10 backdrop-blur-sm border border-white/10 text-xs font-medium text-white/80">
+                        {item.category}
+                      </div>
+                      <div className="px-2 py-1 rounded-md bg-accent-green/20 border border-accent-green/30 text-xs font-bold text-accent-green">
+                        +{item.improvement} Quality
+                      </div>
+                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-1 drop-shadow-lg">{item.title}</h3>
+                    <div className="h-0 group-hover:h-auto overflow-hidden transition-all duration-300">
+                      <p className="text-white/70 text-sm mt-2 line-clamp-2">
+                        {item.description}
+                      </p>
+                      <div className="flex items-center gap-2 mt-4 text-accent-neon text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-200">
+                        View Comparison <ArrowRight className="w-4 h-4" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hover Overlay Gradient */}
+                <div className="absolute inset-0 bg-accent-blue/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none mix-blend-overlay" />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </motion.div>
+
+        {/* Enhanced Gallery Modal */}
+        <EnhancementGalleryModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          pairs={galleryItems} // Pass full list for navigation
+          initialIndex={modalIndex}
         />
+
+        {/* Decorative CTA */}
+        <div className="mt-20 text-center">
+          <motion.button
+            className="inline-flex items-center gap-3 px-8 py-4 rounded-full bg-white text-black font-bold text-lg hover:bg-white/90 transition-all duration-300 hover:scale-105 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)]"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Zap className="w-5 h-5 fill-black" />
+            Start Creating Now
+          </motion.button>
+        </div>
       </div>
     </section>
   )

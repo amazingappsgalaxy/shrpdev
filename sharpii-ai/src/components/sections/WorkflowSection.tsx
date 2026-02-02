@@ -1,9 +1,8 @@
 "use client"
 
-import { motion } from "framer-motion"
-import { useInView } from "framer-motion"
-import { useRef, useState } from "react"
-import { ArrowRight, Play, Zap, Clock, Target } from "lucide-react"
+import { motion, useInView } from "framer-motion"
+import { useRef } from "react"
+import { ArrowRight, Play, Zap, Clock, Target, CheckCircle2, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export function WorkflowSection() {
@@ -15,178 +14,136 @@ export function WorkflowSection() {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.3,
-        delayChildren: 0.2
+        staggerChildren: 0.2,
+        delayChildren: 0.1
       }
     }
   }
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 50, scale: 0.9 },
+    hidden: { opacity: 0, y: 30, scale: 0.95 },
     visible: {
       opacity: 1,
       y: 0,
       scale: 1,
-      transition: {
-        duration: 0.8,
-        ease: [0.25, 0.46, 0.45, 0.94] as const
-      }
+      transition: { duration: 0.6, ease: "easeOut" as any }
     }
   }
 
-
-
-  const features = [
-    {
-      icon: <Zap className="h-6 w-6" />,
-      title: "Lightning Fast",
-      description: "Process images in under 30 seconds",
-      metric: "10x faster"
-    },
+  const steps = [
     {
       icon: <Target className="h-6 w-6" />,
-      title: "Precision AI",
-      description: "Advanced algorithms for perfect results",
-      metric: "99.9% accuracy"
+      title: "Analyze",
+      description: "AI scans image for imperfections utilizing neural networks",
+      color: "text-accent-blue",
+      bg: "bg-accent-blue/10",
+      border: "border-accent-blue/20"
     },
     {
-      icon: <Clock className="h-6 w-6" />,
-      title: "Always Available",
-      description: "24/7 processing with global servers",
-      metric: "99.9% uptime"
+      icon: <Zap className="h-6 w-6" />,
+      title: "Enhance",
+      description: "Smart algorithms process and upscale in real-time",
+      color: "text-accent-neon",
+      bg: "bg-accent-neon/10",
+      border: "border-accent-neon/20"
+    },
+    {
+      icon: <CheckCircle2 className="h-6 w-6" />,
+      title: "Deliver",
+      description: "Download professional results instantly in high quality",
+      color: "text-accent-purple",
+      bg: "bg-accent-purple/10",
+      border: "border-accent-purple/20"
     }
   ]
 
   return (
-    <section className="py-32 relative overflow-hidden bg-background">
-      {/* Enhanced Background with Multiple Layers */}
-      <div className="absolute inset-0">
-        {/* Base gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-surface/20 to-background" />
-        
-        {/* Animated glow orbs */}
-        <div className="absolute inset-0 opacity-30">
-          <motion.div 
-            className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent-neon/30 rounded-full blur-3xl"
-            animate={{
-              scale: [1, 1.2, 1],
-              opacity: [0.3, 0.5, 0.3]
-            }}
-            transition={{
-              duration: 8,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          />
-          <motion.div 
-            className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent-purple/30 rounded-full blur-3xl"
-            animate={{
-              scale: [1.2, 1, 1.2],
-              opacity: [0.5, 0.3, 0.5]
-            }}
-            transition={{
-              duration: 10,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          />
-          <motion.div 
-            className="absolute top-3/4 left-3/4 w-64 h-64 bg-accent-blue/30 rounded-full blur-2xl"
-            animate={{
-              scale: [1, 1.3, 1],
-              opacity: [0.4, 0.6, 0.4]
-            }}
-            transition={{
-              duration: 6,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          />
-        </div>
-        
-        {/* Grid pattern */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(0,255,255,0.08)_1px,transparent_0)] [background-size:60px_60px]" />
-        
-        {/* Noise texture */}
-        <div className="absolute inset-0 opacity-[0.015]" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`
-        }} />
+    <section className="py-24 lg:py-32 relative overflow-hidden bg-black">
+      {/* Background Ambience */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-7xl h-[500px] bg-gradient-to-r from-accent-blue/5 via-accent-neon/5 to-accent-purple/5 blur-[100px] rounded-full opacity-50" />
       </div>
 
-      <div className="container mx-auto px-4 lg:px-6 relative z-10">
+      <div className="container mx-auto px-4 lg:px-6 relative z-10" ref={ref}>
 
-
-        {/* Features Grid */}
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
-          className="mb-16"
+          className="text-center mb-20"
         >
-          <div className="grid md:grid-cols-3 gap-6">
-            {features.map((feature, index) => (
-              <motion.div
-                key={index}
-                variants={itemVariants}
-                className="glass-card rounded-2xl p-6 border border-glass-border backdrop-blur-glass group hover:border-accent-neon/40 transition-all duration-300"
-                whileHover={{ scale: 1.02, y: -4 }}
-              >
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-neon/20 to-accent-blue/20 flex items-center justify-center group-hover:from-accent-neon/30 group-hover:to-accent-blue/30 transition-all duration-300">
-                    {feature.icon}
-                  </div>
-                  
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-text-primary mb-2 group-hover:text-accent-neon transition-colors duration-300">
-                      {feature.title}
-                    </h4>
-                    <p className="text-sm text-text-secondary mb-2">
-                      {feature.description}
-                    </p>
-                    <div className="text-xs font-bold text-accent-neon">
-                      {feature.metric}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+          <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-elevated border border-white/10 mb-8">
+            <Clock className="h-4 w-4 text-accent-neon" />
+            <span className="text-sm font-bold text-white uppercase tracking-widest">Seamless Workflow</span>
+          </motion.div>
+
+          <motion.h2 variants={itemVariants} className="font-heading text-4xl md:text-6xl font-bold mb-6">
+            <span className="text-white">From Upload to</span>
+            <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-neon to-accent-blue">
+              Perfection in Seconds
+            </span>
+          </motion.h2>
+
+          <motion.p variants={itemVariants} className="text-xl text-white/60 max-w-2xl mx-auto">
+            Our streamlined process ensures you get studio-quality results without the wait.
+          </motion.p>
         </motion.div>
 
-        {/* CTA Section */}
+
+        {/* Steps Grid with Connecting Lines */}
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate={isInView ? "visible" : "hidden"}
+          className="relative grid md:grid-cols-3 gap-8 mb-24 max-w-5xl mx-auto"
+        >
+          {/* Decorative Connecting Line (Desktop) */}
+          <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-y-1/2 hidden md:block" />
+
+          {steps.map((step, index) => (
+            <motion.div
+              key={index}
+              variants={itemVariants}
+              className={`relative glass-card-elevated rounded-3xl p-8 border ${step.border} group backdrop-blur-xl hover:-translate-y-2 transition-transform duration-500`}
+            >
+              {/* Step Number Badge */}
+              <div className={`absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full ${step.bg} ${step.border} border flex items-center justify-center text-xs font-bold text-white z-20`}>
+                {index + 1}
+              </div>
+
+              <div className="relative z-10 flex flex-col items-center text-center">
+                <div className={`w-16 h-16 rounded-2xl ${step.bg} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}>
+                  <div className={step.color}>{step.icon}</div>
+                </div>
+
+                <h3 className="text-2xl font-bold text-white mb-3">{step.title}</h3>
+                <p className="text-white/60 leading-relaxed text-sm">
+                  {step.description}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* CTA */}
         <motion.div
           variants={itemVariants}
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           className="text-center"
         >
-          <div className="glass-card rounded-3xl p-8 md:p-12 border border-glass-border-elevated backdrop-blur-glass">
-            <div className="max-w-2xl mx-auto space-y-6">
-              <h3 className="text-2xl md:text-3xl font-bold text-text-primary">
-                Ready to Transform Your Images?
-              </h3>
-              
-              <p className="text-text-secondary">
-                Join thousands of professionals who trust Sharpii.ai for their image enhancement needs.
-              </p>
-              
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Button 
-                  className="btn-premium px-8 py-4 text-lg font-semibold group"
-                  size="lg"
-                >
-                  <Play className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform duration-300" />
-                  Start Enhancing Now
-                  <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
-                </Button>
-                
-                <div className="text-sm text-text-muted">
-                  No credit card required • Free trial available
-                </div>
-              </div>
-            </div>
+          <div className="inline-block p-[2px] rounded-full bg-gradient-to-r from-accent-neon via-accent-blue to-accent-purple">
+            <Button
+              className="rounded-full bg-black hover:bg-white/10 text-white px-10 py-8 text-lg font-bold border-none transition-all duration-300 h-auto"
+            >
+              <span className="mr-2">Start Enhancing Free</span>
+              <ChevronRight className="w-5 h-5 ml-1" />
+            </Button>
           </div>
+          <p className="mt-4 text-white/40 text-sm">No credit card required for trial</p>
         </motion.div>
+
       </div>
     </section>
   )

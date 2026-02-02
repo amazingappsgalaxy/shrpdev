@@ -35,7 +35,6 @@ interface ComparisonPair {
   title: string
   description?: string
   improvement?: string
-  processingTime?: string
   category?: string
   creditsConsumed?: number
   taskTags?: string
@@ -466,33 +465,33 @@ export function EnhancementGalleryModal({
 
                         {/* View Mode Labels - Only for non-split modes */}
                         {(viewMode === 'comparison' || viewMode === 'before' || viewMode === 'after') && (
-                           <div className="absolute top-4 left-4 right-4 flex justify-between pointer-events-none">
-                             <motion.div
-                               className="px-3 py-1 rounded-full glass-elevated border border-glass-border-elevated text-sm font-medium text-white backdrop-blur-md"
-                               animate={{
-                                 opacity: viewMode === 'after' ? 0 : 1,
-                                 scale: viewMode === 'before' ? 1.1 : 1
-                               }}
-                             >
-                               <div className="flex items-center gap-2">
-                                 <div className="w-2 h-2 bg-red-400 rounded-full" />
-                                 Original
-                               </div>
-                             </motion.div>
-                           
-                             <motion.div
-                               className="px-3 py-1 rounded-full glass-elevated border border-glass-border-elevated text-sm font-medium text-white backdrop-blur-md"
-                               animate={{
-                                 opacity: viewMode === 'before' ? 0 : 1,
-                                 scale: viewMode === 'after' ? 1.1 : 1
-                               }}
-                             >
-                               <div className="flex items-center gap-2">
-                                 <Sparkles className="w-3 h-3 text-accent-neon" />
-                                 AI Enhanced
-                               </div>
-                             </motion.div>
-                           </div>
+                          <div className="absolute top-4 left-4 right-4 flex justify-between pointer-events-none">
+                            <motion.div
+                              className="px-3 py-1 rounded-full glass-elevated border border-glass-border-elevated text-sm font-medium text-white backdrop-blur-md"
+                              animate={{
+                                opacity: viewMode === 'after' ? 0 : 1,
+                                scale: viewMode === 'before' ? 1.1 : 1
+                              }}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-red-400 rounded-full" />
+                                Original
+                              </div>
+                            </motion.div>
+
+                            <motion.div
+                              className="px-3 py-1 rounded-full glass-elevated border border-glass-border-elevated text-sm font-medium text-white backdrop-blur-md"
+                              animate={{
+                                opacity: viewMode === 'before' ? 0 : 1,
+                                scale: viewMode === 'after' ? 1.1 : 1
+                              }}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Sparkles className="w-3 h-3 text-accent-neon" />
+                                AI Enhanced
+                              </div>
+                            </motion.div>
+                          </div>
                         )}
                       </>
                     )}
@@ -508,13 +507,6 @@ export function EnhancementGalleryModal({
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
                     >
-                      <div className="px-3 py-1 rounded-full bg-green-500/20 border border-green-500/30 text-xs font-medium text-green-400 backdrop-blur-sm">
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {currentPair.processingTime || "< 30s"}
-                        </div>
-                      </div>
-
                       {currentPair.improvement && (
                         <div className="px-3 py-1 rounded-full bg-accent-neon/20 border border-accent-neon/30 text-xs font-medium text-accent-neon backdrop-blur-sm">
                           <div className="flex items-center gap-1">
@@ -596,12 +588,12 @@ export function EnhancementGalleryModal({
                         </div>
 
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-                            <Clock className="w-5 h-5 text-green-400" />
+                          <div className="w-10 h-10 bg-accent-neon/20 rounded-lg flex items-center justify-center">
+                            <Zap className="w-5 h-5 text-accent-neon" />
                           </div>
                           <div>
-                            <div className="text-white font-medium text-lg">{currentPair.processingTime || "< 30s"}</div>
-                            <div className="text-xs text-gray-400">Processing Time</div>
+                            <div className="text-white font-medium text-lg">{currentPair.improvement || "94%"}</div>
+                            <div className="text-xs text-gray-400">Quality Improvement</div>
                           </div>
                         </div>
 

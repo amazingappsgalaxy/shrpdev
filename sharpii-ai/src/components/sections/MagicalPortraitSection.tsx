@@ -326,10 +326,10 @@ export default function MagicalPortraitSection({
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card mb-6">
             <Sparkles className="h-4 w-4 text-accent-neon" />
-            <span className="text-sm font-semibold text-text-secondary">AI Portrait Magic</span>
+            <span className="text-sm font-bold font-heading text-text-secondary uppercase tracking-wider">AI Portrait Magic</span>
           </div>
 
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold font-heading mb-6">
             <span className="text-white">Watch the</span>
             <br />
             <span className="text-gradient-neon">Magic Happen</span>
@@ -352,7 +352,7 @@ export default function MagicalPortraitSection({
               animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -50 }}
               transition={{ duration: 0.8, delay: 0.3 }}
             >
-              <h3 className="text-2xl font-bold text-white mb-8 flex items-center gap-3">
+              <h3 className="text-2xl font-bold font-heading text-white mb-8 flex items-center gap-3">
                 <Layers className="w-6 h-6 text-accent-neon" />
                 AI Processing Pipeline
               </h3>
@@ -407,7 +407,7 @@ export default function MagicalPortraitSection({
                     </motion.div>
 
                     <div className="flex-1">
-                      <h4 className={`text-xl font-bold mb-2 transition-colors duration-500 ${currentStep >= index ? 'text-white' : 'text-white/70'
+                      <h4 className={`text-xl font-bold font-heading mb-2 transition-colors duration-500 ${currentStep >= index ? 'text-white' : 'text-white/70'
                         }`}>
                         {step.title}
                       </h4>

@@ -52,26 +52,26 @@ module.exports = {
         'surface-elevated': "hsl(var(--surface-elevated))",
         'surface-glass': "var(--surface-glass)",
         'surface-glass-elevated': "var(--surface-glass-elevated)",
-        
+
         // Text colors
         'text-primary': "hsl(var(--text-primary))",
         'text-secondary': "hsl(var(--text-secondary))",
         'text-muted': "hsl(var(--text-muted))",
         'text-disabled': "hsl(var(--text-disabled))",
-        
+
         // Card colors
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
           elevated: "hsl(var(--card-elevated))",
         },
-        
+
         // Popover colors
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
         },
-        
+
         // Primary colors
         primary: {
           DEFAULT: "hsl(var(--primary))",
@@ -79,20 +79,20 @@ module.exports = {
           muted: "hsl(var(--primary-muted))",
           hover: "hsl(var(--primary-hover))",
         },
-        
+
         // Secondary colors
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
           hover: "hsl(var(--secondary-hover))",
         },
-        
+
         // Muted colors
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
         },
-        
+
         // Accent colors
         accent: {
           DEFAULT: "hsl(var(--accent))",
@@ -102,7 +102,7 @@ module.exports = {
           neon: "hsl(var(--accent-neon))",
           pink: "hsl(var(--accent-pink))",
         },
-        
+
         // Status colors
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
@@ -116,7 +116,7 @@ module.exports = {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
         },
-        
+
         // Border and input colors
         border: "hsl(var(--border))",
         'border-muted': "hsl(var(--border-muted))",
@@ -125,7 +125,7 @@ module.exports = {
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
       },
-      
+
       // Enhanced border radius
       borderRadius: {
         'sm': "var(--radius-sm)",
@@ -136,7 +136,7 @@ module.exports = {
         '2xl': "var(--radius-2xl)",
         'full': "var(--radius-full)",
       },
-      
+
       // Enhanced spacing
       spacing: {
         'xs': "var(--space-xs)",
@@ -148,14 +148,14 @@ module.exports = {
         '3xl': "var(--space-3xl)",
         '4xl': "var(--space-4xl)",
       },
-      
+
       // Enhanced animations
       animation: {
         // Existing animations
         aurora: "aurora 60s linear infinite",
         appear: "appear 0.5s ease-out forwards",
         "appear-zoom": "appear-zoom 0.5s ease-out forwards",
-        
+
         // New premium animations
         'fade-in': "fadeIn 0.6s var(--ease-ios) forwards",
         'slide-in-left': "slideInLeft 0.6s var(--ease-ios) forwards",
@@ -167,7 +167,7 @@ module.exports = {
         'sparkle': "sparkle 1.5s ease-in-out infinite",
         'logo-glow': "logoGlow 3s ease-in-out infinite",
       },
-      
+
       // Enhanced keyframes
       keyframes: {
         // Existing keyframes
@@ -183,7 +183,7 @@ module.exports = {
           "0%": { opacity: "0", transform: "scale(0.8)" },
           "100%": { opacity: "1", transform: "scale(1)" },
         },
-        
+
         // New premium keyframes
         fadeIn: {
           "0%": { opacity: "0", transform: "translateY(30px)" },
@@ -218,27 +218,32 @@ module.exports = {
           "50%": { opacity: "0.5", transform: "scale(1.1)" },
         },
         logoGlow: {
-          "0%, 100%": { 
-            filter: "drop-shadow(0 0 10px hsl(var(--accent-blue) / 0.3))" 
+          "0%, 100%": {
+            filter: "drop-shadow(0 0 10px hsl(var(--accent-blue) / 0.3))"
           },
-          "50%": { 
-            filter: "drop-shadow(0 0 20px hsl(var(--accent-blue) / 0.6))" 
+          "50%": {
+            filter: "drop-shadow(0 0 20px hsl(var(--accent-blue) / 0.6))"
           },
         },
       },
-      
+
       // Enhanced typography
+      fontFamily: {
+        sans: ['var(--font-manrope)', 'sans-serif'],
+        heading: ['var(--font-syne)', 'sans-serif'],
+        body: ['var(--font-manrope)', 'sans-serif'],
+      },
       fontSize: {
-        'hero': ['4rem', { lineHeight: '1.1', fontWeight: '700' }],
-        'display': ['3rem', { lineHeight: '1.2', fontWeight: '600' }],
-        'heading': ['2.25rem', { lineHeight: '1.3', fontWeight: '600' }],
-        'subheading': ['1.875rem', { lineHeight: '1.4', fontWeight: '500' }],
+        'hero': ['4.5rem', { lineHeight: '1.05', fontWeight: '800', letterSpacing: '-0.02em' }],
+        'display': ['3.5rem', { lineHeight: '1.1', fontWeight: '700', letterSpacing: '-0.01em' }],
+        'heading': ['2.5rem', { lineHeight: '1.2', fontWeight: '600', letterSpacing: '-0.01em' }],
+        'subheading': ['1.75rem', { lineHeight: '1.3', fontWeight: '500' }],
         'body-lg': ['1.125rem', { lineHeight: '1.6', fontWeight: '400' }],
         'body': ['1rem', { lineHeight: '1.6', fontWeight: '400' }],
         'body-sm': ['0.875rem', { lineHeight: '1.5', fontWeight: '400' }],
         'caption': ['0.75rem', { lineHeight: '1.4', fontWeight: '400' }],
       },
-      
+
       // Enhanced shadows
       boxShadow: {
         'sm': "var(--shadow-sm)",
@@ -251,19 +256,19 @@ module.exports = {
         'neon-strong': "var(--shadow-neon-strong)",
         'glass': "0 8px 32px 0 rgba(31, 38, 135, 0.37)",
       },
-      
+
       // Enhanced backdrop blur
       backdropBlur: {
         'glass': "var(--glass-blur)",
         'glass-heavy': "var(--glass-blur-heavy)",
       },
-      
+
       // Enhanced transition timing
       transitionTimingFunction: {
         'ios': "var(--ease-ios)",
         'spring': "var(--ease-spring)",
       },
-      
+
       // Enhanced transition duration
       transitionDuration: {
         'fast': "var(--duration-fast)",

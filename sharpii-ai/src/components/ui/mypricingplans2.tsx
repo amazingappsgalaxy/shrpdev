@@ -1,8 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { motion, Transition } from "framer-motion"
-import { Check, ArrowRight, Star, CheckCircle } from "lucide-react"
+import { motion, Transition, HTMLMotionProps } from "framer-motion"
+import { Check, ArrowRight, Star, CheckCircle, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { PRICING_PLANS, PRICING_CONFIG } from "@/lib/pricing-config"
 import { useSession } from "@/lib/auth-client-simple"
@@ -21,8 +21,8 @@ const frequencies: FREQUENCY[] = ['monthly', 'yearly']
 
 // Enhanced animation variants for premium feel
 const fadeInUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.4, 0, 0.2, 1] } },
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as any } },
 }
 
 const staggerContainer = {
@@ -37,9 +37,8 @@ const staggerContainer = {
 }
 
 const cardHover = {
-  scale: 1.02,
-  y: -8,
-  transition: { duration: 0.04, ease: [0.4, 0, 0.2, 1] }
+  y: -10,
+  transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as any }
 }
 
 type PricingFrequencyToggleProps = React.ComponentProps<'div'> & {
@@ -57,7 +56,7 @@ function PricingFrequencyToggle({
   return (
     <div
       className={cn(
-        'bg-gray-100 dark:bg-gray-800/60 mx-auto flex w-fit rounded-lg border border-gray-200 dark:border-gray-700/60 p-1 shadow-sm',
+        'glass-elevated mx-auto flex w-fit rounded-full border border-white/10 p-1.5',
         props.className,
       )}
       {...props}
@@ -67,17 +66,27 @@ function PricingFrequencyToggle({
           key={freq}
           onClick={() => setFrequency(freq)}
           className={cn(
-            "px-6 py-2 text-sm font-medium capitalize transition-all duration-200 rounded-md",
+            "relative px-8 py-3 text-sm font-bold capitalize transition-all duration-300 rounded-full",
             frequency === freq
-              ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm border border-gray-200 dark:border-gray-600"
-              : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+              ? "text-black"
+              : "text-white/60 hover:text-white"
           )}
         >
-          <span className="flex items-center gap-2">
+          {frequency === freq && (
+            <motion.div
+              layoutId="activeFrequency"
+              className="absolute inset-0 bg-white rounded-full shadow-[0_0_20px_-5px_rgba(255,255,255,0.5)]"
+              transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+            />
+          )}
+          <span className="relative z-10 flex items-center gap-2">
             {freq}
             {freq === 'yearly' && (
-              <span className="bg-emerald-600 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold">
-                Save {discountPercent}%
+              <span className={cn(
+                "text-[10px] px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider",
+                frequency === freq ? "bg-accent-neon/20 text-accent-blue" : "bg-accent-neon text-black"
+              )}>
+                -{discountPercent}%
               </span>
             )}
           </span>
@@ -106,19 +115,19 @@ function BorderTrail({
 }: BorderTrailProps) {
   const BASE_TRANSITION = {
     repeat: Infinity,
-    duration: 6.5, // Much slower - 70% reduction in speed
+    duration: 4,
     ease: 'linear',
   }
 
   return (
     <div className='pointer-events-none absolute inset-0 rounded-[inherit] border border-transparent [mask-clip:padding-box,border-box] [mask-composite:intersect] [mask-image:linear-gradient(transparent,transparent),linear-gradient(#000,#000)]'>
       <motion.div
-        className={cn('absolute aspect-square bg-gradient-to-r from-accent-neon/60 via-accent-blue/60 to-accent-purple/60 rounded-full', className)}
+        className={cn('absolute aspect-square bg-gradient-to-r from-accent-neon via-white to-accent-purple rounded-full opacity-80', className)}
         style={{
-          width: size * 1.5, // Increased length
+          width: size * 1.5,
           height: size,
           offsetPath: `rect(0 auto auto 0 round ${size}px)`,
-          filter: 'blur(2px) brightness(0.8)', // Reduced brightness
+          filter: 'blur(8px)',
           ...style,
         }}
         animate={{
@@ -134,7 +143,7 @@ function BorderTrail({
   )
 }
 
-type PricingCardProps = React.ComponentProps<'div'> & {
+type PricingCardProps = HTMLMotionProps<'div'> & {
   plan: any
   frequency?: FREQUENCY
   onPlanSelect: (plan: any) => void
@@ -156,7 +165,6 @@ function PricingCard({
   const isCreator = plan.name.toLowerCase().includes("creator")
   const isProfessional = plan.name.toLowerCase().includes("professional")
   const isSpecial = isCreator || isProfessional
-  const discountPercent = Math.round((PRICING_CONFIG.yearlyDiscount ?? 0) * 100)
 
   // Professional plan is the most sought-out
   const isPopular = isProfessional
@@ -165,157 +173,101 @@ function PricingCard({
     <motion.div
       key={plan.name}
       className={cn(
-        'relative flex w-full flex-col rounded-2xl border bg-card shadow-lg hover:shadow-2xl transition-all duration-500 group',
+        'relative flex w-full flex-col rounded-3xl border border-white/5 bg-black/40 backdrop-blur-xl shadow-2xl overflow-hidden group',
+        // isSpecial ? "border-transparent" : "border-white/5",
         className,
       )}
       whileHover={cardHover}
       {...props}
     >
-      {/* BorderTrail for Creator and Professional plans */}
+      {/* BorderTrail for Special Plans */}
       {isSpecial && (
         <BorderTrail
           style={{
             boxShadow: isProfessional
-              ? '0px 0px 80px 40px rgb(139 92 246 / 35%), 0 0 120px 70px rgb(79 70 229 / 25%)'
-              : '0px 0px 80px 40px rgb(59 130 246 / 35%), 0 0 120px 70px rgb(37 99 235 / 25%)',
+              ? '0px 0px 60px 30px rgba(139, 92, 246, 0.15)'
+              : '0px 0px 60px 30px rgba(59, 130, 246, 0.15)',
           }}
-          size={100}
+          size={120}
         />
       )}
 
-      {/* Floating gradient orb for premium effect */}
-      <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+      {/* Background Glow */}
+      <div className="absolute inset-0 transition-opacity duration-500 opacity-0 group-hover:opacity-100 pointer-events-none">
         <div className={cn(
-          "absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl opacity-20 group-hover:opacity-30 transition-opacity duration-500",
-          isProfessional && "bg-gradient-to-br from-accent-purple to-accent-blue",
-          isCreator && "bg-gradient-to-br from-accent-blue to-accent-neon",
-          !isSpecial && "bg-gradient-to-br from-accent-blue/50 to-accent-purple/50"
+          "absolute inset-0 bg-gradient-to-br opacity-20",
+          isProfessional ? "from-accent-purple/30 to-transparent" :
+            isCreator ? "from-accent-blue/30 to-transparent" :
+              "from-white/10 to-transparent"
         )} />
       </div>
 
-      {/* Header Section with enhanced premium styling */}
-      <div
-        className={cn(
-          'rounded-t-2xl border-b p-6 relative backdrop-blur-sm',
-          // Premium backgrounds with subtle gradients
-          isCreator && 'bg-gradient-to-br from-accent-blue/25 to-accent-blue/15 border-b-accent-blue/30',
-          isProfessional && 'bg-gradient-to-br from-accent-purple/30 to-accent-purple/20 border-b-accent-purple/40',
-          !isSpecial && 'bg-gradient-to-br from-muted/20 to-muted/10 border-b-border',
-        )}
-      >
-        <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
+      {/* Header Section */}
+      <div className="p-8 relative z-10">
+        {/* Badges */}
+        <div className="absolute top-6 right-6 flex flex-col items-end gap-2">
           {isPopular && (
-            <div className="bg-gradient-to-r from-accent-purple to-accent-blue text-white flex items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-medium shadow-lg">
-              <Star className="h-2.5 w-2.5 fill-current" />
-              Most Popular
-            </div>
-          )}
-          {isCreator && !isProfessional && (
-            <div className="bg-gradient-to-r from-accent-blue to-accent-blue/80 text-white flex items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-medium shadow-lg">
-              <Star className="h-2.5 w-2.5 fill-current" />
+            <div className="bg-gradient-to-r from-accent-purple to-accent-blue text-white flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider shadow-lg shadow-accent-purple/20">
+              <Sparkles className="h-3 w-3 fill-current" />
               Popular
             </div>
           )}
-          {frequency === 'yearly' && discountPercent > 0 && (
-            <div className="bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-lg px-2.5 py-1 text-[10px] font-medium shadow-lg">
-              {discountPercent}% off
-            </div>
-          )}
         </div>
 
-        {/* Plan name and subtitle with enhanced typography */}
-        <div className="text-xl font-bold tracking-tight mb-2">{plan.name}</div>
-        <p className="text-muted-foreground text-sm font-medium leading-relaxed mb-4">{plan.subtitle}</p>
+        {/* Title */}
+        <h3 className={cn("text-2xl font-bold font-heading mb-2", isSpecial ? "text-white" : "text-white/80")}>
+          {plan.name}
+        </h3>
+        <p className="text-white/50 text-sm font-medium leading-relaxed mb-6 h-10">{plan.subtitle}</p>
 
-        {/* Enhanced price display */}
-        <div className="space-y-1">
-          <h3 className="flex items-end gap-1">
-            <span className={cn(
-              "text-4xl font-bold tracking-tight bg-gradient-to-r bg-clip-text text-transparent",
-              isProfessional && "from-accent-purple via-accent-blue to-accent-neon",
-              isCreator && "from-accent-blue via-accent-neon to-accent-blue",
-              !isSpecial && "from-foreground to-foreground"
-            )}>
-              ${displayPrice}
-            </span>
-            <span className="text-muted-foreground text-lg font-medium">
-              /month
-            </span>
-          </h3>
-
-          {/* Yearly pricing caption with enhanced styling */}
-          {frequency === 'yearly' && (
-            <p className="text-sm text-muted-foreground font-medium">
-              ${yearlyPrice}/year (billed annually)
-            </p>
-          )}
+        {/* Price */}
+        <div className="flex items-baseline gap-1 mb-1">
+          <span className="text-4xl font-bold text-white font-heading">${displayPrice}</span>
+          <span className="text-white/40 font-medium">/month</span>
         </div>
-      </div>
 
-      {/* Body Section with enhanced premium styling */}
-      <div
-        className={cn(
-          'text-muted-foreground space-y-4 px-6 py-6 text-sm flex-1 relative',
-          // Enhanced backgrounds with subtle gradients
-          isCreator && 'bg-gradient-to-br from-accent-blue/8 to-transparent',
-          isProfessional && 'bg-gradient-to-br from-accent-purple/10 to-transparent',
-          !isSpecial && 'bg-gradient-to-br from-muted/5 to-transparent'
+        {frequency === 'yearly' && (
+          <p className="text-xs text-accent-green font-bold mb-6">
+            Billed ${yearlyPrice} yearly
+          </p>
         )}
-      >
-        {/* Description with better spacing */}
-        <p className="text-sm text-muted-foreground leading-relaxed mb-6 font-medium">{plan.description}</p>
 
-        {/* Enhanced features list */}
-        <div className="space-y-3">
+        <div className="w-full h-px bg-white/10 my-6" />
+
+        {/* Features */}
+        <ul className="space-y-4 mb-8 flex-1">
           {plan.features.map((feature: string, index: number) => (
-            <div
-              key={index}
-              className="flex items-start gap-3 group/feature"
-            >
+            <li key={index} className="flex items-start gap-3 text-sm text-white/70 group/feature">
               <CheckCircle className={cn(
-                "h-4 w-4 flex-shrink-0 mt-0.5 transition-all duration-200",
-                isCreator && "text-accent-blue group-hover/feature:scale-110",
-                isProfessional && "text-accent-purple group-hover/feature:scale-110",
-                !isSpecial && "text-emerald-600 dark:text-emerald-400 group-hover/feature:scale-110"
+                "h-5 w-5 flex-shrink-0 transition-colors duration-300",
+                isProfessional ? "text-accent-purple" :
+                  isCreator ? "text-accent-blue" : "text-white/40 group-hover:text-white"
               )} />
-              <p className="text-sm leading-relaxed font-medium group-hover/feature:text-foreground transition-colors duration-200">{feature}</p>
-            </div>
+              <span className="group-hover/feature:text-white transition-colors duration-300">{feature}</span>
+            </li>
           ))}
-        </div>
-      </div>
+        </ul>
 
-      {/* Footer Section with enhanced CTA */}
-      <div
-        className={cn(
-          'mt-auto w-full border-t p-6 relative',
-          // Enhanced footer backgrounds
-          isCreator && 'bg-gradient-to-br from-accent-blue/12 to-accent-blue/6 border-t-accent-blue/30',
-          isProfessional && 'bg-gradient-to-br from-accent-purple/18 to-accent-purple/12 border-t-accent-purple/40',
-          !isSpecial && 'bg-gradient-to-br from-muted/8 to-muted/4 border-t-border',
-        )}
-      >
+        {/* CTA Button */}
         <button
           className={cn(
-            "w-full rounded-lg px-4 py-3.5 text-sm font-semibold transition-all duration-200 relative group/btn shadow-md hover:shadow-lg",
-            // Minimal button styling with subtle hover effects for ALL plans
+            "w-full rounded-2xl py-4 text-sm font-bold transition-all duration-300 relative overflow-hidden group/btn shadow-lg hover:shadow-xl hover:scale-[1.02]",
             isProfessional
-              ? "bg-gradient-to-r from-accent-purple to-accent-blue text-white hover:opacity-90"
+              ? "bg-gradient-to-r from-accent-purple via-accent-blue to-accent-purple bg-[length:200%_auto] animate-gradient text-white"
               : isCreator
-              ? "bg-gradient-to-r from-accent-blue to-accent-blue/80 text-white hover:opacity-90"
-              : plan.highlight
-              ? "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground hover:opacity-90"
-              : "bg-background text-foreground border-2 border-border hover:border-accent-blue/70 hover:bg-muted/30"
+                ? "bg-white text-black hover:bg-white/90"
+                : "bg-white/5 text-white border border-white/10 hover:bg-white/10"
           )}
           onClick={() => onPlanSelect(plan)}
           disabled={isLoading}
         >
-          <span className="flex items-center justify-center gap-2">
+          <span className="relative z-10 flex items-center justify-center gap-2">
             {isLoading ? (
               <span>Processing...</span>
             ) : (
               <>
                 Get Started
-                <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-0.5" />
+                <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
               </>
             )}
           </span>
@@ -342,14 +294,7 @@ export function MyPricingPlans2({
     setIsLoading(plan.name)
 
     try {
-      console.log('📋 Auth data:', {
-        sessionLoading,
-        hasUser: !!authData?.user,
-        userEmail: authData?.user?.email
-      })
-
       if (sessionLoading) {
-        console.log('⏳ Session still loading, retrying in 300ms...')
         setTimeout(() => {
           setIsLoading(null)
           handlePlanSelect(plan)
@@ -358,7 +303,6 @@ export function MyPricingPlans2({
       }
 
       if (!authData?.user) {
-        console.log('🔒 User not authenticated, redirecting to login')
         const planData = {
           plan: plan.name.toLowerCase().replace(/\s+/g, '_'),
           billingPeriod: frequency
@@ -368,16 +312,13 @@ export function MyPricingPlans2({
         return
       }
 
-      console.log('✅ User authenticated, proceeding with checkout')
-
       const requestBody = {
         plan: plan.name.toLowerCase().replace(/\s+/g, '_'),
         billingPeriod: frequency
       }
 
-      // Add timeout to prevent hanging indefinitely
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 20000) // 20 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 20000)
 
       const response = await fetch('/api/payments/checkout', {
         method: 'POST',
@@ -394,9 +335,7 @@ export function MyPricingPlans2({
       let data: any = null
       try {
         data = await response.json()
-        console.log('📤 Response data:', data)
       } catch (e) {
-        console.error('❌ Failed to parse response JSON:', e)
         toast.error('Invalid response from server')
         return
       }
@@ -418,27 +357,18 @@ export function MyPricingPlans2({
       }
 
       if (data && data.checkoutUrl) {
-        console.log('✅ Checkout URL received:', data.checkoutUrl)
         toast.success('Redirecting to payment...')
-
-        // Use window.open as fallback if location.href fails
         try {
           window.location.href = data.checkoutUrl
         } catch (redirectError) {
-          console.error('Primary redirect failed, trying window.open:', redirectError)
           window.open(data.checkoutUrl, '_self')
         }
       } else {
-        console.error('❌ No checkout URL in response:', data)
         toast.error('No checkout URL received')
       }
 
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        toast.error('Payment service is taking too long to respond. Please try again.')
-      } else {
-        toast.error(error instanceof Error ? error.message : 'Checkout failed')
-      }
+      toast.error(error instanceof Error ? error.message : 'Checkout failed')
     } finally {
       setIsLoading(null)
     }
@@ -447,34 +377,37 @@ export function MyPricingPlans2({
   return (
     <div
       className={cn(
-        'flex w-full flex-col items-center justify-center space-y-8 p-4 relative',
+        'relative flex w-full flex-col items-center justify-center space-y-12 py-24',
         className,
       )}
     >
       {/* Premium background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-r from-accent-blue/10 to-accent-purple/10 rounded-full blur-3xl opacity-50" />
-        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-gradient-to-r from-accent-neon/10 to-accent-blue/10 rounded-full blur-3xl opacity-50" />
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-7xl h-[500px] bg-gradient-to-r from-accent-blue/10 via-accent-neon/5 to-accent-purple/10 blur-[120px] rounded-full opacity-40" />
       </div>
 
-      <div className="relative z-10 w-full">
+      <div className="relative z-10 w-full container px-6">
         {showHeader && (
           <motion.div
-            className="mx-auto max-w-3xl space-y-4 text-center mb-8"
+            className="mx-auto max-w-3xl space-y-6 text-center mb-16"
             initial="hidden"
             animate="visible"
             variants={staggerContainer}
           >
-            {/* Enhanced typography matching homepage style */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-elevated border border-white/10 mb-2">
+              <Star className="h-4 w-4 text-accent-neon fill-accent-neon" />
+              <span className="text-sm font-bold text-white uppercase tracking-widest">Premium Plans</span>
+            </div>
+
             <motion.h2
-              className="text-4xl md:text-5xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent"
+              className="text-5xl md:text-7xl font-bold font-heading text-white"
               variants={fadeInUp}
             >
               {title}
             </motion.h2>
             {subtitle && (
               <motion.p
-                className="text-muted-foreground text-base sm:text-lg leading-relaxed font-medium"
+                className="text-white/60 text-lg md:text-xl leading-relaxed max-w-2xl mx-auto"
                 variants={fadeInUp}
               >
                 {subtitle}
@@ -487,7 +420,7 @@ export function MyPricingPlans2({
           initial="hidden"
           animate="visible"
           variants={fadeInUp}
-          className="flex justify-center mb-8"
+          className="flex justify-center mb-16"
         >
           <PricingFrequencyToggle
             frequency={frequency}
@@ -496,21 +429,24 @@ export function MyPricingPlans2({
         </motion.div>
 
         <motion.div
-          className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4"
+          className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 items-start"
           initial="hidden"
-          animate="visible"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
           variants={staggerContainer}
         >
           {PRICING_PLANS.map((plan) => (
             <motion.div
               key={plan.name}
               variants={fadeInUp}
+              className="h-full"
             >
               <PricingCard
                 plan={plan}
                 frequency={frequency}
                 onPlanSelect={handlePlanSelect}
                 isLoading={isLoading === plan.name}
+                className="h-full"
               />
             </motion.div>
           ))}

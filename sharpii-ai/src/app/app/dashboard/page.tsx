@@ -13,7 +13,9 @@ import {
   X
 } from 'lucide-react'
 
-export default function DashboardPage() {
+import { Suspense } from 'react'
+
+function DashboardContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, isLoading } = useAuth()
@@ -128,5 +130,13 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<ElegantLoading message="Loading dashboard..." />}>
+      <DashboardContent />
+    </Suspense>
   )
 }

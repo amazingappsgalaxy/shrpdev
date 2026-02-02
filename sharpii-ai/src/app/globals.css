@@ -11,82 +11,82 @@
 @layer base {
   :root {
     /* Premium Dark Theme - Primary Colors */
-    --background: 0 0% 0%;
-    --surface: 0 0% 6.7%;
-    --surface-elevated: 0 0% 10.2%;
-    --surface-glass: rgba(255, 255, 255, 0.1);
-    --surface-glass-elevated: rgba(255, 255, 255, 0.15);
+    --background: 240 10% 3.9%;
+    --surface: 240 10% 5.9%;
+    --surface-elevated: 240 10% 7.9%;
+    --surface-glass: rgba(20, 20, 25, 0.7);
+    --surface-glass-elevated: rgba(30, 30, 35, 0.8);
     
     /* Text Colors */
-    --foreground: 0 0% 100%;
-    --text-primary: 0 0% 100%;
-    --text-secondary: 0 0% 66.7%;
-    --text-muted: 0 0% 44.3%;
-    --text-disabled: 0 0% 25.1%;
+    --foreground: 0 0% 98%;
+    --text-primary: 0 0% 98%;
+    --text-secondary: 240 5% 64.9%;
+    --text-muted: 240 3.7% 15.9%;
+    --text-disabled: 240 5% 30%;
     
     /* Card and Surface Colors */
-    --card: 0 0% 6.7%;
-    --card-foreground: 0 0% 100%;
-    --card-elevated: 0 0% 10.2%;
-    --popover: 0 0% 6.7%;
-    --popover-foreground: 0 0% 100%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --card-elevated: 240 10% 5.9%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
     
-    /* Neon Accent Colors */
-    --accent-blue: 199 100% 50%;
-    --accent-purple: 258 90% 66%;
-    --accent-neon: 180 100% 50%;
-    --accent-pink: 330 81% 60%;
+    /* Neon Accent Colors - Updated for "Clever/AI" Vibe */
+    --accent-blue: 217 91% 60%; /* Vibrant Electric Blue */
+    --accent-purple: 270 95% 65%; /* Deep Neon Purple */
+    --accent-neon: 160 84% 39%; /* Tech Teal/Cyan */
+    --accent-pink: 322 81% 55%; /* Cyber Pink */
     
     /* Primary Brand Colors */
-    --primary: 199 100% 50%;
-    --primary-foreground: 0 0% 0%;
-    --primary-muted: 199 100% 50% / 0.1;
-    --primary-hover: 199 100% 45%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary-muted: 217 91% 60% / 0.1;
+    --primary-hover: 217 91% 55%;
     
     /* Secondary Colors */
-    --secondary: 0 0% 10.2%;
-    --secondary-foreground: 0 0% 100%;
-    --secondary-hover: 0 0% 13.7%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --secondary-hover: 240 3.7% 20%;
     
     /* Muted Colors */
-    --muted: 0 0% 10.2%;
-    --muted-foreground: 0 0% 66.7%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
     
     /* Accent Colors */
-    --accent: 0 0% 10.2%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
     
     /* Status Colors */
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 100%;
-    --success: 142 76% 36%;
-    --success-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 142 70% 50%;
+    --success-foreground: 0 0% 98%;
     --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 0%;
+    --warning-foreground: 0 0% 98%;
     
     /* Border and Input Colors */
-    --border: 0 0% 20%;
-    --border-muted: 0 0% 13.7%;
-    --input: 0 0% 10.2%;
-    --ring: 199 100% 50%;
+    --border: 240 3.7% 15.9%;
+    --border-muted: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
     
-    /* Glassmorphism Variables - Enhanced for better browser support */
-    --glass-bg: rgba(255, 255, 255, 0.08);
-    --glass-bg-elevated: rgba(255, 255, 255, 0.12);
-    --glass-border: rgba(255, 255, 255, 0.15);
-    --glass-border-elevated: rgba(255, 255, 255, 0.2);
-    --glass-blur: 20px;
-    --glass-blur-heavy: 40px;
+    /* Glassmorphism Variables */
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-bg-elevated: rgba(255, 255, 255, 0.07);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-border-elevated: rgba(255, 255, 255, 0.12);
+    --glass-blur: 16px;
+    --glass-blur-heavy: 32px;
     
     /* Shadow Variables */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-    --shadow-neon: 0 0 20px hsl(var(--accent-neon) / 0.3);
-    --shadow-neon-strong: 0 0 40px hsl(var(--accent-neon) / 0.5);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.2), 0 4px 6px -4px rgb(0 0 0 / 0.2);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3);
+    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.4);
+    --shadow-neon: 0 0 25px hsl(var(--accent-blue) / 0.3);
+    --shadow-neon-strong: 0 0 50px hsl(var(--accent-blue) / 0.5);
     
     /* Spacing Scale */
     --space-xs: 0.25rem;
@@ -99,7 +99,7 @@
     --space-4xl: 6rem;
     
     /* Border Radius */
-    --radius-sm: 0.375rem;
+    --radius-sm: 0.3rem; /* Cleaner, sharper feels for AI */
     --radius: 0.5rem;
     --radius-md: 0.75rem;
     --radius-lg: 1rem;
@@ -118,8 +118,8 @@
     --ease-in: cubic-bezier(0.4, 0, 1, 1);
     --ease-out: cubic-bezier(0, 0, 0.2, 1);
     --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-    --ease-ios: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    --ease-spring: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --ease-ios: cubic-bezier(0.25, 0.1, 0.25, 1); /* Smooth mechanical feel */
+    --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
 }
 
@@ -134,8 +134,8 @@
     min-height: 100vh;
     overflow-x: hidden;
     /* Fallback styles in case CSS variables fail */
-    background-color: #000000 !important;
-    color: #ffffff !important;
+    background-color: #0a0a0b !important;
+    color: #fafafa !important;
   }
   
   html {
@@ -147,6 +147,7 @@
   html, body {
     color-scheme: dark;
   }
+
   
   /* Responsive container */
   .container {
