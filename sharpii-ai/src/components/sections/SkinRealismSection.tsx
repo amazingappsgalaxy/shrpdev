@@ -11,23 +11,23 @@ export function SkinRealismSection() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-100px" })
 
-  const containerVariants = {
+  const containerVariants: any = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.1
+        duration: 0.8,
+        staggerChildren: 0.2
       }
     }
   }
 
-  const itemVariants = {
+  const itemVariants: any = {
     hidden: { opacity: 0, y: 30 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
   }
 
-  const imageVariants = {
+  const imageVariants: any = {
     hidden: { opacity: 0, scale: 0.95 },
     visible: { opacity: 1, scale: 1, transition: { duration: 0.8, ease: "easeOut" } }
   }
@@ -201,7 +201,7 @@ export function SkinRealismSection() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-neon opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-accent-neon"></span>
               </div>
-              <span className="text-sm font-bold text-white uppercase tracking-wider">Processing Time</span>
+              <span className="text-sm font-bold text-white uppercase tracking-wider">Fast Processing</span>
             </div>
             <div className="h-4 w-px bg-white/10" />
             <span className="font-mono text-accent-neon font-bold">~1.2s / photo</span>

@@ -3,10 +3,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Zap, 
+import {
+  TrendingUp,
+  TrendingDown,
+  Zap,
   Database,
   Clock,
   HardDrive,
@@ -154,15 +154,11 @@ export default function RealTimeStats({ stats, usageStats }: RealTimeStatsProps)
                 <span>{stats.monthlyApiLimit}</span>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4 pt-4 border-t">
               <div className="text-center">
                 <div className="text-2xl font-bold text-slate-900">{usageStats.creditsRemaining}</div>
                 <div className="text-sm text-slate-600">Credits Left</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-slate-900">{usageStats.processingTime.toFixed(1)}h</div>
-                <div className="text-sm text-slate-600">Processing Time</div>
               </div>
             </div>
           </div>
@@ -188,7 +184,7 @@ export default function RealTimeStats({ stats, usageStats }: RealTimeStatsProps)
                 <div className="text-sm text-green-600">Connected</div>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                 <Zap className="w-5 h-5 text-blue-600" />

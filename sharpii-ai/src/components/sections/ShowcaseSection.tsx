@@ -16,7 +16,7 @@ const caseStudies = [
     id: '1',
     title: 'Fashion Photography Studio',
     company: 'Elite Fashion Co.',
-    description: 'Reduced post-processing time by 80% while maintaining professional quality standards for high-end fashion shoots.',
+    description: 'Achieve professional quality standards for high-end fashion shoots instantly.',
     image: 'https://s3.tebi.io/sharpiiweb/sharpiiweb/home/before-after/Girl+1+After.png',
     category: 'Fashion',
     categoryColor: 'from-pink-500 to-purple-600',
@@ -141,20 +141,20 @@ export function ShowcaseSection() {
       {/* Enhanced Background */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-gradient-to-b from-surface/5 via-background to-surface/5" />
-        
+
         {/* Animated background elements */}
         <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-accent-neon/10 to-accent-blue/10 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-accent-purple/10 to-accent-pink/10 rounded-full blur-3xl animate-pulse delay-1000" />
-        
+
         {/* Grid pattern */}
-        <div 
+        <div
           className="absolute inset-0 opacity-[0.02]"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3e%3cdefs%3e%3cpattern id='grid' width='60' height='60' patternUnits='userSpaceOnUse'%3e%3cpath d='m 60 0 l 0 60 l -60 0 l 0 -60 z' fill='none' stroke='%23ffffff' stroke-width='1'/%3e%3c/pattern%3e%3c/defs%3e%3crect width='100%25' height='100%25' fill='url(%23grid)' /%3e%3c/svg%3e")`
           }}
         />
       </div>
-      
+
       <div className="container mx-auto px-4 lg:px-6 relative z-10">
         {/* Hero Section */}
         <motion.div
@@ -185,7 +185,7 @@ export function ShowcaseSection() {
             </h2>
 
             <p className="text-xl text-text-secondary max-w-4xl mx-auto leading-relaxed">
-              Discover how creative professionals and businesses worldwide are revolutionizing 
+              Discover how creative professionals and businesses worldwide are revolutionizing
               their workflows with Sharpii.ai's cutting-edge AI enhancement technology.
             </p>
           </motion.div>
@@ -209,7 +209,7 @@ export function ShowcaseSection() {
               >
                 <motion.div
                   className="relative glass-card-elevated rounded-3xl p-8 border border-glass-border-elevated backdrop-blur-xl overflow-hidden h-full"
-                  whileHover={{ 
+                  whileHover={{
                     scale: 1.02,
                     y: -8,
                     borderColor: "rgba(0, 255, 255, 0.4)"
@@ -218,12 +218,12 @@ export function ShowcaseSection() {
                 >
                   {/* Background glow */}
                   <div className={`absolute inset-0 ${study.bgGlow} opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl`} />
-                  
+
                   {/* Category badge */}
                   <div className={`absolute top-6 right-6 px-3 py-1 rounded-full bg-gradient-to-r ${study.categoryColor} text-white text-xs font-semibold`}>
                     {study.category}
                   </div>
-                  
+
                   {/* Image */}
                   <div className="relative w-full h-48 rounded-2xl overflow-hidden mb-6 bg-gradient-to-br from-surface/20 to-surface/40">
                     <Image
@@ -234,7 +234,7 @@ export function ShowcaseSection() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                   </div>
-                  
+
                   {/* Content */}
                   <div className="space-y-4 relative z-10">
                     <div>
@@ -245,11 +245,11 @@ export function ShowcaseSection() {
                         {study.company}
                       </p>
                     </div>
-                    
+
                     <p className="text-text-secondary text-sm leading-relaxed">
                       {study.description}
                     </p>
-                    
+
                     {/* Stats */}
                     <div className="grid grid-cols-3 gap-3">
                       {study.stats.map((stat, statIndex) => {
@@ -263,7 +263,7 @@ export function ShowcaseSection() {
                         )
                       })}
                     </div>
-                    
+
                     {/* Testimonial */}
                     <div className="p-4 rounded-xl glass-card border border-glass-border">
                       <p className="text-sm text-text-secondary italic mb-2">
@@ -274,7 +274,7 @@ export function ShowcaseSection() {
                       </p>
                     </div>
                   </div>
-                  
+
                   {/* Hover arrow */}
                   <motion.div
                     className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -310,7 +310,7 @@ export function ShowcaseSection() {
             </h3>
 
             <p className="text-text-secondary max-w-3xl mx-auto">
-              We integrate with the world's most advanced AI models to deliver 
+              We integrate with the world's most advanced AI models to deliver
               unparalleled image enhancement quality and consistency.
             </p>
           </motion.div>
@@ -349,7 +349,7 @@ export function ShowcaseSection() {
             </h3>
 
             <p className="text-text-secondary max-w-3xl mx-auto">
-              Experience the transformative power of our AI technology through 
+              Experience the transformative power of our AI technology through
               these carefully curated enhancement examples.
             </p>
           </motion.div>
@@ -378,13 +378,13 @@ export function ShowcaseSection() {
               <h3 className="text-3xl md:text-4xl font-bold text-text-primary">
                 Ready to Join These Success Stories?
               </h3>
-              
+
               <p className="text-xl text-text-secondary">
                 Transform your business with the same AI technology trusted by industry leaders worldwide.
               </p>
-              
+
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Button 
+                <Button
                   className="btn-premium px-8 py-4 text-lg font-semibold group"
                   size="lg"
                 >
@@ -392,7 +392,7 @@ export function ShowcaseSection() {
                   Start Your Success Story
                   <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
                 </Button>
-                
+
                 <div className="text-sm text-text-muted">
                   Join 50,000+ professionals • Free trial available
                 </div>

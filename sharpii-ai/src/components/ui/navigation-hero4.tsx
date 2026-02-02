@@ -145,10 +145,13 @@ export function NavigationHero4() {
 
 const Logo = ({ className }: { className?: string }) => {
   return (
-    <div className="flex items-center gap-3">
-      <span className="font-heading text-3xl md:text-4xl font-extrabold tracking-tight text-white hover:text-accent-neon transition-colors duration-300 cursor-pointer">
-        Sharpii.ai
-      </span>
+    <div className="flex items-center gap-3 group">
+      <div className="relative">
+        <div className="absolute inset-0 bg-accent-neon/30 blur-lg rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <span className="relative font-heading text-xl md:text-2xl font-extrabold tracking-tight text-white group-hover:text-accent-neon transition-colors duration-300 cursor-pointer drop-shadow-neon">
+          Sharpii.ai
+        </span>
+      </div>
     </div>
   )
 }

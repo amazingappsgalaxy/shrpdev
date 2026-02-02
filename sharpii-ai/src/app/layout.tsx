@@ -18,7 +18,7 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: "Sharpii.ai - AI-Powered Image Enhancement & Skin Upscaler",
-  description: "Transform your images with professional-grade AI enhancement. Sharpii.ai delivers cinematic quality skin upscaling and image enhancement in seconds. Trusted by 50K+ photographers and studios.",
+  description: "Transform your images with professional-grade AI enhancement. Sharpii.ai delivers cinematic quality skin upscaling and image enhancement in seconds.",
   keywords: ["AI image enhancement", "skin upscaler", "photo editing", "AI photography", "image quality", "portrait enhancement"],
   authors: [{ name: "Sharpii.ai Team" }],
   creator: "Sharpii.ai",

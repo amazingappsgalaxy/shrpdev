@@ -2,12 +2,10 @@
 
 import { motion, Variants } from "framer-motion"
 import Link from "next/link"
-import { ArrowRight, Play, Sparkles, Zap } from "lucide-react"
+import { ArrowRight, Play, Sparkles, Zap, Smartphone, Layers, Wand2 } from "lucide-react"
 import Image from "next/image"
 
 import { Button } from "./button"
-import { SparklesText } from "./sparkles-text"
-
 import { staggerContainerVariants } from "@/lib/animations"
 
 const fadeInVariants: Variants = {
@@ -24,132 +22,192 @@ const fadeInVariants: Variants = {
 
 export function HeroSection() {
   return (
-    <section className="hero-section relative min-h-screen w-full overflow-hidden flex items-center justify-center pt-20">
-      {/* Background Image with Parallax & Overlay */}
-      <div className="absolute inset-0 z-0">
+    <section className="hero-section relative min-h-[90vh] w-full overflow-hidden flex items-center justify-center pt-20 bg-black">
+      {/* Dynamic Ambient Background */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+        {/* Animated Glow Orbs */}
         <motion.div
-          className="absolute inset-0"
-          initial={{ scale: 1.1, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 1.5, ease: "circOut" }}
-        >
-          <Image
-            src="https://s3.tebi.io/sharpiiweb/sharpiiweb/home/hero/herodesktop.jpeg"
-            alt="AI Image Enhancement Hero"
-            fill
-            className="object-cover opacity-60"
-            priority
-            quality={100}
-          />
-          {/* Enhanced Gradient Overlays for Depth */}
-          <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background" />
-          <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-background/50" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-accent-blue/5 via-transparent to-transparent opacity-50" />
-        </motion.div>
+          className="absolute -top-[20%] right-[10%] w-[800px] h-[800px] bg-accent-neon/5 rounded-full blur-[120px] mix-blend-screen"
+          animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.4, 0.3] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute top-[20%] -left-[10%] w-[600px] h-[600px] bg-accent-blue/10 rounded-full blur-[100px] mix-blend-screen"
+          animate={{ scale: [1.1, 1, 1.1], opacity: [0.2, 0.3, 0.2] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+        />
+
+        {/* Grid Pattern Overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)]" />
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 container mx-auto px-4 lg:px-6">
-        <motion.div
-          className="max-w-5xl mx-auto text-center"
-          variants={staggerContainerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          {/* Premium Badge */}
+      <div className="relative z-10 container mx-auto px-4 lg:px-6 h-full flex flex-col justify-center">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center w-full">
+
+          {/* Left Column: Text Content */}
           <motion.div
-            variants={fadeInVariants}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full glass-elevated border border-white/10 mb-8 hover:border-accent-blue/30 transition-colors duration-300"
+            className="text-left"
+            variants={staggerContainerVariants}
+            initial="hidden"
+            animate="visible"
           >
-            <div className="relative flex items-center justify-center">
-              <div className="absolute w-3 h-3 bg-accent-neon rounded-full animate-ping opacity-75"></div>
-              <div className="relative w-2 h-2 bg-accent-neon rounded-full"></div>
-            </div>
-            <span className="text-sm font-medium tracking-wide text-white/90 uppercase">
-              Next-Gen AI Enhancement
-            </span>
-          </motion.div>
-
-          {/* Main Heading - Massive & Impactful */}
-          <motion.h1
-            variants={fadeInVariants}
-            className="font-heading text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-[0.9] tracking-tight mb-8 drop-shadow-2xl"
-          >
-            <span className="text-white block mb-2">
-              Transform Content
-            </span>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-blue via-accent-purple to-accent-pink animate-gradient-x block">
-              With Pure AI
-            </span>
-          </motion.h1>
-
-          {/* Subtitle - Clean & Readable */}
-          <motion.p
-            variants={fadeInVariants}
-            className="font-body text-lg sm:text-xl md:text-2xl text-white/60 leading-relaxed mb-12 max-w-3xl mx-auto"
-          >
-            Professional-grade image upscaling and enhancement powered by neural networks.
-            Experience <span className="text-white font-semibold">cinematic clarity</span> in milliseconds.
-          </motion.p>
-
-          {/* High-Impact CTA Buttons */}
-          <motion.div
-            variants={fadeInVariants}
-            className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-20"
-          >
-            <Button
-              size="lg"
-              className="group relative overflow-hidden rounded-full bg-white text-black px-10 py-8 text-lg font-bold shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] hover:shadow-[0_0_60px_-10px_rgba(255,255,255,0.4)] transition-all duration-300 transform hover:-translate-y-1"
-              asChild
+            {/* Premium Badge */}
+            <motion.div
+              variants={fadeInVariants}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-elevated border border-white/10 mb-8 hover:border-accent-neon/30 transition-colors duration-300"
             >
-              <Link href="/app/signup">
-                <span className="relative z-10 flex items-center gap-3">
-                  Start Creating Free
-                  <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-gray-100 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </Link>
-            </Button>
+              <Sparkles className="w-4 h-4 text-accent-neon" />
+              <span className="text-xs font-bold tracking-widest text-white uppercase">
+                AI Enhancement Platform
+              </span>
+            </motion.div>
 
-            <Button
-              variant="ghost"
-              size="lg"
-              className="group rounded-full px-10 py-8 text-lg font-medium text-white glass border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300"
-              asChild
+            {/* Main Heading */}
+            <motion.h1
+              variants={fadeInVariants}
+              className="font-heading text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight mb-8"
             >
-              <Link href="/demo" className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white/10 group-hover:bg-accent-blue/20 transition-colors">
-                  <Play className="h-4 w-4 fill-current" />
-                </div>
-                See How It Works
-              </Link>
-            </Button>
-          </motion.div>
+              <span className="text-white block">
+                Studio Quality
+              </span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-neon via-white to-accent-blue animate-gradient-x">
+                In Every Pixel
+              </span>
+            </motion.h1>
 
-          {/* Trust Indicators / Stats */}
-          <motion.div
-            variants={fadeInVariants}
-            className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto border-t border-white/5 pt-12"
-          >
-            {[
-              { label: "Active Users", value: "50K+" },
-              { label: "Images Processed", value: "10M+" },
-              { label: "Average Rating", value: "4.9/5" },
-              { label: "Processing Speed", value: "< 2s" },
-            ].map((stat, i) => (
-              <div key={i} className="flex flex-col items-center">
-                <span className="text-2xl md:text-3xl font-heading font-bold text-white mb-1">{stat.value}</span>
-                <span className="text-xs uppercase tracking-widest text-white/40 font-medium">{stat.label}</span>
+            {/* Subtitle */}
+            <motion.p
+              variants={fadeInVariants}
+              className="font-body text-xl text-white/60 leading-relaxed mb-10 max-w-xl"
+            >
+              The advanced platform for creative professionals. Restore details, upscale resolution, and enhance lighting with our proprietary AI engine.
+            </motion.p>
+
+            {/* CTAs */}
+            <motion.div
+              variants={fadeInVariants}
+              className="flex flex-col sm:flex-row items-center justify-start gap-4 mb-16"
+            >
+              <Button
+                size="lg"
+                className="btn-primary w-full sm:w-auto px-10 py-7 text-lg shadow-neon hover:shadow-neon-strong transition-all duration-300 group"
+                asChild
+              >
+                <Link href="/app/signup">
+                  <span className="flex items-center gap-3">
+                    Start Enhancing
+                    <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </span>
+                </Link>
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="lg"
+                className="w-full sm:w-auto px-10 py-7 text-lg font-medium text-white glass hover:bg-white/10 border border-white/10"
+                asChild
+              >
+                <Link href="/demo" className="flex items-center gap-3">
+                  <Play className="h-4 w-4 fill-white" />
+                  Live Demo
+                </Link>
+              </Button>
+            </motion.div>
+
+            {/* Trust Indicator - Minimalist */}
+            <motion.div variants={fadeInVariants} className="flex items-center gap-6 text-white/40 text-sm font-medium border-t border-white/5 pt-8">
+              <span className="uppercase tracking-widest text-xs">Trusted By</span>
+              <div className="flex gap-6 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
+                <span className="font-bold text-white">STUDIO<span className="text-accent-neon">AI</span></span>
+                <span className="font-bold text-white">PIXEL<span className="text-blue-400">LAB</span></span>
+                <span className="font-bold text-white">VIVID<span className="text-purple-400">ARTS</span></span>
               </div>
-            ))}
+            </motion.div>
           </motion.div>
-        </motion.div>
-      </div>
 
-      {/* Dynamic Background Elements */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent-blue/10 rounded-full blur-[100px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent-purple/10 rounded-full blur-[100px] animate-pulse delay-1000" />
+          {/* Right Column: Platform Visual Mockup */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, rotateY: 15 }}
+            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+            transition={{ duration: 1.2, delay: 0.2, ease: "easeOut" }}
+            className="relative hidden lg:block perspective-1000"
+          >
+            {/* Main Application Interface Mockup */}
+            <div className="relative z-10 rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-[#0A0A0A]">
+              {/* Window Controls */}
+              <div className="h-8 bg-white/5 border-b border-white/5 flex items-center px-4 gap-2">
+                <div className="w-3 h-3 rounded-full bg-red-500/20" />
+                <div className="w-3 h-3 rounded-full bg-yellow-500/20" />
+                <div className="w-3 h-3 rounded-full bg-green-500/20" />
+              </div>
+
+              {/* UI Layout */}
+              <div className="flex h-[500px]">
+                {/* Sidebar */}
+                <div className="w-16 border-r border-white/5 flex flex-col items-center py-6 gap-6">
+                  <div className="w-10 h-10 rounded-xl bg-accent-neon/20 flex items-center justify-center text-accent-neon">
+                    <Wand2 className="w-5 h-5" />
+                  </div>
+                  <div className="w-8 h-8 rounded-lg bg-white/5" />
+                  <div className="w-8 h-8 rounded-lg bg-white/5" />
+                </div>
+
+                {/* Canvas Area */}
+                <div className="flex-1 relative bg-grid-white/[0.02]">
+                  <Image
+                    src="https://s3.tebi.io/sharpiiweb/sharpiiweb/home/hero/herodesktop.jpeg"
+                    alt="Platform Interface"
+                    fill
+                    className="object-cover opacity-80"
+                  />
+
+                  {/* Floating Action Cards */}
+                  <motion.div
+                    initial={{ x: 20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 1 }}
+                    className="absolute top-6 right-6 w-64 glass-card p-4 rounded-xl border border-white/10 shadow-xl backdrop-blur-md"
+                  >
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-xs font-bold text-white">Enhancing...</span>
+                      <span className="text-xs font-mono text-accent-neon">94%</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: "94%" }}
+                        transition={{ duration: 1.5, delay: 1.2 }}
+                        className="h-full bg-accent-neon"
+                      />
+                    </div>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 1.5 }}
+                    className="absolute bottom-6 left-6 px-4 py-3 glass-elevated rounded-lg flex items-center gap-3 border border-white/20"
+                  >
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-500/20 text-green-400">
+                      <Zap className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-white">Upscale Complete</div>
+                      <div className="text-[10px] text-white/50">4K Ultra Resolution</div>
+                    </div>
+                  </motion.div>
+                </div>
+              </div>
+            </div>
+
+            {/* Back Glow */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[80%] bg-accent-neon/20 blur-[100px] -z-10 opacity-50 pointer-events-none" />
+          </motion.div>
+
+        </div>
       </div>
     </section>
   )

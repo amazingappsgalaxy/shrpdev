@@ -5,7 +5,7 @@ import { useInView } from "framer-motion"
 import { useRef, useState } from "react"
 import {
   Sparkles, Eye, Palette, Brain, Layers, Award,
-  TrendingUp, Clock, Users, Heart, Download, Play, CheckCircle, Cpu, ArrowRight
+  TrendingUp, Clock, Users, Heart, Download, Play, CheckCircle, Cpu, ArrowRight, Zap, Shield
 } from "lucide-react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
@@ -95,8 +95,8 @@ export function UnifiedEnhancementSection() {
 
   const performanceMetrics = [
     { icon: <TrendingUp className="h-5 w-5" />, label: "Quality Improvement", value: "94.8%" },
-    { icon: <Clock className="h-5 w-5" />, label: "Processing Speed", value: "< 15s" },
-    { icon: <Users className="h-5 w-5" />, label: "Satisfied Users", value: "50K+" },
+    { icon: <Zap className="h-5 w-5" />, label: "Enhancement Speed", value: "Instant" },
+    { icon: <Shield className="h-5 w-5" />, label: "Secure Processing", value: "Enterprise-Grade" },
     { icon: <Heart className="h-5 w-5" />, label: "Natural Results", value: "99.1%" }
   ]
 

@@ -118,75 +118,56 @@ export function InteractiveBentoGallerySecond() {
           </div>
         </motion.div>
 
-        {/* Bento Grid Gallery */}
+        {/* Simplified Grid Gallery */}
         <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[300px]"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
           layout
         >
           <AnimatePresence mode="popLayout">
-            {filteredItems.map((item, index) => (
+            {filteredItems.slice(0, 6).map((item, index) => (
               <motion.div
                 key={`${item.title}-${index}`}
                 layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.4 }}
-                className={cn(
-                  "group relative rounded-3xl overflow-hidden cursor-pointer glass-card border border-white/10",
-                  // Create a bento-like irregular grid
-                  index === 0 ? "lg:col-span-2 lg:row-span-2" : "",
-                  index === 3 ? "lg:col-span-2" : "",
-                  index === 6 ? "md:col-span-2" : ""
-                )}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+                className="group cursor-pointer"
                 onMouseEnter={() => setHoveredIndex(index)}
                 onMouseLeave={() => setHoveredIndex(null)}
                 onClick={() => handleImageClick(index)}
               >
-                {/* Image Container */}
-                <div className="absolute inset-0 w-full h-full">
+                {/* Image Container - Clean, No Text Overlay */}
+                <div className="relative aspect-[3/4] rounded-2xl overflow-hidden glass-card border border-white/10 mb-5 shadow-2xl">
                   <Image
                     src={hoveredIndex === index ? item.after : item.before}
                     alt={item.title}
                     fill
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-                  {/* Hint Badge */}
-                  <div className="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <span className="text-xs font-bold text-accent-neon flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" /> Enhanced View
-                    </span>
-                  </div>
 
-                  {/* Comparison Slider Hint (Visual Only) */}
-                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-100 transition-opacity duration-300" />
-                </div>
-
-                {/* Content Overlay */}
-                <div className="absolute inset-0 p-6 flex flex-col justify-end z-10">
-                  <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                    <div className="flex items-center gap-3 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
-                      <div className="px-2 py-1 rounded-md bg-white/10 backdrop-blur-sm border border-white/10 text-xs font-medium text-white/80">
-                        {item.category}
-                      </div>
-                      <div className="px-2 py-1 rounded-md bg-accent-green/20 border border-accent-green/30 text-xs font-bold text-accent-green">
-                        +{item.improvement} Quality
-                      </div>
-                    </div>
-                    <h3 className="text-2xl font-bold text-white mb-1 drop-shadow-lg">{item.title}</h3>
-                    <div className="h-0 group-hover:h-auto overflow-hidden transition-all duration-300">
-                      <p className="text-white/70 text-sm mt-2 line-clamp-2">
-                        {item.description}
-                      </p>
-                      <div className="flex items-center gap-2 mt-4 text-accent-neon text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-200">
-                        View Comparison <ArrowRight className="w-4 h-4" />
-                      </div>
+                  {/* Subtle Badge - Top Right */}
+                  <div className="absolute top-4 right-4 z-20">
+                    <div className="px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-2 group-hover:translate-y-0">
+                      <span className="text-xs font-bold text-accent-neon flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" /> Enhanced
+                      </span>
                     </div>
                   </div>
+
+                  {/* Slider Hint Gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 </div>
 
-                {/* Hover Overlay Gradient */}
-                <div className="absolute inset-0 bg-accent-blue/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none mix-blend-overlay" />
+                {/* Content Below Image */}
+                <div className="px-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-accent-blue uppercase tracking-wider">{item.category}</span>
+                    <span className="text-xs font-bold text-accent-green">+{item.improvement} Quality</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-white group-hover:text-accent-neon transition-colors duration-300">{item.title}</h3>
+                  <p className="text-white/40 text-sm mt-1 line-clamp-2">{item.description}</p>
+                </div>
               </motion.div>
             ))}
           </AnimatePresence>

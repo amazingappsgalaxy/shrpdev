@@ -50,7 +50,7 @@ export function FAQSection() {
 
           <motion.h2
             variants={fadeInVariants}
-            className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6"
+            className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 pb-4"
           >
             <span className="text-text-primary">Got</span>
             <br />

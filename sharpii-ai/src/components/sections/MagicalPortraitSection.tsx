@@ -7,10 +7,7 @@ import {
   CheckCircle,
   Play,
   RotateCcw,
-  Brain,
-  Cpu,
-  Target,
-  Layers
+  Scan
 } from "lucide-react"
 
 interface MagicalPortraitSectionProps {
@@ -37,7 +34,7 @@ const AnimatedGradientBorder = ({ isActive, step }: { isActive: boolean, step: n
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
           style={{
-            background: gradients[step] || gradients[0],
+            backgroundImage: gradients[step] || gradients[0],
             backgroundSize: '300% 300%',
           }}
         >
@@ -52,7 +49,7 @@ const AnimatedGradientBorder = ({ isActive, step }: { isActive: boolean, step: n
               ease: 'linear',
             }}
             style={{
-              background: gradients[step] || gradients[0],
+              backgroundImage: gradients[step] || gradients[0],
               backgroundSize: '300% 300%',
             }}
           />
@@ -79,9 +76,9 @@ const SimpleLoader = ({ isActive, step, progress }: { isActive: boolean, step: n
           <div className="bg-white/10 backdrop-blur-2xl rounded-2xl border border-white/20 p-4">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-medium text-white/90">
-                {step === 0 ? 'Analyzing portrait...' :
-                  step === 1 ? 'Enhancing features...' :
-                    'Optimizing quality...'}
+                {step === 0 ? 'Analyzing details...' :
+                  step === 1 ? 'Enhancing pixels...' :
+                    'Finalizing result...'}
               </span>
               <span className="text-sm font-mono text-white/70">{Math.round(progress)}%</span>
             </div>
@@ -176,34 +173,35 @@ export default function MagicalPortraitSection({
   const [isComplete, setIsComplete] = useState(false)
   const [showComparison, setShowComparison] = useState(false)
   const [stepProgress, setStepProgress] = useState(0)
+  const [hasPlayedOnce, setHasPlayedOnce] = useState(false)
 
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-100px" })
 
   const processingSteps = [
     {
-      id: "analyzing",
-      icon: <Brain className="w-6 h-6" />,
-      title: "Neural Analysis",
-      description: "AI examines facial structure and skin patterns with deep learning algorithms",
+      id: "scanning",
+      icon: <Scan className="w-6 h-6" />,
+      title: "Scanning",
+      description: "We analyze the image to identify improvements.",
       color: "from-blue-500 to-cyan-500",
-      duration: 1800
+      duration: 1500
     },
     {
-      id: "processing",
-      icon: <Cpu className="w-6 h-6" />,
-      title: "Deep Processing",
-      description: "Advanced neural networks apply intelligent skin enhancement and color correction",
+      id: "enhancing",
+      icon: <Sparkles className="w-6 h-6" />,
+      title: "Enhancing",
+      description: "Our AI adds detail and clarifies pixels.",
       color: "from-purple-500 to-pink-500",
-      duration: 1800
+      duration: 1500
     },
     {
-      id: "optimizing",
-      icon: <Target className="w-6 h-6" />,
-      title: "Quality Optimization",
-      description: "Final optimization algorithms ensure natural appearance and professional quality",
+      id: "finalizing",
+      icon: <CheckCircle className="w-6 h-6" />,
+      title: "Finalizing",
+      description: "Polishing the result for a perfect finish.",
       color: "from-green-500 to-emerald-500",
-      duration: 1800
+      duration: 1500
     }
   ]
 
@@ -238,6 +236,7 @@ export default function MagicalPortraitSection({
           setTimeout(() => {
             setCurrentStep(-1)
             setIsPlaying(false)
+            setHasPlayedOnce(true)
 
             // Show vertical stack comparison after processing
             setTimeout(() => {
@@ -246,7 +245,7 @@ export default function MagicalPortraitSection({
             }, 300)
           }, step.duration)
         }
-      }, index * 2000)
+      }, index * 1800)
     })
   }
 
@@ -256,18 +255,10 @@ export default function MagicalPortraitSection({
     setIsComplete(false)
     setShowComparison(false)
     setStepProgress(0)
+    setHasPlayedOnce(false)
   }
 
-  // Auto-start when in view
-  useEffect(() => {
-    if (isInView) {
-      const timer = setTimeout(() => {
-        startMagic()
-      }, 1000)
-      return () => clearTimeout(timer)
-    }
-    return undefined
-  }, [isInView])
+  /* Auto-start removed to allow user to click 'See It In Action' manually */
 
   return (
     <section id="magical-portrait-section" className={`py-24 relative overflow-hidden bg-black ${className}`}>
@@ -326,7 +317,7 @@ export default function MagicalPortraitSection({
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card mb-6">
             <Sparkles className="h-4 w-4 text-accent-neon" />
-            <span className="text-sm font-bold font-heading text-text-secondary uppercase tracking-wider">AI Portrait Magic</span>
+            <span className="text-sm font-bold font-heading text-text-secondary uppercase tracking-wider">How It Works</span>
           </div>
 
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold font-heading mb-6">
@@ -336,8 +327,7 @@ export default function MagicalPortraitSection({
           </h2>
 
           <p className="text-lg text-text-secondary max-w-3xl mx-auto">
-            Experience the power of AI as it transforms your portrait in real-time.
-            Watch each enhancement step unfold with cinematic precision.
+            Simple, honest, and effective image enhancement. See how we bring your photos to life.
           </p>
         </motion.div>
 
@@ -353,8 +343,8 @@ export default function MagicalPortraitSection({
               transition={{ duration: 0.8, delay: 0.3 }}
             >
               <h3 className="text-2xl font-bold font-heading text-white mb-8 flex items-center gap-3">
-                <Layers className="w-6 h-6 text-accent-neon" />
-                AI Processing Pipeline
+                <Scan className="w-6 h-6 text-accent-neon" />
+                The Process
               </h3>
 
               {processingSteps.map((step, index) => (
@@ -491,7 +481,7 @@ export default function MagicalPortraitSection({
                           transition={{ delay: 0.2 }}
                         >
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs text-white/70">Processing...</span>
+                            <span className="text-xs text-white/70">Working...</span>
                             <span className="text-xs font-mono text-white/70">{Math.round(stepProgress)}%</span>
                           </div>
                           <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
@@ -512,16 +502,14 @@ export default function MagicalPortraitSection({
               {/* Control Button */}
               <div className="mt-auto">
                 <motion.button
-                  onClick={isComplete ? resetMagic : startMagic}
-                  disabled={isPlaying}
-                  className={`w-full flex items-center justify-center gap-3 px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 ${isPlaying
+                  onClick={startMagic}
+                  disabled={isPlaying || isComplete || hasPlayedOnce}
+                  className={`w-full flex items-center justify-center gap-3 px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 ${isPlaying || isComplete || hasPlayedOnce
                     ? 'bg-white/5 text-white/40 cursor-not-allowed backdrop-blur-2xl border border-white/10'
-                    : isComplete
-                      ? 'bg-white/10 backdrop-blur-2xl text-white hover:bg-white/20 border border-white/20'
-                      : 'bg-gradient-to-r from-accent-blue to-accent-purple text-white hover:shadow-xl hover:scale-105'
+                    : 'bg-gradient-to-r from-accent-blue to-accent-purple text-black hover:shadow-xl hover:scale-105 shadow-neon'
                     }`}
-                  whileHover={!isPlaying ? { scale: 1.02, y: -2 } : {}}
-                  whileTap={!isPlaying ? { scale: 0.98 } : {}}
+                  whileHover={!isPlaying && !isComplete && !hasPlayedOnce ? { scale: 1.02, y: -2 } : {}}
+                  whileTap={!isPlaying && !isComplete && !hasPlayedOnce ? { scale: 0.98 } : {}}
                 >
                   {isPlaying ? (
                     <>
@@ -530,17 +518,17 @@ export default function MagicalPortraitSection({
                         animate={{ rotate: 360 }}
                         transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                       />
-                      Processing Magic...
+                      Enhancing...
                     </>
-                  ) : isComplete ? (
+                  ) : hasPlayedOnce || isComplete ? (
                     <>
-                      <RotateCcw className="w-5 h-5" />
-                      Experience Again
+                      <CheckCircle className="w-5 h-5" />
+                      Enhanced
                     </>
                   ) : (
                     <>
                       <Play className="w-5 h-5" />
-                      Start the Magic
+                      See It In Action
                     </>
                   )}
                 </motion.button>
@@ -568,7 +556,6 @@ export default function MagicalPortraitSection({
                   alt="Original Portrait"
                   className="absolute inset-0 w-full h-full object-cover object-center rounded-3xl"
                   animate={{
-                    filter: currentStep >= 0 && !showComparison ? 'blur(0.5px) brightness(0.9)' : 'blur(0px) brightness(1)',
                     opacity: showComparison ? 0 : 1
                   }}
                   transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
@@ -619,7 +606,7 @@ export default function MagicalPortraitSection({
                         >
                           <Sparkles className="w-5 h-5 text-accent-neon" />
                         </motion.div>
-                        <span className="text-white font-semibold text-base">Magic Complete!</span>
+                        <span className="text-white font-semibold text-base">Enhancement Complete</span>
                         <motion.div
                           animate={{
                             scale: [1, 1.1, 1]
