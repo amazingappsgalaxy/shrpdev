@@ -4,6 +4,7 @@ import React from "react"
 import { motion } from "framer-motion"
 import { Star, Quote } from "lucide-react"
 import { cn } from "@/lib/utils"
+import Image from "next/image"
 
 interface Testimonial {
   id: number
@@ -17,7 +18,7 @@ const testimonials: Testimonial[] = [
   {
     id: 1,
     text: "SharpII has revolutionized our workflow. The AI enhancement quality is incredible, and it saves us hours of manual editing.",
-    imageSrc: "https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150&h=150&fit=crop&crop=face",
+    imageSrc: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
     name: "Sarah Chen",
     username: "@sarahc_design"
   },
@@ -106,9 +107,11 @@ const TestimonialsColumn = (props: {
                   <div className="flex items-center gap-4 mb-6">
                     <div className="relative">
                       <div className="absolute inset-0 rounded-full bg-gradient-to-r from-accent-blue to-accent-purple blur-md opacity-50 group-hover:opacity-100 transition-opacity" />
-                      <img
+                      <Image
                         src={imageSrc}
                         alt={name}
+                        width={56}
+                        height={56}
                         className="w-14 h-14 rounded-full object-cover border-2 border-white/10 relative z-10"
                       />
                     </div>

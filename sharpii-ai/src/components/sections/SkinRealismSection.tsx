@@ -193,21 +193,6 @@ export function SkinRealismSection() {
           ))}
         </div>
 
-        {/* Processing Speed Indicator */}
-        <motion.div variants={itemVariants} className="flex justify-center">
-          <div className="inline-flex items-center gap-4 px-8 py-4 rounded-full glass-card border border-white/10 hover:border-accent-neon/30 hover:bg-white/5 transition-all cursor-default">
-            <div className="flex items-center gap-2">
-              <div className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-neon opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-accent-neon"></span>
-              </div>
-              <span className="text-sm font-bold text-white uppercase tracking-wider">Fast Processing</span>
-            </div>
-            <div className="h-4 w-px bg-white/10" />
-            <span className="font-mono text-accent-neon font-bold">~1.2s / photo</span>
-          </div>
-        </motion.div>
-
       </div>
     </section>
   )

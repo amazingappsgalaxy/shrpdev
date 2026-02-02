@@ -2,10 +2,10 @@
 
 import { motion, Variants } from "framer-motion"
 import Link from "next/link"
-import { ArrowRight, Play, Sparkles, Zap, Smartphone, Layers, Wand2 } from "lucide-react"
+import { ArrowRight, Play, Sparkles, Zap, Layers, Wand2 } from 'lucide-react'
 import Image from "next/image"
 
-import { Button } from "./button"
+import { Button } from '@/components/ui/button'
 import { staggerContainerVariants } from "@/lib/animations"
 
 const fadeInVariants: Variants = {
@@ -71,10 +71,10 @@ export function HeroSection() {
               className="font-heading text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight mb-8"
             >
               <span className="text-white block">
-                Studio Quality
+                Fix AI Skin &
               </span>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-neon via-white to-accent-blue animate-gradient-x">
-                In Every Pixel
+                Generate Perfect Images
               </span>
             </motion.h1>
 
@@ -83,7 +83,7 @@ export function HeroSection() {
               variants={fadeInVariants}
               className="font-body text-xl text-white/60 leading-relaxed mb-10 max-w-xl"
             >
-              The advanced platform for creative professionals. Restore details, upscale resolution, and enhance lighting with our proprietary AI engine.
+              Professional AI skin enhancement and image generation platform. Fix AI-generated skin textures, upscale to 4K resolution, and create photorealistic portraits with our advanced AI engine.
             </motion.p>
 
             {/* CTAs */}
@@ -117,13 +117,19 @@ export function HeroSection() {
               </Button>
             </motion.div>
 
-            {/* Trust Indicator - Minimalist */}
-            <motion.div variants={fadeInVariants} className="flex items-center gap-6 text-white/40 text-sm font-medium border-t border-white/5 pt-8">
-              <span className="uppercase tracking-widest text-xs">Trusted By</span>
-              <div className="flex gap-6 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-                <span className="font-bold text-white">STUDIO<span className="text-accent-neon">AI</span></span>
-                <span className="font-bold text-white">PIXEL<span className="text-blue-400">LAB</span></span>
-                <span className="font-bold text-white">VIVID<span className="text-purple-400">ARTS</span></span>
+            {/* Feature Highlights - Replacing Trust Indicator */}
+            <motion.div variants={fadeInVariants} className="flex flex-wrap items-center gap-6 text-white/40 text-sm font-medium border-t border-white/5 pt-8">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-accent-neon" />
+                <span className="text-white/70">AI Skin Enhancement</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-accent-blue" />
+                <span className="text-white/70">4K Upscaling</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-accent-purple" />
+                <span className="text-white/70">Video Generation</span>
               </div>
             </motion.div>
           </motion.div>
@@ -149,7 +155,7 @@ export function HeroSection() {
                 {/* Sidebar */}
                 <div className="w-16 border-r border-white/5 flex flex-col items-center py-6 gap-6">
                   <div className="w-10 h-10 rounded-xl bg-accent-neon/20 flex items-center justify-center text-accent-neon">
-                    <Wand2 className="w-5 h-5" />
+                    <Sparkles className="w-5 h-5" />
                   </div>
                   <div className="w-8 h-8 rounded-lg bg-white/5" />
                   <div className="w-8 h-8 rounded-lg bg-white/5" />

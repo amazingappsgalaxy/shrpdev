@@ -120,11 +120,11 @@ export function InteractiveBentoGallerySecond() {
 
         {/* Simplified Grid Gallery */}
         <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8"
           layout
         >
           <AnimatePresence mode="popLayout">
-            {filteredItems.slice(0, 6).map((item, index) => (
+            {filteredItems.slice(0, 4).map((item, index) => (
               <motion.div
                 key={`${item.title}-${index}`}
                 layout

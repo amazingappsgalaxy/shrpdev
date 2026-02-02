@@ -157,7 +157,7 @@ export function ComparisonSection() {
 
           {/* Main Stage */}
           <div ref={comparisonSectionRef} className="lg:col-span-9 order-1 lg:order-2">
-            <div className="relative aspect-[4/3] md:aspect-[16/9] rounded-3xl overflow-hidden glass-premium shadow-2xl border border-white/10 group">
+            <div className="relative aspect-[3/4] rounded-3xl overflow-hidden glass-premium shadow-2xl border border-white/10 group">
 
               {/* Images */}
               <AnimatePresence mode="wait">

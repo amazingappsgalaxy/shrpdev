@@ -899,3 +899,74 @@ section,
   border: 2px solid rgba(255, 255, 255, 0.3);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
+
+/* Yellow Background Section Utility */
+.bg-yellow-section {
+  background: hsl(var(--accent-neon)) !important;
+  color: #000000 !important;
+}
+
+.bg-yellow-section h1,
+.bg-yellow-section h2,
+.bg-yellow-section h3,
+.bg-yellow-section h4,
+.bg-yellow-section h5,
+.bg-yellow-section h6,
+.bg-yellow-section p,
+.bg-yellow-section span,
+.bg-yellow-section a {
+  color: #000000 !important;
+}
+
+.bg-yellow-section button {
+  color: #000000;
+}
+
+/* Yellow Glow on Hover - Global */
+.glow-yellow-hover {
+  transition: all 0.3s ease;
+}
+
+.glow-yellow-hover:hover {
+  box-shadow: 0 0 30px hsl(var(--accent-neon) / 0.6),
+    0 0 60px hsl(var(--accent-neon) / 0.4);
+  border-color: hsl(var(--accent-neon)) !important;
+}
+
+/* Fix Heading Text Clipping */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  line-height: 1.2 !important;
+  padding-bottom: 0.15em;
+}
+
+/* Ensure headings don't clip descenders */
+.text-hero,
+.font-heading {
+  line-height: 1.15 !important;
+  padding-bottom: 0.1em;
+}
+
+/* Yellow text glow effect */
+.text-glow-yellow {
+  text-shadow: 0 0 20px hsl(var(--accent-neon) / 0.5),
+    0 0 40px hsl(var(--accent-neon) / 0.3);
+}
+
+/* Button with yellow glow */
+.btn-yellow-glow {
+  background: hsl(var(--accent-neon));
+  color: #000000;
+  transition: all 0.3s ease;
+}
+
+.btn-yellow-glow:hover {
+  box-shadow: 0 0 30px hsl(var(--accent-neon) / 0.8),
+    0 0 60px hsl(var(--accent-neon) / 0.5),
+    0 10px 40px hsl(var(--accent-neon) / 0.3);
+  transform: translateY(-2px);
+}

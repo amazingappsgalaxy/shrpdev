@@ -158,19 +158,46 @@ export function EnhancementGalleryModal({
     })
   }
 
-  // Body Scroll Lock
+  // Body Scroll Lock - Enhanced for better compatibility
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden'
+      // Store original values
+      const scrollY = window.scrollY
+      const body = document.body
+
+      // Apply scroll lock
+      body.style.position = 'fixed'
+      body.style.top = `-${scrollY}px`
+      body.style.width = '100%'
+      body.style.overflow = 'hidden'
     } else {
-      document.body.style.overflow = 'unset'
+      // Restore scroll position
+      const body = document.body
+      const scrollY = body.style.top
+      body.style.position = ''
+      body.style.top = ''
+      body.style.width = ''
+      body.style.overflow = ''
+
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1)
+      }
     }
+
     return () => {
-      document.body.style.overflow = 'unset'
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.width = ''
+      document.body.style.overflow = ''
     }
   }, [isOpen])
 
-  // Slider dragging
+  // Slider - Mouse movement based (not drag)
+  const handleSliderMouseMove = (e: React.MouseEvent) => {
+    if (viewMode !== 'comparison') return
+    updateSliderPosition(e.clientX)
+  }
+
   const handleSliderMouseDown = (e: React.MouseEvent) => {
     if (viewMode !== 'comparison') return
     e.preventDefault()
@@ -184,6 +211,7 @@ export function EnhancementGalleryModal({
     const percentage = ((clientX - rect.left) / rect.width) * 100
     const clampedPercentage = Math.max(5, Math.min(95, percentage))
     setSliderPosition(clampedPercentage)
+    sliderMotionValue.set(clampedPercentage)
   }
 
   // Transform for slider position
@@ -294,7 +322,7 @@ export function EnhancementGalleryModal({
   return createPortal(
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-[10000] flex items-center justify-center font-sans"
+        className="fixed inset-0 z-[99999] flex items-center justify-center font-sans"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -331,15 +359,6 @@ export function EnhancementGalleryModal({
               </button>
 
               <button
-                onClick={() => setShowInfo(!showInfo)}
-                className={`p-2 rounded-lg glass hover:glass-elevated border border-glass-border transition-all duration-300 ${showInfo ? 'glow-neon' : ''
-                  }`}
-                title="Toggle info (I)"
-              >
-                <Info className="w-5 h-5 text-white" />
-              </button>
-
-              <button
                 onClick={onClose}
                 className="p-2 rounded-lg glass hover:glass-elevated border border-glass-border hover:glow-neon transition-all duration-300"
                 title="Close (Esc)"
@@ -356,6 +375,7 @@ export function EnhancementGalleryModal({
                   ref={containerRef}
                   className="relative w-full h-full rounded-2xl overflow-hidden glass border border-glass-border select-none"
                   layout
+                  onMouseMove={handleSliderMouseMove}
                 >
                   <AnimatePresence mode="wait">
                     <motion.div
@@ -475,7 +495,7 @@ export function EnhancementGalleryModal({
                             <motion.div
                               className="absolute top-0 bottom-0 flex items-center justify-center z-50 cursor-ew-resize touch-none"
                               style={{
-                                left: `${springSliderPosition.get()}%`,
+                                left: `${springSliderPosition.get() ?? 50}%`,
                                 x: '-50%' // Use x instead of transform to avoid conflicts
                               }}
                               onMouseDown={handleSliderMouseDown}
