@@ -67,15 +67,14 @@ export function PricingTableNew() {
 
     return (
         <section className="py-24 relative bg-black overflow-hidden" id="pricing-new">
-            {/* Simplified Background Ambience */}
+            {/* Background Ambience */}
             <div className="absolute inset-0 pointer-events-none opacity-40">
                 <div className="absolute top-[10%] right-[10%] w-[600px] h-[600px] bg-[#FFFF00]/5 rounded-full blur-[120px]" />
             </div>
 
             <div className="container mx-auto px-4 relative z-10">
-                {/* Header - Simpler, Cleaner */}
+                {/* Header */}
                 <div className="text-center max-w-4xl mx-auto mb-20">
-                    {/* Replaced 'Zap' badge with simpler text badge or removed */}
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/5 bg-white/5 mb-8 backdrop-blur-sm">
                         <Sparkles className="w-3 h-3 text-[#FFFF00]" />
                         <span className="text-xs font-bold font-sans text-white/80 uppercase tracking-widest">
@@ -83,7 +82,6 @@ export function PricingTableNew() {
                         </span>
                     </div>
 
-                    {/* New Heading - Simple & Direct */}
                     <h2 className="text-4xl md:text-5xl font-bold font-heading mb-6 leading-tight text-white tracking-tight">
                         Start Your <span className="text-[#FFFF00]">Journey.</span>
                     </h2>
@@ -92,27 +90,46 @@ export function PricingTableNew() {
                         Transparent pricing for everyone. Upgrade, downgrade, or cancel anytime.
                     </p>
 
-                    {/* Updated Toggle Switch with Original Layout + Logic */}
+                    {/* Segmented Control Toggle - WHITE style */}
                     <div className="flex justify-center mt-12">
-                        <div className="flex items-center gap-4">
-                            <span className={cn("text-sm font-bold transition-colors", frequency === 'monthly' ? "text-white" : "text-white/40")}>Monthly</span>
-                            <div
-                                className="w-14 h-7 bg-white/10 rounded-full p-1 cursor-pointer transition-colors relative"
-                                onClick={() => setFrequency(frequency === 'monthly' ? 'yearly' : 'monthly')}
+                        <div className="flex items-center p-1 bg-white/10 border border-white/10 rounded-full relative">
+                            {/* Sliding Background - White */}
+                            <motion.div
+                                className="absolute top-1 bottom-1 bg-white rounded-full shadow-lg z-0"
+                                initial={false}
+                                animate={{
+                                    x: frequency === 'monthly' ? 0 : '100%',
+                                    width: '50%'
+                                }}
+                                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                            />
+
+                            <button
+                                onClick={() => setFrequency('monthly')}
+                                className={cn(
+                                    "px-8 py-2.5 rounded-full text-sm font-bold transition-colors relative z-10 w-32",
+                                    frequency === 'monthly' ? "text-black" : "text-white/60 hover:text-white"
+                                )}
                             >
-                                <motion.div
-                                    className="w-5 h-5 bg-[#FFFF00] rounded-full shadow-lg"
-                                    layout
-                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                    animate={{ x: frequency === 'monthly' ? 0 : 28 }}
-                                />
-                            </div>
-                            <span className={cn("text-sm font-bold transition-colors flex items-center gap-2", frequency === 'yearly' ? "text-white" : "text-white/40")}>
+                                Monthly
+                            </button>
+                            <button
+                                onClick={() => setFrequency('yearly')}
+                                className={cn(
+                                    "px-8 py-2.5 rounded-full text-sm font-bold transition-colors relative z-10 w-32 flex items-center justify-center gap-2",
+                                    frequency === 'yearly' ? "text-black" : "text-white/60 hover:text-white"
+                                )}
+                            >
                                 Yearly
-                                <span className="text-[#FFFF00] text-xs bg-[#FFFF00]/10 px-2 py-0.5 rounded-full border border-[#FFFF00]/20">
+                                <span className={cn(
+                                    "text-[10px] px-1.5 py-0.5 rounded-full font-black",
+                                    frequency === 'yearly'
+                                        ? "bg-black/10 text-black border border-black/10" // On White Pill
+                                        : "bg-[#FFFF00] text-black border border-[#FFFF00]" // On Dark Pill
+                                )}>
                                     -20%
                                 </span>
-                            </span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -137,98 +154,95 @@ export function PricingTableNew() {
                                     isCreator
                                         ? "bg-[#FFFF00] text-black border-[#FFFF00] shadow-[0_0_50px_rgba(255,255,0,0.15)]"
                                         : isPro
-                                            ? "text-white border-[#FFFF00]/30 shadow-[0_0_50px_rgba(255,215,0,0.1)] relative" // Pro Styles below
+                                            ? "bg-[#FFFF00] text-black border-[#FFFF00] shadow-[0_0_60px_rgba(255,255,0,0.25)] relative" // Solid Yellow for Pro too
                                             : "bg-[#0A0A0A] border-white/5 text-white hover:border-white/10"
                                 )}
                             >
-                                {/* PROFESSIONAL PLAN STYLING: Premium Gradient + Mesh */}
+                                {/* PROFESSIONAL PLAN: Special Border Effect (Looping) */}
                                 {isPro && (
                                     <>
-                                        <div className="absolute inset-0 bg-gradient-to-b from-[#1a1a1a] to-black z-0" />
-                                        {/* Subtle Animated Gold Mesh */}
-                                        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#FFD700_1px,transparent_1px)] [background-size:16px_16px] z-0" />
-                                        {/* Top Light Source */}
-                                        <div className="absolute top-0 inset-x-0 h-[150px] bg-gradient-to-b from-[#FFD700]/10 to-transparent blur-xl z-0" />
+                                        {/* Looping Border Animation */}
+                                        <div className="absolute inset-0 rounded-[2rem] border-4 border-black/10 animate-[pulse_3s_infinite] pointer-events-none z-10" />
+                                        {/* Shimmering Overlay (Subtle) */}
+                                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent skew-x-12 animate-[shimmer_4s_infinite] opacity-30 z-0 pointer-events-none" />
                                     </>
                                 )}
 
-                                {/* Popular Badge */}
+                                {/* Popular Badge - Adjusted Position Top Right (Inside Safe Zone) */}
                                 {plan.badge && (
-                                    <div className="absolute top-5 right-6 z-20">
+                                    <div className="absolute top-6 right-6 z-20">
                                         <div className={cn(
-                                            "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5",
-                                            isCreator
-                                                ? "bg-black/90 text-[#FFFF00]"
-                                                : isPro
-                                                    ? "bg-[#FFD700] text-black shadow-lg shadow-[#FFD700]/20"
-                                                    : "bg-white/10 text-white"
+                                            "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-md",
+                                            isHighlighted
+                                                ? "bg-black text-[#FFFF00]" // Black badge on yellow card
+                                                : "bg-[#FFFF00] text-black" // Yellow badge on black card
                                         )}>
-                                            {isPro && <Crown className="w-3 h-3 fill-current" />}
-                                            {isCreator && <Star className="w-3 h-3 fill-current" />}
+                                            <Star className="w-3 h-3 fill-current" />
                                             {plan.badge}
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Plan Name */}
-                                <div className="mb-6 pt-2 relative z-20">
+                                {/* Plan Name - SYNE FONT BOLD (Black) */}
+                                <div className="mb-6 pt-6 relative z-20">
                                     <h3 className={cn(
-                                        "text-lg font-bold uppercase tracking-wider font-sans",
-                                        isCreator ? "text-black/80" : "text-white/80"
+                                        "text-2xl font-black uppercase tracking-tight font-heading", // Syne Font ExtraBold
+                                        isCreator ? "text-black" : isPro ? "text-black" : "text-white"
                                     )}>
                                         {plan.name}
                                     </h3>
                                     <p className={cn(
-                                        "text-xs font-medium mt-1 leading-relaxed opacity-60 font-sans",
-                                        isCreator ? "text-black" : "text-white"
+                                        "text-xs font-medium mt-1 leading-relaxed opacity-70 font-sans",
+                                        isCreator ? "text-black" : isPro ? "text-black" : "text-white/60"
                                     )}>
                                         {plan.description}
                                     </p>
                                 </div>
 
-                                {/* Price - Syne Font with lighter weight (Regular/Medium instead of Black) */}
+                                {/* Price - Syne Font BOLD */}
                                 <div className="mb-8 relative z-20">
                                     <div className="flex items-baseline gap-1">
                                         <span className={cn(
-                                            "text-4xl md:text-5xl font-bold font-heading tracking-tight", // CHANGED: font-bold instead of font-black
-                                            isCreator ? "text-black" : isPro ? "text-[#FFD700]" : "text-white"
+                                            "text-4xl md:text-5xl font-black font-heading tracking-tight", // ExtraBold
+                                            isHighlighted ? "text-black" : "text-white"
                                         )}>${displayPrice}</span>
                                         <span className={cn(
                                             "text-xs font-bold uppercase font-sans mb-1",
-                                            isCreator ? "text-black/50" : "text-white/40"
+                                            isHighlighted ? "text-black/60" : "text-white/40"
                                         )}>/mo</span>
                                     </div>
 
                                     {frequency === 'yearly' && (
                                         <div className={cn(
                                             "mt-2 text-[10px] font-bold uppercase tracking-wide font-sans px-2 py-0.5 rounded w-fit",
-                                            isCreator ? "bg-black/5 text-black/70" : "bg-[#FFFF00]/10 text-[#FFFF00]"
+                                            isHighlighted ? "bg-black/5 text-black/70" : "bg-[#FFFF00]/10 text-[#FFFF00]"
                                         )}>
                                             Billed ${yearlyPrice}/yr
                                         </div>
                                     )}
                                 </div>
 
-                                {/* Credits Highlight */}
+                                {/* Credits Highlight - BLACK BACKGROUND for Yellow Cards */}
                                 <div className={cn(
                                     "mb-8 p-4 rounded-xl border flex items-center gap-3 relative z-20",
-                                    isCreator
-                                        ? "bg-white/20 border-black/5"
-                                        : isPro
-                                            ? "bg-gradient-to-r from-[#FFD700]/10 to-transparent border-[#FFD700]/20"
-                                            : "bg-white/5 border-white/5"
+                                    isHighlighted
+                                        ? "bg-black border-black text-[#FFFF00]" // Black BG on Yellow Card
+                                        : "bg-white/5 border-white/5"
                                 )}>
                                     <div className={cn(
                                         "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
-                                        isCreator ? "bg-black text-[#FFFF00]" : isPro ? "bg-[#FFD700] text-black" : "bg-white/10 text-white"
+                                        isHighlighted ? "bg-[#FFFF00] text-black" : "bg-[#FFFF00]/10 text-[#FFFF00]"
                                     )}>
                                         <Zap className="w-4 h-4 fill-current" />
                                     </div>
                                     <div>
-                                        <div className={cn("text-base font-bold font-sans", isCreator ? "text-black" : "text-white")}>
+                                        <div className={cn(
+                                            "text-base font-bold font-heading",
+                                            isHighlighted ? "text-[#FFFF00]" : "text-[#FFFF00]" // Yellow text on both
+                                        )}>
                                             {plan.credits.monthly} Credits
                                         </div>
-                                        <div className={cn("text-[8px] uppercase font-bold tracking-wider opacity-60 font-sans", isCreator ? "text-black" : "text-white")}>
+                                        <div className={cn("text-[8px] uppercase font-bold tracking-wider opacity-60 font-sans", isHighlighted ? "text-[#FFFF00]" : "text-white")}>
                                             Per Month
                                         </div>
                                     </div>
@@ -241,13 +255,13 @@ export function PricingTableNew() {
                                             <li key={idx} className="flex items-start gap-3">
                                                 <div className={cn(
                                                     "w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5",
-                                                    isCreator ? "bg-black/10 text-black" : isPro ? "bg-[#FFD700]/20 text-[#FFD700]" : "bg-white/10 text-white/30"
+                                                    isHighlighted ? "bg-black/10 text-black" : "bg-white/10 text-white/30"
                                                 )}>
                                                     <Check className="w-2.5 h-2.5" strokeWidth={3} />
                                                 </div>
                                                 <span className={cn(
                                                     "text-xs font-medium font-sans leading-relaxed",
-                                                    isCreator ? "text-black/80" : "text-white/70"
+                                                    isHighlighted ? "text-black/80" : "text-white/70"
                                                 )}>
                                                     {feature}
                                                 </span>
@@ -256,30 +270,32 @@ export function PricingTableNew() {
                                     </ul>
                                 </div>
 
-                                {/* New Button Style - Matched to Header Style but adapted */}
+                                {/* Button with Shimmer Effect */}
                                 <div className="mt-auto relative z-20">
                                     <Button
                                         onClick={() => handlePlanSelect(plan)}
                                         disabled={isLoading === plan.name}
                                         className={cn(
-                                            "w-full h-12 rounded-xl text-xs font-bold uppercase tracking-widest transition-all duration-300",
-                                            // Default styles
+                                            "w-full h-12 rounded-xl text-xs font-bold uppercase tracking-widest transition-all duration-300 overflow-hidden relative group/btn",
                                             "shadow-lg hover:translate-y-[-2px]",
 
-                                            isCreator
-                                                ? "bg-black text-white hover:bg-black/80 hover:shadow-xl"
-                                                : isPro
-                                                    ? "bg-gradient-to-r from-[#FFD700] to-[#E6E600] text-black hover:shadow-[0_0_20px_rgba(255,215,0,0.4)]"
-                                                    : "bg-white text-black hover:bg-white/90"
+                                            isHighlighted
+                                                ? "bg-black text-white hover:bg-black/90 hover:shadow-xl" // Black button on Yellow card
+                                                : "bg-white text-black hover:bg-white/90"
                                         )}
                                     >
-                                        {isLoading === plan.name ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                            <>
-                                                Get Started
-                                            </>
-                                        )}
+                                        {/* Shimmer Effect */}
+                                        <span className="absolute inset-0 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent z-10" />
+
+                                        <span className="relative z-20 flex items-center justify-center gap-2">
+                                            {isLoading === plan.name ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                                <>
+                                                    Get Started
+                                                </>
+                                            )}
+                                        </span>
                                     </Button>
                                 </div>
                             </div>
