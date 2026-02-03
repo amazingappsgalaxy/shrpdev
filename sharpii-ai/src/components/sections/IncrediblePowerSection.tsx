@@ -285,7 +285,7 @@ export function IncrediblePowerSection() {
             <button
               onClick={handleProcessing}
               disabled={isProcessing}
-              className="w-full py-5 rounded-2xl bg-gradient-to-r from-accent-blue to-accent-purple text-white font-bold text-lg hover:shadow-lg hover:shadow-accent-blue/20 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-5 rounded-2xl bg-[#FFFF00] text-black font-bold text-lg hover:bg-[#E6E600] hover:shadow-[0_0_20px_rgba(255,255,0,0.4)] transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isProcessing ? (
                 <>

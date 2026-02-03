@@ -58,7 +58,7 @@ export function UnifiedEnhancementSection() {
 
   const performanceMetrics = [
     { icon: <TrendingUp className="h-5 w-5" />, label: "Quality Improvement", value: "94.8%" },
-    { icon: <Zap className="h-5 w-5" />, label: "Enhancement Speed", value: "Instant" },
+    { icon: <Award className="h-5 w-5" />, label: "Max Resolution", value: "Up to 8K" },
     { icon: <Shield className="h-5 w-5" />, label: "Secure Processing", value: "Enterprise" },
     { icon: <Heart className="h-5 w-5" />, label: "Natural Results", value: "99.1%" }
   ]

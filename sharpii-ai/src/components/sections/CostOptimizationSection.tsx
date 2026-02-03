@@ -49,9 +49,9 @@ export function CostOptimizationSection() {
   }
 
   const calculateSavings = (images: number) => {
-    // Assumptions: Traditional edit $50, Sharpii $0.10 (illustrative)
-    const traditionalCost = images * 50
-    const sharpiiCost = images * 0.1 // Significant savings
+    // Assumptions: Traditional edit $1000, Other AI $50, Sharpii $0.10
+    const traditionalCost = images * 10
+    const sharpiiCost = images * 0.1
     const annualSavings = (traditionalCost - sharpiiCost) * 12
     return {
       monthly: traditionalCost - sharpiiCost,
@@ -64,9 +64,9 @@ export function CostOptimizationSection() {
 
   return (
     <section ref={ref} className="py-32 relative overflow-hidden bg-black">
-      {/* Background Ambience */}
+      {/* Background Ambience - Removed as requested */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl bg-gradient-to-b from-accent-purple/5 to-transparent opacity-50" />
+        {/* Clean black background */}
       </div>
 
       <div className="container mx-auto px-4 lg:px-6 relative z-10">
@@ -139,7 +139,7 @@ export function CostOptimizationSection() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm font-medium">
                     <span className="text-white">Traditional Retouching</span>
-                    <span className="text-red-400">${(imagesPerMonth[0]! * 50).toLocaleString()}</span>
+                    <span className="text-red-400">$1,000</span>
                   </div>
                   <div className="h-4 bg-white/5 rounded-full overflow-hidden">
                     <motion.div
@@ -154,7 +154,7 @@ export function CostOptimizationSection() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm font-medium">
                     <span className="text-white">Other AI Tools</span>
-                    <span className="text-yellow-400">${(imagesPerMonth[0]! * 5).toLocaleString()}</span>
+                    <span className="text-yellow-400">$50</span>
                   </div>
                   <div className="h-4 bg-white/5 rounded-full overflow-hidden">
                     <motion.div

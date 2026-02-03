@@ -111,7 +111,7 @@ export function AIInfluencerSection() {
 
           <motion.h2 variants={itemVariants} className="font-heading text-5xl md:text-7xl font-bold mb-6 leading-tight">
             <span className="text-white block">Humanize Your</span>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-blue via-accent-purple to-accent-pink">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FFFF00] via-accent-purple to-accent-pink">
               AI Influencers
             </span>
           </motion.h2>
@@ -136,13 +136,13 @@ export function AIInfluencerSection() {
                 className={cn(
                   "relative flex items-center gap-3 px-6 py-3 rounded-xl transition-all duration-300 min-w-[200px]",
                   activeComparison === index
-                    ? "bg-white/10 shadow-lg border border-white/10"
+                    ? "bg-[#FFFF00]/10 shadow-lg border border-[#FFFF00]/30"
                     : "hover:bg-white/5 border border-transparent"
                 )}
               >
                 <div className={cn(
                   "w-10 h-10 rounded-full p-[2px]",
-                  activeComparison === index ? "bg-gradient-to-tr from-accent-blue to-accent-purple" : "bg-white/10"
+                  activeComparison === index ? "bg-gradient-to-tr from-[#FFFF00] to-accent-purple" : "bg-white/10"
                 )}>
                   <Image
                     src={influencer.afterImage}

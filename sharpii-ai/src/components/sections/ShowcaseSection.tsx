@@ -307,7 +307,7 @@ export function ShowcaseSection() {
             </h3>
 
             <p className="text-text-secondary max-w-3xl mx-auto text-lg">
-              We orchestrate a symphony of the world's most advanced foundation models, fine-tuned on millions of proprietary datasets.
+              Seamless workflows for AI Skin Enhancement, Image Generation, Video Generation, Motion Transfer, and Lip Syncing—all in one unified platform.
             </p>
           </motion.div>
 

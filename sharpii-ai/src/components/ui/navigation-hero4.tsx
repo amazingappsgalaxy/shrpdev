@@ -147,8 +147,9 @@ const Logo = ({ className }: { className?: string }) => {
   return (
     <div className="flex items-center gap-3 group">
       <div className="relative">
-        <div className="absolute inset-0 bg-accent-neon/30 blur-lg rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        <span className="relative font-heading text-2xl md:text-3xl font-extrabold tracking-tight text-white group-hover:text-accent-neon transition-colors duration-300 cursor-pointer drop-shadow-neon">
+        {/* Removed Glow Effect as per user request */}
+        {/* <div className="absolute inset-0 bg-accent-neon/30 blur-lg rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" /> */}
+        <span className="relative font-heading text-2xl md:text-3xl font-extrabold tracking-tight text-white group-hover:text-[#FFFF00] transition-colors duration-300 cursor-pointer">
           Sharpii<span className="text-[#FFFF00]">.</span>ai
         </span>
       </div>

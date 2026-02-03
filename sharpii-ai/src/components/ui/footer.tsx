@@ -15,27 +15,28 @@ export function Footer() {
 
       <div className="container mx-auto px-4 lg:px-6 relative z-10">
 
-        {/* CTA Section */}
-        <div className="flex flex-col items-center justify-center text-center mb-24 border-b border-white/10 pb-24">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-elevated border border-white/10 mb-8">
-            <Sparkles className="h-4 w-4 text-accent-neon" />
-            <span className="text-sm font-bold text-white uppercase tracking-widest">Join the Revolution</span>
+        {/* CTA Section - Redesigned */}
+        <div className="relative rounded-[3rem] overflow-hidden bg-gradient-to-b from-white/10 to-black border border-white/10 p-12 md:p-24 text-center mb-24">
+          {/* Glow Effects */}
+          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#FFFF00]/50 to-transparent" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#FFFF00]/5 rounded-full blur-[100px] pointer-events-none" />
+
+          <div className="relative z-10 max-w-4xl mx-auto">
+            <h2 className="font-heading text-6xl md:text-9xl font-black text-white tracking-tighter mb-8 leading-[0.9]">
+              CREATE <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-b from-[#FFFF00] to-yellow-600">IMPACT.</span>
+            </h2>
+            <p className="text-xl md:text-2xl text-white/60 mb-12 max-w-2xl mx-auto leading-relaxed">
+              Join the revolution of AI-enhanced aesthetics. Your masterpiece awaits.
+            </p>
+
+            <Link
+              href="/app/login"
+              className="inline-flex items-center gap-3 px-10 py-5 bg-[#FFFF00] text-black font-bold text-xl rounded-full hover:bg-[#E6E600] hover:scale-105 transition-all duration-300 shadow-[0_0_40px_-10px_rgba(255,255,0,0.5)]"
+            >
+              Enter App <Send className="w-5 h-5 -rotate-45" />
+            </Link>
           </div>
-          <h2 className="text-5xl md:text-8xl font-bold font-heading text-white mb-8 tracking-tight">
-            Create Impact.
-          </h2>
-          <p className="text-xl text-white/50 max-w-2xl mb-12">
-            Join thousands of creators who are using Sharpii AI to transform their visuals.
-          </p>
-          <Link
-            href="/app/login"
-            className="group relative px-10 py-5 rounded-full bg-white text-black font-bold text-lg hover:scale-105 transition-transform duration-300"
-          >
-            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-accent-neon via-white to-accent-blue blur opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
-            <span className="relative z-10 flex items-center gap-3">
-              Start Creating Free <Send className="w-5 h-5 -rotate-45 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-            </span>
-          </Link>
         </div>
 
 

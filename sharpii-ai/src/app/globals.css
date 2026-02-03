@@ -419,8 +419,10 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    padding-bottom: 0.1em;
-    /* Prevent descender clipping */
+    padding-bottom: 0.2em;
+    /* Increased to prevent clipping of 'g' */
+    line-height: 1.1;
+    /* Relaxed leading */
   }
 
   .text-gradient-neon {
@@ -428,7 +430,8 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    padding-bottom: 0.1em;
+    padding-bottom: 0.2em;
+    line-height: 1.1;
   }
 
   .text-gradient-purple {
@@ -436,7 +439,8 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    padding-bottom: 0.1em;
+    padding-bottom: 0.2em;
+    line-height: 1.1;
   }
 
   /* Image Enhancement Styles */
