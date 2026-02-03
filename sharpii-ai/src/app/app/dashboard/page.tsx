@@ -22,6 +22,9 @@ function DashboardContent() {
   const [activeSection, setActiveSection] = useState('credits')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
+  // Demo mode check
+  const isDemo = searchParams.get('demo') === 'true'
+
   // Read tab parameter from URL
   useEffect(() => {
     const tab = searchParams.get('tab')
@@ -34,7 +37,17 @@ function DashboardContent() {
     return <ElegantLoading message="Loading your dashboard..." />
   }
 
-  if (!user) {
+  // Effective user (real or demo)
+  const effectiveUser = user || (isDemo ? {
+    id: 'demo-user',
+    name: 'Demo Creator',
+    email: 'demo@sharpii.ai',
+    subscriptionStatus: 'pro',
+    apiUsage: 45,
+    monthlyApiLimit: 100
+  } : null) as typeof user
+
+  if (!effectiveUser) {
     router.push('/app/login')
     return null
   }
@@ -69,10 +82,20 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-black text-white">
+      {/* Pass effective user to header if needed, but UserHeader likely uses useAuth internally. 
+          If UserHeader uses useAuth, it will show 'Sign In' or empty. 
+          Ideally we update UserHeader too, but for now we focus on access. 
+      */}
       <UserHeader />
 
       <div className="pt-24">
         <div className="max-w-7xl mx-auto px-6 lg:px-12">
+          {isDemo && (
+            <div className="mb-6 p-4 rounded-lg bg-[hsl(var(--accent-neon))]/10 border border-[hsl(var(--accent-neon))]/20 text-[hsl(var(--accent-neon))] text-sm">
+              ⚠️ You are in <strong>Demo Mode</strong>. Changes will not be saved.
+            </div>
+          )}
+
           {/* Mobile Menu Button - Minimal */}
           <div className="lg:hidden mb-6">
             <button

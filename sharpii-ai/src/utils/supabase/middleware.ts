@@ -15,11 +15,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Redirect unauthenticated users to login (except for login and auth pages)
+  // Redirect unauthenticated users to login (except for login and auth pages, or demo mode)
   if (
     !hasSessionCookie &&
     !request.nextUrl.pathname.startsWith('/app/login') &&
-    !request.nextUrl.pathname.startsWith('/app/auth')
+    !request.nextUrl.pathname.startsWith('/app/auth') &&
+    request.nextUrl.searchParams.get('demo') !== 'true'
   ) {
     const url = request.nextUrl.clone()
     url.pathname = '/app/login'
