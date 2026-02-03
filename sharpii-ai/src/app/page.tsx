@@ -8,6 +8,7 @@ import { WorkflowSection } from "@/components/sections/WorkflowSection"
 import { ComparisonSection } from "@/components/sections/ComparisonSection"
 import { TestimonialsSection } from "@/components/sections/TestimonialsSection"
 import { MyPricingPlans2 } from "@/components/ui/mypricingplans2"
+import { PricingTableNew } from "@/components/ui/pricing-table-new"
 import { FAQSection } from "@/components/sections/FAQSection"
 import { Footer } from "@/components/ui/footer"
 import { SkinRealismSection } from "@/components/sections/SkinRealismSection"
@@ -51,6 +52,7 @@ export default function Home() {
           <MyPricingPlans2 />
         </div>
       </section>
+      <PricingTableNew />
       <section id="faq">
         <FAQSection />
       </section>
