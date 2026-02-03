@@ -1,131 +1,88 @@
 "use client"
 
 import Link from "next/link"
-import { Facebook, Twitter, Instagram, Linkedin, Github, Youtube, Sparkles, Send } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { motion } from "framer-motion"
+import { ArrowRight, Sparkles } from "lucide-react"
 
 export function Footer() {
-  return (
-    <footer className="relative bg-black border-t border-white/10 pt-24 pb-12 overflow-hidden">
-      {/* Background Gradients */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-accent-purple/10 rounded-full blur-[150px] mix-blend-screen opacity-30" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent-blue/10 rounded-full blur-[150px] mix-blend-screen opacity-30" />
-      </div>
+    return (
+        <footer className="bg-black border-t border-white/5 pt-24 pb-12 relative overflow-hidden">
 
-      <div className="container mx-auto px-4 lg:px-6 relative z-10">
+            {/* New CTA Section */}
+            <div className="container mx-auto px-4 mb-24">
+                <div className="relative rounded-[3rem] bg-white/5 border border-white/10 overflow-hidden p-12 md:p-24 text-center">
+                    <div className="absolute inset-0 bg-[#FFFF00]/5 blur-[100px] pointer-events-none" />
 
-        {/* CTA Section - Redesigned */}
-        <div className="relative rounded-[3rem] overflow-hidden bg-gradient-to-b from-white/10 to-black border border-white/10 p-12 md:p-24 text-center mb-24">
-          {/* Glow Effects */}
-          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#FFFF00]/50 to-transparent" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#FFFF00]/5 rounded-full blur-[100px] pointer-events-none" />
+                    <div className="relative z-10 max-w-4xl mx-auto space-y-8">
+                        <h2 className="text-5xl md:text-8xl font-black font-heading text-white tracking-tight leading-[0.9]">
+                            CREATE <br />
+                            <span className="text-[#FFFF00]">IMPACT.</span>
+                        </h2>
 
-          <div className="relative z-10 max-w-4xl mx-auto">
-            <h2 className="font-heading text-6xl md:text-9xl font-black text-white tracking-tighter mb-8 leading-[0.9]">
-              CREATE <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-b from-[#FFFF00] to-yellow-600">IMPACT.</span>
-            </h2>
-            <p className="text-xl md:text-2xl text-white/60 mb-12 max-w-2xl mx-auto leading-relaxed">
-              Join the revolution of AI-enhanced aesthetics. Your masterpiece awaits.
-            </p>
+                        <p className="text-xl text-white/60 max-w-2xl mx-auto">
+                            Elevate your visual storytelling with the world's most advanced AI enhancement engine.
+                        </p>
 
-            <Link
-              href="/app/login"
-              className="inline-flex items-center gap-3 px-10 py-5 bg-[#FFFF00] text-black font-bold text-xl rounded-full hover:bg-[#E6E600] hover:scale-105 transition-all duration-300 shadow-[0_0_40px_-10px_rgba(255,255,0,0.5)]"
-            >
-              Enter App <Send className="w-5 h-5 -rotate-45" />
-            </Link>
-          </div>
-        </div>
-
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 lg:gap-24 mb-16">
-
-          {/* Brand Column */}
-          <div className="lg:col-span-4 space-y-8">
-            <Link href="/" className="inline-block">
-              <span className="font-heading text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60">
-                Sharpii<span className="text-accent-neon">.</span>ai
-              </span>
-            </Link>
-            <p className="text-white/50 leading-relaxed max-w-sm">
-              The advanced AI platform for next-generation image and video enhancement. Elevate your content with professional-grade tools.
-            </p>
-            <div className="flex gap-4 pt-4">
-              {[Twitter, Github, Linkedin, Instagram, Youtube].map((Icon, i) => (
-                <a
-                  key={i}
-                  href="#"
-                  className="w-10 h-10 rounded-full glass-elevated border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-accent-neon/50 hover:bg-accent-neon/10 transition-all duration-300 group"
-                >
-                  <Icon className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                </a>
-              ))}
-            </div>
-          </div>
-
-          {/* Links Columns */}
-          <div className="lg:col-span-8 grid grid-cols-2 md:grid-cols-3 gap-12">
-
-            {/* Column 1 */}
-            <div className="space-y-6">
-              <h4 className="text-white font-bold font-heading text-lg">Platform</h4>
-              <ul className="space-y-4">
-                {["Image Upscaler", "Video Enhancer", "Face Restoration", "Background Remover", "Color Correction"].map((item) => (
-                  <li key={item}>
-                    <Link href="#" className="text-white/50 hover:text-accent-neon transition-colors duration-300 text-sm font-medium">
-                      {item}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+                        <div className="flex justify-center pt-8">
+                            <Link href="/app/dashboard">
+                                <button className="group relative bg-[#FFFF00] text-black px-10 py-5 rounded-2xl font-bold text-xl inline-flex items-center gap-3 hover:scale-105 transition-transform duration-300">
+                                    <span>Enter App</span>
+                                    <ArrowRight className="w-6 h-6 transition-transform group-hover:translate-x-1" />
+                                </button>
+                            </Link>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            {/* Column 2 */}
-            <div className="space-y-6">
-              <h4 className="text-white font-bold font-heading text-lg">Company</h4>
-              <ul className="space-y-4">
-                {["About Us", "Careers", "Blog", "Press Kit", "Contact"].map((item) => (
-                  <li key={item}>
-                    <Link href="#" className="text-white/50 hover:text-accent-neon transition-colors duration-300 text-sm font-medium">
-                      {item}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <div className="container mx-auto px-4">
+                <div className="grid md:grid-cols-4 gap-12 mb-16 border-b border-white/5 pb-16">
+                    <div className="col-span-1 md:col-span-1">
+                        <div className="text-2xl font-bold text-white mb-4 tracking-tighter">Sharpii.ai</div>
+                        <p className="text-white/40 text-sm leading-relaxed">
+                            Pioneering the future of digital aesthetic enhancement through generative AI.
+                        </p>
+                    </div>
 
-            {/* Column 3 */}
-            <div className="space-y-6">
-              <h4 className="text-white font-bold font-heading text-lg">Legal</h4>
-              <ul className="space-y-4">
-                {["Privacy Policy", "Terms of Service", "Cookie Policy", "Security", "GDPR"].map((item) => (
-                  <li key={item}>
-                    <Link href="#" className="text-white/50 hover:text-accent-neon transition-colors duration-300 text-sm font-medium">
-                      {item}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+                    <div>
+                        <h4 className="font-bold text-white mb-6">Product</h4>
+                        <ul className="space-y-4 text-sm text-white/50">
+                            <li className="hover:text-[#FFFF00] cursor-pointer transition-colors">Enhancement</li>
+                            <li className="hover:text-[#FFFF00] cursor-pointer transition-colors">Generation</li>
+                            <li className="hover:text-[#FFFF00] cursor-pointer transition-colors">Video</li>
+                            <li className="hover:text-[#FFFF00] cursor-pointer transition-colors">Pricing</li>
+                        </ul>
+                    </div>
 
-          </div>
-        </div>
+                    <div>
+                        <h4 className="font-bold text-white mb-6">Resources</h4>
+                        <ul className="space-y-4 text-sm text-white/50">
+                            <li className="hover:text-[#FFFF00] cursor-pointer transition-colors">Documentation</li>
+                            <li className="hover:text-[#FFFF00] cursor-pointer transition-colors">API Reference</li>
+                            <li className="hover:text-[#FFFF00] cursor-pointer transition-colors">Community</li>
+                            <li className="hover:text-[#FFFF00] cursor-pointer transition-colors">Blog</li>
+                        </ul>
+                    </div>
 
-        {/* Bottom Bar */}
-        <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6">
-          <p className="text-white/30 text-sm">
-            © {new Date().getFullYear()} Sharpii AI Inc. All rights reserved.
-          </p>
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-accent-green animate-pulse" />
-              <span className="text-white/50 text-xs font-medium">All Systems Operational</span>
+                    <div>
+                        <h4 className="font-bold text-white mb-6">Legal</h4>
+                        <ul className="space-y-4 text-sm text-white/50">
+                            <li className="hover:text-[#FFFF00] cursor-pointer transition-colors">Privacy Policy</li>
+                            <li className="hover:text-[#FFFF00] cursor-pointer transition-colors">Terms of Service</li>
+                            <li className="hover:text-[#FFFF00] cursor-pointer transition-colors">Security</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-white/30">
+                    <div>© 2024 Sharpii Inc. All rights reserved.</div>
+                    <div className="flex gap-6">
+                        <span>Twitter</span>
+                        <span>GitHub</span>
+                        <span>Discord</span>
+                    </div>
+                </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </footer>
-  )
+        </footer>
+    )
 }

@@ -8,7 +8,6 @@ import { WorkflowSection } from "@/components/sections/WorkflowSection"
 import { ComparisonSection } from "@/components/sections/ComparisonSection"
 import { TestimonialsSection } from "@/components/sections/TestimonialsSection"
 import { MyPricingPlans2 } from "@/components/ui/mypricingplans2"
-import { PricingTableV2 } from "@/components/ui/pricing-table-v2"
 import { FAQSection } from "@/components/sections/FAQSection"
 import { Footer } from "@/components/ui/footer"
 import { SkinRealismSection } from "@/components/sections/SkinRealismSection"
@@ -21,6 +20,7 @@ import AIImageGenSection from "@/components/sections/AIImageGenSection"
 import AIMotionTransferSection from "@/components/sections/AIMotionTransferSection"
 import AILipSyncSection from "@/components/sections/AILipSyncSection"
 import { VelocityScrollSection } from "@/components/sections/VelocityScrollSection"
+import { ShowcaseSection } from "@/components/sections/ShowcaseSection"
 
 export default function Home() {
   return (
@@ -29,6 +29,7 @@ export default function Home() {
       <HeroSection />
       <InteractiveBentoGallerySecond />
       <ComparisonSection />
+      <ShowcaseSection />
       <MagicalPortraitSection />
 
       {/* New AI Creative Suite Sections */}
@@ -47,7 +48,7 @@ export default function Home() {
       <TestimonialsSection />
       <section id="pricing-section" className="py-16 sm:py-20">
         <div className="max-w-7xl mx-auto px-6">
-          <PricingTableV2 />
+          <MyPricingPlans2 />
         </div>
       </section>
       <section id="faq">

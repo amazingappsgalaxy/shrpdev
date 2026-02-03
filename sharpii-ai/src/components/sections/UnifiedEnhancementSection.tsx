@@ -173,12 +173,12 @@ export function UnifiedEnhancementSection() {
                 {/* Metrics - Removed Satisfied Users as requested */}
                 <div className="grid grid-cols-2 gap-6 pt-6 border-t border-white/10">
                   <div>
-                    <div className="text-2xl font-bold text-white">0.8s</div>
-                    <div className="text-xs text-white/40 uppercase tracking-widest">Speed</div>
+                    <div className="text-2xl font-bold text-white">8K</div>
+                    <div className="text-xs text-white/40 uppercase tracking-widest">Max Resolution</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-white">4K</div>
-                    <div className="text-xs text-white/40 uppercase tracking-widest">Output Quality</div>
+                    <div className="text-2xl font-bold text-white">2K/4K/8K</div>
+                    <div className="text-xs text-white/40 uppercase tracking-widest">Upscaling Support</div>
                   </div>
                 </div>
               </div>

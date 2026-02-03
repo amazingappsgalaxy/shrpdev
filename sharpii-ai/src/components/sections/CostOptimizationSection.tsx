@@ -1,256 +1,109 @@
 "use client"
 
-import { motion, useInView } from "framer-motion"
-import { useRef, useState } from "react"
-import {
-  DollarSign,
-  TrendingDown,
-  Zap,
-  Calculator,
-  PiggyBank,
-  Clock,
-  Target,
-  ArrowRight,
-  CheckCircle,
-  Sparkles,
-  BarChart3,
-  Coins,
-  Timer,
-  ChevronRight
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Slider } from "@/components/ui/slider"
-import { cn } from "@/lib/utils"
+import { motion } from "framer-motion"
+import { TrendingDown, Zap, DollarSign } from "lucide-react"
 
 export function CostOptimizationSection() {
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, margin: "-100px" })
-  const [imagesPerMonth, setImagesPerMonth] = useState([100])
+    return (
+        <section className="py-24 bg-black border-t border-white/5 overflow-hidden relative">
+            <div className="container mx-auto px-4 relative z-10">
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.12,
-        delayChildren: 0.1
-      }
-    }
-  }
+                <div className="grid lg:grid-cols-2 gap-16 items-center">
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 30, scale: 0.95 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      scale: 1,
-      transition: { duration: 0.5, ease: "easeOut" as any }
-    }
-  }
+                    {/* Left Content */}
+                    <div className="space-y-8">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FFFF00]/10 border border-[#FFFF00]/20 text-[#FFFF00] text-xs font-bold uppercase tracking-widest">
+                            <DollarSign className="w-3 h-3" />
+                            Cost Efficiency
+                        </div>
 
-  const calculateSavings = (images: number) => {
-    // Assumptions: Traditional edit $1000, Other AI $50, Sharpii $0.10
-    const traditionalCost = images * 10
-    const sharpiiCost = images * 0.1
-    const annualSavings = (traditionalCost - sharpiiCost) * 12
-    return {
-      monthly: traditionalCost - sharpiiCost,
-      annual: annualSavings,
-      efficiency: "99.8%"
-    }
-  }
+                        <h2 className="text-4xl md:text-6xl font-bold font-heading text-white leading-tight">
+                            Save up to <br />
+                            <span className="text-[#FFFF00]">95% on Costs.</span>
+                        </h2>
 
-  const savings = calculateSavings(imagesPerMonth[0]!)
+                        <p className="text-lg text-white/60 leading-relaxed max-w-lg">
+                            Stop overpaying for traditional retouching. Sharpii delivers agency-quality results at a fraction of the time and price.
+                        </p>
 
-  return (
-    <section ref={ref} className="py-32 relative overflow-hidden bg-black">
-      {/* Background Ambience - Removed as requested */}
-      <div className="absolute inset-0 pointer-events-none">
-        {/* Clean black background */}
-      </div>
+                        <div className="flex flex-col gap-4">
+                            <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+                                <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
+                                    <TrendingDown className="w-6 h-6 text-red-500" />
+                                </div>
+                                <div>
+                                    <div className="text-sm text-white/50 font-medium">Traditional Agency</div>
+                                    <div className="text-2xl font-bold text-white">$1,000+ <span className="text-sm font-normal text-white/30">/ batch</span></div>
+                                </div>
+                            </div>
 
-      <div className="container mx-auto px-4 lg:px-6 relative z-10">
+                            <div className="flex items-center gap-4 p-4 rounded-2xl bg-[#FFFF00]/5 border border-[#FFFF00]/20 relative overflow-hidden">
+                                <div className="absolute inset-0 bg-[#FFFF00]/5 animate-pulse" />
+                                <div className="w-12 h-12 rounded-full bg-[#FFFF00]/20 flex items-center justify-center relative z-10">
+                                    <Zap className="w-6 h-6 text-[#FFFF00]" />
+                                </div>
+                                <div className="relative z-10">
+                                    <div className="text-sm text-[#FFFF00]/80 font-bold">Sharpii AI</div>
+                                    <div className="text-2xl font-bold text-[#FFFF00]">$50 <span className="text-sm font-normal text-[#FFFF00]/50">/ batch</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          className="text-center mb-20"
-        >
-          <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-elevated border border-white/10 mb-8">
-            <Coins className="h-4 w-4 text-accent-neon" />
-            <span className="text-sm font-bold text-white uppercase tracking-widest">Smart Cost Optimization</span>
-          </motion.div>
+                    {/* Right Visual - Comparison Graph Style */}
+                    <div className="relative">
+                        <div className="absolute inset-0 bg-gradient-to-r from-[#FFFF00]/10 to-transparent blur-[80px] opacity-30" />
 
-          <motion.h2 variants={itemVariants} className="font-heading text-5xl md:text-7xl font-bold mb-6 leading-tight">
-            <span className="text-white">Save Up To</span>{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-neon via-emerald-400 to-teal-400">
-              85%
-            </span>
-            <br />
-            <span className="text-white">On Processing</span>
-          </motion.h2>
+                        <div className="relative bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm">
+                            <h3 className="text-xl font-bold text-white mb-8">Cost Per 100 Images</h3>
 
-          <motion.p variants={itemVariants} className="text-xl text-white/60 max-w-3xl mx-auto leading-relaxed">
-            Our revolutionary AI processing architecture dramatically reduces computational costs without compromising on quality.
-          </motion.p>
-        </motion.div>
+                            {/* Bar 1 */}
+                            <div className="mb-6">
+                                <div className="flex justify-between text-sm text-white/50 mb-2 font-medium">
+                                    <span>Traditional Manual Reading</span>
+                                    <span>$1,000</span>
+                                </div>
+                                <div className="h-4 w-full bg-white/10 rounded-full overflow-hidden">
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        whileInView={{ width: "100%" }}
+                                        transition={{ duration: 1.5, ease: "easeOut" }}
+                                        className="h-full bg-white/20"
+                                    />
+                                </div>
+                            </div>
 
-        {/* Dashboard Interface */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          className="grid lg:grid-cols-12 gap-8 mb-24"
-        >
-          {/* Control Panel */}
-          <div className="lg:col-span-7 space-y-8">
-            <motion.div variants={itemVariants} className="p-8 rounded-[2.5rem] glass-card-elevated border border-white/10">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h3 className="text-2xl font-bold text-white mb-2">Cost Simulator</h3>
-                  <p className="text-white/60">Adjust projection volume</p>
+                            {/* Bar 2 */}
+                            <div>
+                                <div className="flex justify-between text-sm text-[#FFFF00] mb-2 font-bold">
+                                    <span>Sharpii AI Automation</span>
+                                    <span>$50</span>
+                                </div>
+                                <div className="h-4 w-full bg-white/10 rounded-full overflow-hidden">
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        whileInView={{ width: "5%" }}
+                                        transition={{ duration: 1.5, ease: "easeOut", delay: 0.2 }}
+                                        className="h-full bg-[#FFFF00]"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mt-8 pt-6 border-t border-white/5 grid grid-cols-2 gap-4">
+                                <div className="text-center">
+                                    <div className="text-3xl font-bold text-white mb-1">20x</div>
+                                    <div className="text-xs text-white/40 uppercase tracking-widest">Cheaper</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-3xl font-bold text-[#FFFF00] mb-1">100x</div>
+                                    <div className="text-xs text-[#FFFF00]/60 uppercase tracking-widest">Faster</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
-                <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-                  <Calculator className="w-6 h-6 text-accent-neon" />
-                </div>
-              </div>
-
-              {/* Slider Section */}
-              <div className="mb-12">
-                <div className="flex justify-between text-sm font-medium text-white/80 mb-6">
-                  <span>100 Images</span>
-                  <span className="text-accent-neon">{imagesPerMonth[0]} Images / month</span>
-                  <span>10,000 Images</span>
-                </div>
-                <Slider
-                  defaultValue={[100]}
-                  max={10000}
-                  min={100}
-                  step={100}
-                  value={imagesPerMonth}
-                  onValueChange={setImagesPerMonth}
-                  className="py-4"
-                />
-              </div>
-
-              {/* Comparison Bars */}
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm font-medium">
-                    <span className="text-white">Traditional Retouching</span>
-                    <span className="text-red-400">$1,000</span>
-                  </div>
-                  <div className="h-4 bg-white/5 rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full bg-gradient-to-r from-red-500 to-rose-600"
-                      initial={{ width: 0 }}
-                      animate={{ width: "100%" }}
-                      transition={{ duration: 1 }}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm font-medium">
-                    <span className="text-white">Other AI Tools</span>
-                    <span className="text-yellow-400">$50</span>
-                  </div>
-                  <div className="h-4 bg-white/5 rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full bg-gradient-to-r from-yellow-400 to-orange-500"
-                      initial={{ width: 0 }}
-                      animate={{ width: "30%" }} // Approximate ratio
-                      transition={{ duration: 1 }}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm font-medium">
-                    <span className="text-white flex items-center gap-2">Sharpii.ai <span className="px-2 py-0.5 rounded text-[10px] bg-accent-neon text-black font-bold">BEST VALUE</span></span>
-                    <span className="text-accent-neon">${(imagesPerMonth[0]! * 0.1).toFixed(2)}</span>
-                  </div>
-                  <div className="h-4 bg-white/5 rounded-full overflow-hidden relative">
-                    <motion.div
-                      className="h-full bg-accent-neon"
-                      initial={{ width: 0 }}
-                      animate={{ width: "5%" }} // Very small relative to traditional
-                      transition={{ duration: 1 }}
-                    />
-                    <div className="absolute inset-0 bg-accent-neon/20 animate-pulse" />
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Savings Display */}
-          <div className="lg:col-span-5 space-y-6">
-            <motion.div variants={itemVariants} className="p-8 rounded-[2.5rem] bg-gradient-to-br from-accent-neon/20 to-accent-blue/20 border border-accent-neon/30 relative overflow-hidden group">
-              <div className="absolute inset-0 bg-accent-neon/10 blur-[50px] group-hover:bg-accent-neon/20 transition-colors duration-700" />
-
-              <div className="relative z-10">
-                <h3 className="text-white/80 font-medium mb-1">Estimated Annual Savings</h3>
-                <div className="text-5xl md:text-6xl font-bold text-white mb-6 tracking-tight">
-                  ${savings.annual.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                </div>
-
-                <div className="flex items-center gap-3 text-sm text-emerald-300 bg-emerald-500/10 px-4 py-2 rounded-xl w-fit border border-emerald-500/20">
-                  <TrendingDown className="w-4 h-4" />
-                  <span>Redirect funds to growth</span>
-                </div>
-              </div>
-            </motion.div>
-
-            <div className="grid grid-cols-2 gap-6">
-              <motion.div variants={itemVariants} className="p-6 rounded-[2rem] glass-card border border-white/5">
-                <Clock className="w-8 h-8 text-accent-blue mb-4" />
-                <div className="text-2xl font-bold text-white mb-1">300x</div>
-                <div className="text-white/60 text-sm">Faster Delivery</div>
-              </motion.div>
-
-              <motion.div variants={itemVariants} className="p-6 rounded-[2rem] glass-card border border-white/5">
-                <BarChart3 className="w-8 h-8 text-accent-purple mb-4" />
-                <div className="text-2xl font-bold text-white mb-1">ROI</div>
-                <div className="text-white/60 text-sm">Positive in 1 week</div>
-              </motion.div>
             </div>
-          </div>
-        </motion.div>
-
-        {/* Features List */}
-        <motion.div variants={containerVariants} className="grid md:grid-cols-3 gap-8">
-          {[
-            {
-              icon: <Zap className="w-6 h-6" />,
-              title: "Batch Processing",
-              desc: "Process thousands of images simultaneously with our distributed cloud architecture."
-            },
-            {
-              icon: <Target className="w-6 h-6" />,
-              title: "Precision Targeting",
-              desc: "Pay only for what you enhance. Our AI detects exactly what needs improvement."
-            },
-            {
-              icon: <CheckCircle className="w-6 h-6" />,
-              title: "Quality Guarantee",
-              desc: "Automatic quality assurance checks on every processed image."
-            }
-          ].map((feature, i) => (
-            <motion.div key={i} variants={itemVariants} className="flex gap-4 p-4 rounded-2xl hover:bg-white/5 transition-colors">
-              <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0 border border-white/10 text-white">
-                {feature.icon}
-              </div>
-              <div>
-                <h4 className="text-lg font-bold text-white mb-2">{feature.title}</h4>
-                <p className="text-white/60 text-sm leading-relaxed">{feature.desc}</p>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-
-      </div>
-    </section>
-  )
+        </section>
+    )
 }

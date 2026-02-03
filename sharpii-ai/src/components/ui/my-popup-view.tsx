@@ -3,13 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react"
 import { createPortal } from "react-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import {
-  ZoomIn,
-  ZoomOut,
-  RotateCcw,
-  Sparkles,
-  Maximize2
-} from "lucide-react"
+import { ZoomIn, RotateCcw, X } from "lucide-react"
 
 interface MyPopupViewProps {
   isOpen: boolean
@@ -28,22 +22,17 @@ export default function MyPopupView({
   title,
   description
 }: MyPopupViewProps) {
-  // We use Refs for direct DOM manipulation to avoid React Render Cycle lag
   const containerRef = useRef<HTMLDivElement>(null)
   const sliderRef = useRef<HTMLDivElement>(null)
   const afterImageRef = useRef<HTMLDivElement>(null)
-  const handleRef = useRef<HTMLDivElement>(null)
 
-  // Minimal state for view management
   const [isMounted, setIsMounted] = useState(false)
   const [zoomLevel, setZoomLevel] = useState(1)
 
-  // Mount handling for Portal
   useEffect(() => {
     setIsMounted(true)
   }, [])
 
-  // Lock Body Scroll
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
@@ -58,32 +47,26 @@ export default function MyPopupView({
     }
   }, [isOpen])
 
-  // Optimization: Direct DOM update function
   const updateSliderPosition = useCallback((clientX: number) => {
-    if (!containerRef.current || !sliderRef.current || !afterImageRef.current || !handleRef.current) return
+    if (!containerRef.current || !sliderRef.current || !afterImageRef.current) return
 
     const rect = containerRef.current.getBoundingClientRect()
     const x = Math.max(0, Math.min(clientX - rect.left, rect.width))
     const percent = (x / rect.width) * 100
 
-    // Direct style updates - ZERO React renders
     sliderRef.current.style.left = `${percent}%`
     afterImageRef.current.style.clipPath = `polygon(0 0, ${percent}% 0, ${percent}% 100%, 0 100%)`
-    // handleRef.current.style.left = `${percent}%` // Handle moves with slider div
   }, [])
 
-  // Mouse/Touch Event Handlers
   const handleMouseDown = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     const startDrag = (clientX: number) => {
       updateSliderPosition(clientX)
 
       const moveHandler = (moveEvent: MouseEvent | TouchEvent) => {
         let cx;
-        // Check if it's a touch event by presence of touches
         if ('touches' in moveEvent && moveEvent.touches && moveEvent.touches.length > 0) {
           cx = moveEvent.touches[0]?.clientX ?? 0;
         } else {
-          // It's a mouse event
           cx = (moveEvent as MouseEvent).clientX;
         }
         requestAnimationFrame(() => updateSliderPosition(cx))
@@ -123,6 +106,13 @@ export default function MyPopupView({
         exit={{ opacity: 0 }}
         onClick={onClose}
       >
+        <button
+          onClick={onClose}
+          className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-[100000]"
+        >
+          <X className="w-6 h-6" />
+        </button>
+
         <motion.div
           className="relative w-full max-w-6xl h-[85vh] mx-4 bg-black border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row"
           initial={{ scale: 0.95, opacity: 0 }}
@@ -130,93 +120,71 @@ export default function MyPopupView({
           exit={{ scale: 0.95, opacity: 0 }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Image Area - 100% Lag Free Logic */}
+          {/* COMPARISON AREA */}
           <div
             className="flex-1 relative overflow-hidden bg-black select-none cursor-ew-resize group"
             ref={containerRef}
             onMouseDown={handleMouseDown}
             onTouchStart={handleMouseDown}
           >
-            {/* Background Image (BEFORE - Now visible on the RIGHT side as slider moves left? No.) 
-               Let's re-think standard logic:
-               - We want "Before" on Left, "After" on Right. 
-               - If we clip the TOP image from 0 to X%, the Left side is the TOP image.
-               - So TOP image = BEFORE. 
-               - BOTTOM image = AFTER.
-               
-               User said: "you have put before image as after enhanced image".
-               So currently: Bottom=After, Top=Before.
-               If user thinks this is reversed, they probably see the "Enhanced" version on the Left?
-               Wait, "Before" image is usually "Original" (Bad Quality). "After" is "Enhanced" (Good Quality).
-               
-               If I want to fix "reversed logic", I should swap them.
-               So Bottom = Before. Top = After.
-               Then Left Side (Top) = After. Right Side (Bottom) = Before.
-               This logic (After on Left) is often used to "Reveal" the enhancement.
-               
-               Let's swap them as requested.
-            */}
-
-            {/* Background Image (now BEFORE/Original) */}
+            {/* 1. BACKGROUND = AFTER (Enhanced) = RIGHT SIDE */}
             <img
-              src={beforeImage}
-              alt="Before"
+              src={afterImage}
+              alt="Enhanced - After"
               className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
               style={{ transform: `scale(${zoomLevel})` }}
             />
 
-            {/* Labels */}
-            <div className="absolute top-4 right-4 z-20 px-3 py-1 bg-black/50 backdrop-blur-md rounded-full text-xs font-bold text-white/70 border border-white/10 pointer-events-none">
-              Before
+            {/* Label: Enhanced (Right) */}
+            <div className="absolute top-4 right-4 z-20 px-3 py-1 bg-[#FFFF00] backdrop-blur-md rounded-full text-xs font-bold text-black border border-[#FFFF00]/20 pointer-events-none">
+              Enhanced
             </div>
 
-            {/* Foreground Image (now AFTER/Enhanced - Clipped) */}
+            {/* 2. FOREGROUND = BEFORE (Original) = LEFT SIDE (Clipped) */}
             <div
               ref={afterImageRef}
               className="absolute inset-0 w-full h-full pointer-events-none select-none overflow-hidden"
               style={{
-                clipPath: 'polygon(0 0, 50% 0, 50% 100%, 0 100%)',
+                clipPath: 'polygon(0 0, 50% 0, 50% 100%, 0 100%)', // Starts at 50%
               }}
             >
               <img
-                src={afterImage}
-                alt="After"
+                src={beforeImage}
+                alt="Original - Before"
                 className="absolute inset-0 w-full h-full object-contain max-w-none"
                 style={{ width: '100%', height: '100%', transform: `scale(${zoomLevel})` }}
               />
-              <div className="absolute top-4 left-4 z-20 px-3 py-1 bg-[#FFFF00]/10 backdrop-blur-md rounded-full text-xs font-bold text-[#FFFF00] border border-[#FFFF00]/20">
-                After
+              {/* Label: Original (Left) */}
+              <div className="absolute top-4 left-4 z-20 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full text-xs font-bold text-white/80 border border-white/10">
+                Original
               </div>
             </div>
 
-            {/* Slider Handle (Absolute) - Simple Yellow Line with Diamond/Icon */}
+            {/* SLIDER LINE */}
             <div
               ref={sliderRef}
-              className="absolute top-0 bottom-0 w-[2px] bg-[#FFFF00] z-30 pointer-events-none shadow-[0_0_10px_rgba(255,255,0,0.5)]"
+              className="absolute top-0 bottom-0 w-[2px] bg-[#FFFF00] z-30 pointer-events-none shadow-[0_0_15px_rgba(255,255,0,0.6)]"
               style={{ left: '50%' }}
             >
+              {/* HANDLE ICON */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center">
-                {/* Simple Geometric Handle */}
-                <div className="w-6 h-6 rotate-45 border-2 border-[#FFFF00] bg-black shadow-lg flex items-center justify-center">
-                  <div className="w-2 h-2 bg-[#FFFF00] rounded-full" />
+                <div className="w-8 h-8 bg-black/50 backdrop-blur-sm rounded-full border-2 border-[#FFFF00] flex items-center justify-center shadow-lg">
+                  <div className="flex gap-[2px]">
+                    <div className="w-[1px] h-3 bg-[#FFFF00]" />
+                    <div className="w-[1px] h-3 bg-[#FFFF00]" />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Sidebar removed - simplified to bottom controls if needed, or just cleaner UI */}
-          {/* User asked to "remove the stats button". */}
-          {/* We'll stick to a minimal bottom bar or overlay? 
-              Actually the sidebar contained title/desc. We should probably keep title/desc but remove "buttons".
-              Let's make it a bottom overlay or simpler side panel.
-          */}
+          {/* SIDEBAR / INFO */}
           <div className="w-full md:w-80 bg-black/95 backdrop-blur-xl border-t md:border-t-0 md:border-l border-white/10 p-6 flex flex-col z-40">
-            <h3 className="text-xl font-bold font-heading text-white mb-2">{title}</h3>
+            <h3 className="text-2xl font-bold font-heading text-white mb-2">{title}</h3>
             <p className="text-white/60 leading-relaxed text-sm mb-6 flex-1">
               {description}
             </p>
 
-            {/* Simplified Controls - Just Zoom */}
             <div className="flex gap-4 mt-auto">
               <button
                 onClick={() => setZoomLevel(z => Math.min(z + 0.5, 3))}
