@@ -101,13 +101,13 @@ export function IncrediblePowerSection() {
           className="text-center mb-16"
         >
           <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-6">
-            <Cpu className="h-4 w-4 text-accent-neon" />
+            <Cpu className="h-4 w-4 text-[#FFFF00]" />
             <span className="text-xs font-bold text-white uppercase tracking-widest">Pro Control Engine</span>
           </motion.div>
 
           <motion.h2 variants={itemVariants} className="font-heading text-4xl md:text-5xl font-bold mb-6">
             <span className="text-white">Professional Grade </span>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-blue to-accent-purple">Control</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FFFF00] to-[#E6E600]">Control</span>
           </motion.h2>
 
           <motion.p variants={itemVariants} className="text-lg text-white/60 max-w-2xl mx-auto">

@@ -61,7 +61,7 @@ export function SkinRealismSection() {
 
           <motion.h2 variants={itemVariants} className="font-heading text-4xl md:text-6xl font-bold mb-6 leading-tight">
             <span className="text-white block">Achieve New Levels of</span>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 pb-2 inline-block">
               Skin Realism
             </span>
           </motion.h2>

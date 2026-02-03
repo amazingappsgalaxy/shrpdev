@@ -8,6 +8,7 @@ import { WorkflowSection } from "@/components/sections/WorkflowSection"
 import { ComparisonSection } from "@/components/sections/ComparisonSection"
 import { TestimonialsSection } from "@/components/sections/TestimonialsSection"
 import { MyPricingPlans2 } from "@/components/ui/mypricingplans2"
+import { PricingTableV2 } from "@/components/ui/pricing-table-v2"
 import { FAQChatAccordion } from "@/components/ui/faq-chat-accordion"
 import { Footer } from "@/components/ui/footer"
 import { SkinRealismSection } from "@/components/sections/SkinRealismSection"
@@ -19,6 +20,7 @@ import { MagicalPortraitSection } from "@/components/sections/MagicalPortraitSec
 import AIImageGenSection from "@/components/sections/AIImageGenSection"
 import AIMotionTransferSection from "@/components/sections/AIMotionTransferSection"
 import AILipSyncSection from "@/components/sections/AILipSyncSection"
+import { VelocityScrollSection } from "@/components/sections/VelocityScrollSection"
 
 export default function Home() {
   return (
@@ -37,6 +39,7 @@ export default function Home() {
       <GridMotion />
       <UnifiedEnhancementSection />
       <SkinRealismSection />
+      <VelocityScrollSection />
       <IncrediblePowerSection />
       <AIInfluencerSection />
       <CostOptimizationSection />
@@ -48,6 +51,7 @@ export default function Home() {
             title="Choose Your Perfect Plan"
             subtitle="Transform your images with professional AI enhancement. Start with any plan."
           />
+          <PricingTableV2 />
         </div>
       </section>
       <FAQChatAccordion />
