@@ -50,11 +50,10 @@ export function NavigationHero4() {
                 <li key={index}>
                   <Link
                     href={item.href}
-                    className="text-sm font-medium text-white/70 transition-all duration-300 hover:text-white hover:text-shadow-glow relative group"
+                    className="text-sm font-medium text-white/70 transition-all duration-300 hover:text-white hover:bg-white/5 rounded-lg px-3 py-2"
                     onClick={(e) => handleNavigation(item.href, e)}
                   >
                     {item.name}
-                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-accent-blue to-accent-purple transition-all duration-300 group-hover:w-full"></span>
                   </Link>
                 </li>
               ))}
