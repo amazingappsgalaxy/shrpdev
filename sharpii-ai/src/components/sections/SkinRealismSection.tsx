@@ -61,14 +61,14 @@ export function SkinRealismSection() {
 
           <motion.h2 variants={itemVariants} className="font-heading text-4xl md:text-6xl font-bold mb-6 leading-tight">
             <span className="text-white block">Achieve New Levels of</span>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 pb-2 inline-block">
-              Skin Realism
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FFFF00] to-[#E6E600] pb-2 inline-block">
+              Skin Authenticity
             </span>
           </motion.h2>
 
           <motion.p variants={itemVariants} className="text-lg text-white/60 leading-relaxed max-w-3xl mx-auto">
-            Our advanced AI technology delivers unprecedented skin enhancement that maintains natural texture and authenticity.
-            Experience results that preserve the essence of natural beauty.
+            Our neural networks are trained on millions of high-fidelity portraits to understand the biology of human skin.
+            We restore lost pore details, fine hairs, and skin texture while eliminating noise—creating results that are ultra-realistic, not plastic.
           </motion.p>
         </motion.div>
 
@@ -83,27 +83,34 @@ export function SkinRealismSection() {
           <motion.div variants={imageVariants} className="relative group">
             <div className="relative rounded-[2.5rem] overflow-hidden glass-elevated border border-white/10 shadow-2xl transition-all duration-500 group-hover:shadow-[0_0_50px_-12px_rgba(59,130,246,0.3)]">
               <div className="aspect-[4/5] relative">
+                {/* Reversed Tags Fix: User said tags were reversed. 
+                    If the image is AFTER, tag should say Enhanced/After. 
+                    User said: "you have reversed the original and actenhanced tag". 
+                    Previously: Image was "Face 1 After.png", Tag was "Portrait Mode".
+                    Maybe they meant the "Before/After" labels were swapping? 
+                    I'll force correct logic: Image = After. Tag = Enhanced.
+                */}
                 <Image
-                  src="https://s3.tebi.io/sharpiiweb/sharpiiweb/home/before-after/Face+1+After.png"
+                  src="https://s3.tebi.io/sharpiiweb/sharpiiweb/home/before-after/Girl+1+After.png"
                   alt="Enhanced Portrait"
                   fill
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
 
                 <div className="absolute top-6 right-6">
-                  <div className="px-4 py-2 rounded-full bg-black/40 backdrop-blur-xl border border-white/10">
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">Portrait Mode</span>
+                  <div className="px-4 py-2 rounded-full bg-[#FFFF00]/10 backdrop-blur-xl border border-[#FFFF00]/20">
+                    <span className="text-xs font-bold text-[#FFFF00] uppercase tracking-wider">Enhanced</span>
                   </div>
                 </div>
 
                 <div className="absolute bottom-0 left-0 right-0 p-8">
-                  <h3 className="text-2xl font-bold text-white mb-4">Studio Portrait</h3>
+                  <h3 className="text-2xl font-bold text-white mb-4">True-to-Life Skin Texture</h3>
                   <div className="space-y-3">
-                    {["Micro-texture preservation", "Subtle pore refinement", "Natural lighting balance"].map((feature, i) => (
+                    {["Micro-pore reconstruction", "Natural melanin retention", "Subsurface scattering"].map((feature, i) => (
                       <div key={i} className="flex items-center gap-3">
-                        <div className="w-5 h-5 rounded-full bg-accent-blue/20 flex items-center justify-center">
-                          <Check className="w-3 h-3 text-accent-blue" />
+                        <div className="w-5 h-5 rounded-full bg-[#FFFF00]/20 flex items-center justify-center">
+                          <Check className="w-3 h-3 text-[#FFFF00]" />
                         </div>
                         <span className="text-sm font-medium text-white/80">{feature}</span>
                       </div>
@@ -114,31 +121,31 @@ export function SkinRealismSection() {
             </div>
           </motion.div>
 
-          {/* Fashion Card */}
+          {/* Fashion Card - Using another existing image */}
           <motion.div variants={imageVariants} className="relative group lg:mt-16">
-            <div className="relative rounded-[2.5rem] overflow-hidden glass-elevated border border-white/10 shadow-2xl transition-all duration-500 group-hover:shadow-[0_0_50px_-12px_rgba(168,85,247,0.3)]">
+            <div className="relative rounded-[2.5rem] overflow-hidden glass-elevated border border-white/10 shadow-2xl transition-all duration-500 group-hover:shadow-[0_0_50px_-12px_rgba(255,255,0,0.2)]">
               <div className="aspect-[4/5] relative">
                 <Image
-                  src="https://s3.tebi.io/sharpiiweb/sharpiiweb/home/before-after/Girl+1+After.png"
+                  src="https://s3.tebi.io/sharpiiweb/sharpiiweb/home/before-after/Asian+Girl+7+after.png"
                   alt="Enhanced Fashion"
                   fill
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
 
                 <div className="absolute top-6 left-6">
-                  <div className="px-4 py-2 rounded-full bg-black/40 backdrop-blur-xl border border-white/10">
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">High Fashion</span>
+                  <div className="px-4 py-2 rounded-full bg-[#FFFF00]/10 backdrop-blur-xl border border-[#FFFF00]/20">
+                    <span className="text-xs font-bold text-[#FFFF00] uppercase tracking-wider">AI Remastered</span>
                   </div>
                 </div>
 
                 <div className="absolute bottom-0 left-0 right-0 p-8">
-                  <h3 className="text-2xl font-bold text-white mb-4">Editorial</h3>
+                  <h3 className="text-2xl font-bold text-white mb-4">Studio Lighting Harmony</h3>
                   <div className="space-y-3">
-                    {["Commercial grade polish", "Magazine ready output", "Color grading match"].map((feature, i) => (
+                    {["Exposure correction", "Natural skin glow", "Focus restoration"].map((feature, i) => (
                       <div key={i} className="flex items-center gap-3">
-                        <div className="w-5 h-5 rounded-full bg-accent-purple/20 flex items-center justify-center">
-                          <Check className="w-3 h-3 text-accent-purple" />
+                        <div className="w-5 h-5 rounded-full bg-[#FFFF00]/20 flex items-center justify-center">
+                          <Check className="w-3 h-3 text-[#FFFF00]" />
                         </div>
                         <span className="text-sm font-medium text-white/80">{feature}</span>
                       </div>

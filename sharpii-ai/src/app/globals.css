@@ -414,11 +414,13 @@
 
   /* Typography Styles */
   .text-hero {
-    @apply text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold leading-none tracking-tight;
+    @apply text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold leading-tight tracking-tight;
     background: linear-gradient(135deg, hsl(var(--text-primary)), hsl(var(--text-secondary)));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    padding-bottom: 0.1em;
+    /* Prevent descender clipping */
   }
 
   .text-gradient-neon {
@@ -426,6 +428,7 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    padding-bottom: 0.1em;
   }
 
   .text-gradient-purple {
@@ -433,6 +436,7 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    padding-bottom: 0.1em;
   }
 
   /* Image Enhancement Styles */

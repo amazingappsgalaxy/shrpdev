@@ -152,9 +152,9 @@ export function IncrediblePowerSection() {
             {/* Metrics Dock */}
             <div className="absolute bottom-6 left-6 right-6 grid grid-cols-3 gap-4">
               {[
-                { label: "Texture", value: textureValue, color: "text-accent-blue" },
-                { label: "Detail", value: detailValue, color: "text-accent-purple" },
-                { label: "Smoothness", value: smoothnessValue, color: "text-accent-pink" },
+                { label: "Texture", value: textureValue, color: "text-[#FFFF00]" },
+                { label: "Detail", value: detailValue, color: "text-yellow-400" },
+                { label: "Smoothness", value: smoothnessValue, color: "text-amber-300" },
               ].map((metric, i) => (
                 <div key={i} className="bg-black/40 backdrop-blur-xl border border-white/10 p-4 rounded-xl">
                   <div className="flex justify-between items-end mb-1">
@@ -163,7 +163,7 @@ export function IncrediblePowerSection() {
                   </div>
                   <div className="h-1 bg-white/10 rounded-full overflow-hidden">
                     <motion.div
-                      className={cn("h-full rounded-full bg-current", metric.color.replace('text-', 'bg-'))}
+                      className={cn("h-full rounded-full bg-current", metric.color)}
                       initial={{ width: 0 }}
                       animate={{ width: `${metric.value}%` }}
                       transition={{ duration: 0.5 }}
@@ -187,7 +187,7 @@ export function IncrediblePowerSection() {
               {/* Header */}
               <div className="flex items-center justify-between pb-4 border-b border-white/5">
                 <div className="flex items-center gap-3">
-                  <Settings2 className="w-5 h-5 text-accent-blue" />
+                  <Settings2 className="w-5 h-5 text-[#FFFF00]" />
                   <span className="font-bold text-white">Parameters</span>
                 </div>
                 <button
@@ -201,9 +201,9 @@ export function IncrediblePowerSection() {
               {/* Sliders */}
               <div className="space-y-6">
                 {[
-                  { label: "Texture Strength", value: textureValue, setValue: setTextureValue, color: "accent-blue" },
-                  { label: "Micro Detail", value: detailValue, setValue: setDetailValue, color: "accent-purple" },
-                  { label: "Skin Smoothness", value: smoothnessValue, setValue: setSmoothness, color: "accent-pink" },
+                  { label: "Texture Strength", value: textureValue, setValue: setTextureValue, color: "text-[#FFFF00]" },
+                  { label: "Micro Detail", value: detailValue, setValue: setDetailValue, color: "text-yellow-400" },
+                  { label: "Skin Smoothness", value: smoothnessValue, setValue: setSmoothness, color: "text-amber-300" },
                 ].map((control, i) => (
                   <div key={i} className="space-y-3">
                     <div className="flex justify-between text-sm">

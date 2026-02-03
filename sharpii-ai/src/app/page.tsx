@@ -54,7 +54,9 @@ export default function Home() {
           <PricingTableV2 />
         </div>
       </section>
-      <FAQChatAccordion />
+      <section id="faq">
+        <FAQChatAccordion />
+      </section>
       <Footer />
     </main>
   )

@@ -289,42 +289,44 @@ export function ShowcaseSection() {
           </div>
         </motion.div>
 
-        {/* Partner Logos Section */}
+        {/* Partner Logos / Tech Stack Section */}
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
-          className="mb-20"
+          className="mb-32 relative"
         >
-          <motion.div variants={itemVariants} className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full glass-card mb-6 border border-accent-neon/30">
-              <Users className="h-4 w-4 text-accent-neon" />
-              <span className="text-sm font-medium text-text-secondary">
-                Trusted by Industry Leaders
-              </span>
-            </div>
+          <div className="absolute inset-0 bg-gradient-to-r from-accent-neon/5 via-accent-purple/5 to-accent-blue/5 blur-3xl rounded-full" />
 
-            <h3 className="text-3xl sm:text-4xl font-bold mb-4">
+          <motion.div variants={itemVariants} className="text-center mb-16 relative z-10">
+            <h3 className="text-3xl sm:text-5xl font-bold mb-6">
               <span className="text-text-primary">Powered by</span>{" "}
-              <span className="text-gradient-neon">Leading AI Models</span>
+              <span className="text-gradient-neon bg-gradient-to-r from-[#FFFF00] to-[#E6E600] bg-clip-text text-transparent">
+                Leading AI Models
+              </span>
             </h3>
 
-            <p className="text-text-secondary max-w-3xl mx-auto">
-              We integrate with the world's most advanced AI models to deliver
-              unparalleled image enhancement quality and consistency.
+            <p className="text-text-secondary max-w-3xl mx-auto text-lg">
+              We orchestrate a symphony of the world's most advanced foundation models, fine-tuned on millions of proprietary datasets.
             </p>
           </motion.div>
 
-          <motion.div variants={itemVariants}>
-            <InfiniteSliderHorizontal
-              items={PARTNER_LOGOS}
-              speed={25}
-              direction="left"
-              pauseOnHover={true}
-              itemWidth={140}
-              itemHeight={80}
-              className="mb-8"
-            />
+          {/* Tech Stack Grid */}
+          <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 gap-6 relative z-10">
+            {[
+              { name: "Stability AI", desc: "SDXL Turbo Architecture", icon: "S" },
+              { name: "Midjourney", desc: "V6 Color Science", icon: "M" },
+              { name: "OpenAI", desc: "Vision Transformer", icon: "O" },
+              { name: "NVIDIA", desc: "TensorRT Acceleration", icon: "N" }
+            ].map((tech, i) => (
+              <div key={i} className="group p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-[#FFFF00]/50 hover:bg-white/10 transition-all duration-300">
+                <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <span className="text-2xl font-bold text-white group-hover:text-[#FFFF00]">{tech.icon}</span>
+                </div>
+                <h4 className="text-xl font-bold text-white mb-2">{tech.name}</h4>
+                <p className="text-xs text-white/50 uppercase tracking-widest font-mono">{tech.desc}</p>
+              </div>
+            ))}
           </motion.div>
         </motion.div>
 
