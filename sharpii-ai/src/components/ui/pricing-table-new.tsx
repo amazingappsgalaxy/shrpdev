@@ -150,29 +150,29 @@ export function PricingTableNew() {
                             <div
                                 key={i}
                                 className={cn(
-                                    "flex flex-col p-6 lg:p-8 rounded-[2rem] transition-all duration-300 relative group h-full overflow-hidden border",
+                                    "flex flex-col p-6 lg:p-8 rounded-[2rem] transition-all duration-300 relative group h-full overflow-visible", // Changed overflow-hidden to visible for ring effects if needed, but styling usually handles it on the element
+                                    // Hover: Scale Effect on the Whole Card
+                                    "hover:scale-[1.02] hover:-translate-y-1",
                                     isCreator
-                                        ? "bg-[#FFFF00] text-black border-[#FFFF00] shadow-[0_0_50px_rgba(255,255,0,0.15)]"
+                                        ? "bg-[#FFFF00] text-black border border-[#FFFF00] shadow-[0_0_50px_rgba(255,255,0,0.15)]"
                                         : isPro
-                                            ? "bg-[#FFFF00] text-black border-[#FFFF00] shadow-[0_0_60px_rgba(255,255,0,0.25)] relative" // Solid Yellow for Pro too
-                                            : "bg-[#0A0A0A] border-white/5 text-white hover:border-white/10"
+                                            ? "bg-[#FFFF00] text-black shadow-[0_0_80px_rgba(255,255,0,0.3)] z-10 scale-[1.02] ring-2 ring-white/50 ring-offset-4 ring-offset-black" // OUTSIDE BORDER via Ring + Offset
+                                            : "bg-[#0A0A0A] border border-white/5 text-white hover:border-white/10"
                                 )}
                             >
-                                {/* PROFESSIONAL PLAN: Special Border Effect (Looping) */}
-                                {isPro && (
-                                    <>
-                                        {/* Looping Border Animation */}
-                                        <div className="absolute inset-0 rounded-[2rem] border-4 border-black/10 animate-[pulse_3s_infinite] pointer-events-none z-10" />
-                                        {/* Shimmering Overlay (Subtle) */}
-                                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent skew-x-12 animate-[shimmer_4s_infinite] opacity-30 z-0 pointer-events-none" />
-                                    </>
-                                )}
+                                {/* Content Container to ensure internal clipping if valid */}
+                                <div className="absolute inset-0 rounded-[2rem] overflow-hidden pointer-events-none">
+                                    {/* Shimmering Overlay for Pro (Subtle) */}
+                                    {isPro && (
+                                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/40 to-transparent skew-x-12 animate-[shimmer_3.5s_infinite] opacity-30 z-0 pointer-events-none" />
+                                    )}
+                                </div>
 
-                                {/* Popular Badge - Adjusted Position Top Right (Inside Safe Zone) */}
+                                {/* Popular Badge - Moved Top Right (Further Out) */}
                                 {plan.badge && (
-                                    <div className="absolute top-6 right-6 z-20">
+                                    <div className="absolute top-4 right-4 z-20">
                                         <div className={cn(
-                                            "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-md",
+                                            "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-md",
                                             isHighlighted
                                                 ? "bg-black text-[#FFFF00]" // Black badge on yellow card
                                                 : "bg-[#FFFF00] text-black" // Yellow badge on black card
@@ -183,10 +183,10 @@ export function PricingTableNew() {
                                     </div>
                                 )}
 
-                                {/* Plan Name - SYNE FONT BOLD (Black) */}
-                                <div className="mb-6 pt-6 relative z-20">
+                                {/* Plan Name - Resized (Smaller: text-lg) */}
+                                <div className="mb-6 pt-8 relative z-20">
                                     <h3 className={cn(
-                                        "text-2xl font-black uppercase tracking-tight font-heading", // Syne Font ExtraBold
+                                        "text-lg font-black uppercase tracking-tight font-heading", // Reduced from xl -> lg
                                         isCreator ? "text-black" : isPro ? "text-black" : "text-white"
                                     )}>
                                         {plan.name}
@@ -199,11 +199,11 @@ export function PricingTableNew() {
                                     </p>
                                 </div>
 
-                                {/* Price - Syne Font BOLD */}
+                                {/* Price */}
                                 <div className="mb-8 relative z-20">
                                     <div className="flex items-baseline gap-1">
                                         <span className={cn(
-                                            "text-4xl md:text-5xl font-black font-heading tracking-tight", // ExtraBold
+                                            "text-4xl font-black font-heading tracking-tight", // 4xl seems correct size based on request
                                             isHighlighted ? "text-black" : "text-white"
                                         )}>${displayPrice}</span>
                                         <span className={cn(
@@ -270,7 +270,7 @@ export function PricingTableNew() {
                                     </ul>
                                 </div>
 
-                                {/* Button with Shimmer Effect */}
+                                {/* Button with Shimmer Effect + Yellow Hover for Standards */}
                                 <div className="mt-auto relative z-20">
                                     <Button
                                         onClick={() => handlePlanSelect(plan)}
@@ -281,11 +281,11 @@ export function PricingTableNew() {
 
                                             isHighlighted
                                                 ? "bg-black text-white hover:bg-black/90 hover:shadow-xl" // Black button on Yellow card
-                                                : "bg-white text-black hover:bg-white/90"
+                                                : "bg-white text-black hover:bg-[#FFFF00]" // White button -> Yellow Hover
                                         )}
                                     >
                                         {/* Shimmer Effect */}
-                                        <span className="absolute inset-0 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent z-10" />
+                                        <span className="absolute inset-0 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/40 to-transparent z-10" />
 
                                         <span className="relative z-20 flex items-center justify-center gap-2">
                                             {isLoading === plan.name ? (
