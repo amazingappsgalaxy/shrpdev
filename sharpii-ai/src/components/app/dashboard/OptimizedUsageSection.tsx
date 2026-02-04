@@ -209,91 +209,90 @@ export default function OptimizedUsageSection({ className }: OptimizedUsageSecti
   const displayedTransactions = showAll ? transactions : transactions.slice(0, DEFAULT_TRANSACTION_LIMIT)
 
   return (
-      <div className={`${className}`}>
-        <div className="space-y-6">
-          {/* Credit Usage Summary */}
-          {creditBalance && (
-            <div className="bg-white/5 rounded-lg p-4 mb-6">
-              <h3 className="text-white/90 text-lg font-light mb-4">Credit Usage Summary</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-2xl font-bold text-white">
-                    {(creditBalance.totalCredits - (creditBalance.remaining || creditBalance.totalCredits)).toLocaleString()}
-                  </div>
-                  <div className="text-white/60 text-sm">Credits Used</div>
+    <div className={`${className}`}>
+      <div className="space-y-6">
+        {/* Credit Usage Summary */}
+        {creditBalance && (
+          <div className="bg-white/5 rounded-lg p-4 mb-6">
+            <h3 className="text-white/90 text-lg font-light mb-4">Credit Usage Summary</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-2xl font-bold text-white">
+                  {(creditBalance.totalCredits - (creditBalance.remaining || creditBalance.totalCredits)).toLocaleString()}
                 </div>
-                <div>
-                  <div className="text-2xl font-bold text-green-400">
-                    {(creditBalance.remaining || creditBalance.totalCredits).toLocaleString()}
-                  </div>
-                  <div className="text-white/60 text-sm">Credits Remaining</div>
+                <div className="text-white/60 text-sm">Credits Used</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-[#FFFF00]">
+                  {(creditBalance.remaining || creditBalance.totalCredits).toLocaleString()}
                 </div>
+                <div className="text-white/60 text-sm">Credits Remaining</div>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Recent Activity */}
-          <div>
-            <h3 className="text-white/90 text-lg font-light mb-6">Recent Activity</h3>
-            
-            {transactions.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="w-12 h-12 bg-white/10 rounded-lg mx-auto mb-4 flex items-center justify-center">
-                  <div className="w-6 h-6 bg-white/20 rounded"></div>
-                </div>
-                <p className="text-white/60">No recent activity</p>
-                <p className="text-white/40 text-sm mt-2">
-                  {creditBalance && (creditBalance.totalCredits - (creditBalance.remaining || creditBalance.totalCredits)) > 0 
-                    ? 'Your credit usage will appear here as you enhance images'
-                    : 'Your image enhancements will appear here'
-                  }
-                </p>
+        {/* Recent Activity */}
+        <div>
+          <h3 className="text-white/90 text-lg font-light mb-6">Recent Activity</h3>
+
+          {transactions.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="w-12 h-12 bg-white/10 rounded-lg mx-auto mb-4 flex items-center justify-center">
+                <div className="w-6 h-6 bg-white/20 rounded"></div>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {displayedTransactions.map((transaction) => (
-                  <div
-                    key={transaction.id}
-                    className="flex items-center justify-between py-3 px-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="min-w-0 flex-1">
-                        <div className="text-white/90 text-sm font-medium truncate">
-                          {transaction.description}
-                        </div>
-                        <div className="text-white/40 text-xs">
-                          {safeFormatDistance(transaction.timestamp)}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex-shrink-0 text-right">
-                      <div className={`text-sm font-medium ${
-                        transaction.type === 'credit' ? 'text-green-400' : 'text-red-400'
-                      }`}>
-                        {transaction.type === 'credit' ? '+' : '-'}{transaction.amount}
+              <p className="text-white/60">No recent activity</p>
+              <p className="text-white/40 text-sm mt-2">
+                {creditBalance && (creditBalance.totalCredits - (creditBalance.remaining || creditBalance.totalCredits)) > 0
+                  ? 'Your credit usage will appear here as you enhance images'
+                  : 'Your image enhancements will appear here'
+                }
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {displayedTransactions.map((transaction) => (
+                <div
+                  key={transaction.id}
+                  className="flex items-center justify-between py-3 px-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-white/90 text-sm font-medium truncate">
+                        {transaction.description}
                       </div>
                       <div className="text-white/40 text-xs">
-                        credits
+                        {safeFormatDistance(transaction.timestamp)}
                       </div>
                     </div>
                   </div>
-                ))}
-                
-                {/* View All Button */}
-                {transactions.length > DEFAULT_TRANSACTION_LIMIT && (
-                  <div className="pt-4">
-                    <button
-                      onClick={() => setShowAll(!showAll)}
-                      className="w-full py-2 px-4 text-white/60 hover:text-white text-sm border border-white/10 rounded-lg hover:bg-white/5 transition-colors"
-                    >
-                      {showAll ? 'Show Less' : `View All (${transactions.length} activities)`}
-                    </button>
+                  <div className="flex-shrink-0 text-right">
+                    <div className={`text-sm font-medium ${transaction.type === 'credit' ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                      {transaction.type === 'credit' ? '+' : '-'}{transaction.amount}
+                    </div>
+                    <div className="text-white/40 text-xs">
+                      credits
+                    </div>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
+                </div>
+              ))}
+
+              {/* View All Button */}
+              {transactions.length > DEFAULT_TRANSACTION_LIMIT && (
+                <div className="pt-4">
+                  <button
+                    onClick={() => setShowAll(!showAll)}
+                    className="w-full py-2 px-4 text-white/60 hover:text-white text-sm border border-white/10 rounded-lg hover:bg-white/5 transition-colors"
+                  >
+                    {showAll ? 'Show Less' : `View All (${transactions.length} activities)`}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
-    )
+    </div>
+  )
 }

@@ -129,7 +129,7 @@ function MyTaskLoader({ isVisible, progress, status, message }: {
       setSimulatedProgress(100)
     }
 
-    return () => {} // Ensure all code paths return a cleanup function
+    return () => { } // Ensure all code paths return a cleanup function
   }, [status, isVisible])
 
   // Use API progress if available and > simulated, otherwise use simulated
@@ -153,7 +153,7 @@ function MyTaskLoader({ isVisible, progress, status, message }: {
         <motion.div
           layout
           className={cn(
-            "backdrop-blur-2xl border shadow-2xl flex items-center gap-4 transition-all duration-500",
+            "backdrop-blur-2xl border shadow-2xl flex items-center gap-4 transition-all decoration-[#FFFF00]",
             status === 'loading' && "bg-black/80 border-white/30 rounded-full px-6 py-4 min-w-[360px]",
             status === 'success' && "bg-green-900/80 border-green-400/50 rounded-2xl px-8 py-6 min-w-[300px]",
             status === 'error' && "bg-red-900/80 border-red-400/50 rounded-2xl px-8 py-6 min-w-[300px]"
@@ -654,7 +654,7 @@ export default function EditorPage() {
                 value={currentValue}
                 onChange={(e) => setModelSettings(prev => ({ ...prev, [key]: e.target.value }))}
                 placeholder={config.default}
-                className="w-full px-2 py-1 text-xs bg-[#151515] border border-[#282828] rounded text-gray-300 focus:border-blue-500 focus:outline-none"
+                className="w-full px-2 py-1 text-xs bg-[#151515] border border-[#282828] rounded text-gray-300 focus:border-[#FFFF00] focus:outline-none"
               />
             </div>
           )
@@ -699,7 +699,7 @@ export default function EditorPage() {
                   <div className={cn(
                     "w-10 h-5 rounded-full transition-all duration-300 flex items-center",
                     currentValue
-                      ? "bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm shadow-blue-500/20"
+                      ? "bg-[#FFFF00] shadow-sm shadow-blue-500/20"
                       : "bg-gradient-to-r from-[#1c1c1e] to-[#1c1c1e]/80"
                   )}>
                     <div className={cn(
@@ -721,7 +721,7 @@ export default function EditorPage() {
               <select
                 value={currentValue}
                 onChange={(e) => setModelSettings(prev => ({ ...prev, [key]: e.target.value }))}
-                className="w-full px-2 py-1 text-xs bg-[#151515] border border-[#282828] rounded text-gray-300 focus:border-blue-500 focus:outline-none"
+                className="w-full px-2 py-1 text-xs bg-[#151515] border border-[#282828] rounded text-gray-300 focus:border-[#FFFF00] focus:outline-none"
               >
                 {config.options?.map(option => (
                   <option key={option} value={option}>{option}</option>
@@ -833,86 +833,86 @@ export default function EditorPage() {
 
                     {/* Controls Section */}
                     <div className="space-y-3">
-                        {/* Model Selection - iOS Style Segmented Control */}
-                        <div>
-                          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[hsl(199,100%,50%)] to-[hsl(258,90%,66%)] flex items-center justify-center">
-                              <TrendingUp className="w-4 h-4 text-white" />
-                            </div>
-                            AI Enhancement Model
-                          </h3>
-
-                          {/* iOS-style Segmented Control */}
-                          <div className="relative bg-[#1c1c1e] rounded-xl p-1">
-                            <div className="grid grid-cols-2 gap-0 relative">
-                              {/* Sliding Background */}
-                              <div
-                                className="absolute top-1 bottom-1 bg-gradient-to-r from-[hsl(199,100%,50%)] to-[hsl(258,90%,66%)] rounded-lg transition-all duration-300 ease-out"
-                                style={{
-                                  left: selectedModel === AVAILABLE_MODELS[0].id ? '4px' : '50%',
-                                  right: selectedModel === AVAILABLE_MODELS[0].id ? '50%' : '4px',
-                                }}
-                              />
-
-                              {AVAILABLE_MODELS.map((model, index) => (
-                                <button
-                                  key={model.id}
-                                  onClick={() => setSelectedModel(model.id)}
-                                  className={cn(
-                                    "relative z-10 px-4 py-3 text-sm font-semibold rounded-lg transition-all duration-300 flex items-center justify-center gap-2",
-                                    selectedModel === model.id
-                                      ? "text-white"
-                                      : "text-gray-400 hover:text-gray-300"
-                                  )}
-                                >
-                                  <span className="text-lg">{model.icon}</span>
-                                  <div className="text-left">
-                                    <div className="font-semibold text-xs">{model.name.split(' ')[0]}</div>
-                                    <div className="text-xs opacity-80">{model.category}</div>
-                                  </div>
-                                </button>
-                              ))}
-                            </div>
+                      {/* Model Selection - iOS Style Segmented Control */}
+                      <div>
+                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[hsl(199,100%,50%)] to-[hsl(258,90%,66%)] flex items-center justify-center">
+                            <TrendingUp className="w-4 h-4 text-white" />
                           </div>
+                          AI Enhancement Model
+                        </h3>
 
-                          {/* Selected Model Description */}
-                          <div className="mt-3 p-3 bg-[#0a0a0a] rounded-lg border border-[#1c1c1e]">
-                            <p className="text-sm text-gray-400 leading-relaxed">
-                              {AVAILABLE_MODELS.find(m => m.id === selectedModel)?.description}
-                            </p>
+                        {/* iOS-style Segmented Control */}
+                        <div className="relative bg-[#1c1c1e] rounded-xl p-1">
+                          <div className="grid grid-cols-2 gap-0 relative">
+                            {/* Sliding Background */}
+                            <div
+                              className="absolute top-1 bottom-1 bg-gradient-to-r from-[hsl(199,100%,50%)] to-[hsl(258,90%,66%)] rounded-lg transition-all duration-300 ease-out"
+                              style={{
+                                left: selectedModel === AVAILABLE_MODELS[0].id ? '4px' : '50%',
+                                right: selectedModel === AVAILABLE_MODELS[0].id ? '50%' : '4px',
+                              }}
+                            />
+
+                            {AVAILABLE_MODELS.map((model, index) => (
+                              <button
+                                key={model.id}
+                                onClick={() => setSelectedModel(model.id)}
+                                className={cn(
+                                  "relative z-10 px-4 py-3 text-sm font-semibold rounded-lg transition-all duration-300 flex items-center justify-center gap-2",
+                                  selectedModel === model.id
+                                    ? "text-white"
+                                    : "text-gray-400 hover:text-gray-300"
+                                )}
+                              >
+                                <span className="text-lg">{model.icon}</span>
+                                <div className="text-left">
+                                  <div className="font-semibold text-xs">{model.name.split(' ')[0]}</div>
+                                  <div className="text-xs opacity-80">{model.category}</div>
+                                </div>
+                              </button>
+                            ))}
                           </div>
                         </div>
 
-                        {/* Enhancement Type */}
-                        <div>
-                          <h3 className="text-sm font-medium text-gray-300 mb-2">Enhancement Type</h3>
-                          <div className="space-y-1">
-                            <button
-                              onClick={() => setEnhancementType('face')}
-                              className={cn(
-                                "w-full px-2.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
-                                enhancementType === 'face'
-                                  ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg"
-                                  : "bg-[#151515] text-gray-400 hover:text-white border border-[#282828] hover:border-blue-500/50 hover:bg-[#1c1c1e]"
-                              )}
-                            >
-                              Face
-                            </button>
-                            <button
-                              onClick={() => setEnhancementType('body')}
-                              className={cn(
-                                "w-full px-2.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
-                                enhancementType === 'body'
-                                  ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg"
-                                  : "bg-[#151515] text-gray-400 hover:text-white border border-[#282828] hover:border-blue-500/50 hover:bg-[#1c1c1e]"
-                              )}
-                            >
-                              Body
-                            </button>
-                          </div>
+                        {/* Selected Model Description */}
+                        <div className="mt-3 p-3 bg-[#0a0a0a] rounded-lg border border-[#1c1c1e]">
+                          <p className="text-sm text-gray-400 leading-relaxed">
+                            {AVAILABLE_MODELS.find(m => m.id === selectedModel)?.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Enhancement Type */}
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-300 mb-2">Enhancement Type</h3>
+                        <div className="space-y-1">
+                          <button
+                            onClick={() => setEnhancementType('face')}
+                            className={cn(
+                              "w-full px-2.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
+                              enhancementType === 'face'
+                                ? "bg-[#FFFF00] text-black font-bold shadow-[0_0_20px_rgba(255,255,0,0.3)]"
+                                : "bg-[#151515] text-gray-400 hover:text-white border border-[#282828] hover:border-[#FFFF00]/50 hover:bg-[#1c1c1e]"
+                            )}
+                          >
+                            Face
+                          </button>
+                          <button
+                            onClick={() => setEnhancementType('body')}
+                            className={cn(
+                              "w-full px-2.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
+                              enhancementType === 'body'
+                                ? "bg-[#FFFF00] text-black font-bold shadow-[0_0_20px_rgba(255,255,0,0.3)]"
+                                : "bg-[#151515] text-gray-400 hover:text-white border border-[#282828] hover:border-[#FFFF00]/50 hover:bg-[#1c1c1e]"
+                            )}
+                          >
+                            Body
+                          </button>
                         </div>
                       </div>
                     </div>
+                  </div>
 
 
                   <div className="space-y-1.5">
@@ -929,7 +929,7 @@ export default function EditorPage() {
                             className={cn(
                               "px-1.5 md:px-3 py-1 md:py-1.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-normal transition-all duration-200 relative capitalize",
                               enhancementMode === mode
-                                ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg"
+                                ? "bg-[#FFFF00] text-black font-bold shadow-[0_0_20px_rgba(255,255,0,0.3)]"
                                 : "bg-[#151515] text-gray-400 hover:text-white border border-[#282828] hover:border-[#404040]",
                               mode === 'heavy' && "opacity-50 cursor-not-allowed"
                             )}
@@ -1101,14 +1101,14 @@ export default function EditorPage() {
                     </div>
 
                     <div className="flex gap-2">
-                      <button className="flex-1 py-2 lg:py-2.5 px-3 text-sm font-medium transition-all duration-200 flex flex-col lg:flex-row items-center justify-center gap-1.5 rounded-lg bg-[#151515] hover:bg-[#1c1c1e] text-gray-300 hover:text-white border border-[#282828] hover:border-blue-500/50">
+                      <button className="flex-1 py-2 lg:py-2.5 px-3 text-sm font-medium transition-all duration-200 flex flex-col lg:flex-row items-center justify-center gap-1.5 rounded-lg bg-[#151515] hover:bg-[#1c1c1e] text-gray-300 hover:text-white border border-[#282828] hover:border-[#FFFF00]/50">
                         <TrendingUp className="w-4 h-4" />
                         <div className="text-center">
                           <div className="text-xs font-medium">Upscale Image</div>
                           <div className="text-xs text-gray-500">General upscaling</div>
                         </div>
                       </button>
-                      <button className="flex-1 py-2 lg:py-2.5 px-3 text-sm font-medium transition-all duration-200 flex flex-col lg:flex-row items-center justify-center gap-1.5 rounded-lg bg-[#151515] hover:bg-[#1c1c1e] text-gray-300 hover:text-white border border-[#282828] hover:border-blue-500/50">
+                      <button className="flex-1 py-2 lg:py-2.5 px-3 text-sm font-medium transition-all duration-200 flex flex-col lg:flex-row items-center justify-center gap-1.5 rounded-lg bg-[#151515] hover:bg-[#1c1c1e] text-gray-300 hover:text-white border border-[#282828] hover:border-[#FFFF00]/50">
                         <Eye className="w-4 h-4" />
                         <div className="text-center">
                           <div className="text-xs font-medium">Upscale Portrait</div>
@@ -1168,7 +1168,7 @@ export default function EditorPage() {
                                   <div className={cn(
                                     "w-8 h-5 rounded-full transition-all duration-300 flex items-center",
                                     value
-                                      ? "bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm shadow-blue-500/20"
+                                      ? "bg-[#FFFF00] shadow-sm shadow-blue-500/20"
                                       : "bg-gradient-to-r from-[#1c1c1e] to-[#1c1c1e]/80"
                                   )}>
                                     <div className={cn(
@@ -1192,10 +1192,10 @@ export default function EditorPage() {
                               <label key={key} className="group flex items-center cursor-pointer justify-between bg-gradient-to-r from-[#111111] to-[#0d0d0d] rounded-md border border-[#1c1c1e]/50 px-3 py-2 transition-all duration-300 hover:border-[#282828]">
                                 <span className="text-xs font-light text-gray-300 tracking-wide group-hover:text-white transition-colors duration-200">
                                   {key === 'eyeGeneral' ? 'Eye General'
-                                   : key === 'rightEye' ? 'Right Eye'
-                                   : key === 'leftBrow' ? 'Left Brow'
-                                   : key === 'rightBrow' ? 'Right Brow'
-                                   : 'Left Eye'}
+                                    : key === 'rightEye' ? 'Right Eye'
+                                      : key === 'leftBrow' ? 'Left Brow'
+                                        : key === 'rightBrow' ? 'Right Brow'
+                                          : 'Left Eye'}
                                 </span>
                                 <div className="flex-shrink-0">
                                   <input
@@ -1207,7 +1207,7 @@ export default function EditorPage() {
                                   <div className={cn(
                                     "w-8 h-5 rounded-full transition-all duration-300 flex items-center",
                                     value
-                                      ? "bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm shadow-blue-500/20"
+                                      ? "bg-[#FFFF00] shadow-sm shadow-blue-500/20"
                                       : "bg-gradient-to-r from-[#1c1c1e] to-[#1c1c1e]/80"
                                   )}>
                                     <div className={cn(
