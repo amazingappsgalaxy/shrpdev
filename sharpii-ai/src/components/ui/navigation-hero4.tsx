@@ -29,7 +29,7 @@ export function NavigationHero4() {
     }
   }
 
-  const loginHref = user ? '/app/dashboard' : '/app/login'
+  const loginHref = user ? '/app/dashboard' : '/app/signin?tab=signin'
   const loginText = user ? 'Dashboard' : 'Login'
 
   return (
@@ -78,7 +78,7 @@ export function NavigationHero4() {
                 size="sm"
                 className="btn-premium text-sm font-bold text-black shadow-neon hover:shadow-neon-strong transition-all duration-300 transform hover:-translate-y-0.5"
               >
-                <Link href="/app/signup">
+                <Link href="/app/signin?tab=signup">
                   Sign Up
                 </Link>
               </Button>
@@ -131,7 +131,7 @@ export function NavigationHero4() {
                 asChild
                 className="w-full btn-premium justify-center text-black font-extrabold"
               >
-                <Link href="/app/signup">
+                <Link href="/app/signin?tab=signup">
                   Sign Up
                 </Link>
               </Button>
