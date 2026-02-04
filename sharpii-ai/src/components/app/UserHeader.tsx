@@ -103,8 +103,8 @@ export function UserHeader({ className }: UserHeaderProps) {
 
     return (
         <>
-            <header className={`fixed top-0 left-0 right-0 z-[9999] px-4 py-4 md:px-6 ${className || ''}`}>
-                <nav className="glass-premium mx-auto max-w-7xl rounded-2xl border border-white/10 px-4 py-3 shadow-2xl backdrop-blur-xl md:px-6 md:py-3 relative transition-all duration-300">
+            <header className={`fixed top-0 left-0 right-0 z-[9999] ${className || ''}`}>
+                <nav className="w-full bg-[#09090b]/90 border-b border-white/5 px-4 py-3 shadow-sm backdrop-blur-xl md:px-6 md:py-3 relative transition-all duration-300">
                     <div className="flex items-center justify-between gap-4">
 
                         {/* 1. Brand Logo */}
