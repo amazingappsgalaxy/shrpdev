@@ -370,10 +370,7 @@ export function AuthUI() {
 
           {view !== 'forgot_password' && (
             <>
-              {/* Logo */}
-              <div className="mb-8 flex justify-center">
-                <MainLogo className="h-12 w-auto" />
-              </div>
+
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t border-white/10" />
