@@ -699,7 +699,7 @@ export default function EditorPage() {
                   <div className={cn(
                     "w-10 h-5 rounded-full transition-all duration-300 flex items-center",
                     currentValue
-                      ? "bg-[#FFFF00] shadow-sm shadow-blue-500/20"
+                      ? "bg-[#FFFF00] shadow-sm shadow-[#FFFF00]/20"
                       : "bg-gradient-to-r from-[#1c1c1e] to-[#1c1c1e]/80"
                   )}>
                     <div className={cn(
@@ -836,8 +836,8 @@ export default function EditorPage() {
                       {/* Model Selection - iOS Style Segmented Control */}
                       <div>
                         <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[hsl(199,100%,50%)] to-[hsl(258,90%,66%)] flex items-center justify-center">
-                            <TrendingUp className="w-4 h-4 text-white" />
+                          <div className="w-8 h-8 rounded-full bg-[#FFFF00] flex items-center justify-center">
+                            <TrendingUp className="w-4 h-4 text-black" />
                           </div>
                           AI Enhancement Model
                         </h3>
@@ -847,7 +847,7 @@ export default function EditorPage() {
                           <div className="grid grid-cols-2 gap-0 relative">
                             {/* Sliding Background */}
                             <div
-                              className="absolute top-1 bottom-1 bg-gradient-to-r from-[hsl(199,100%,50%)] to-[hsl(258,90%,66%)] rounded-lg transition-all duration-300 ease-out"
+                              className="absolute top-1 bottom-1 bg-[#FFFF00] rounded-lg transition-all duration-300 ease-out"
                               style={{
                                 left: selectedModel === AVAILABLE_MODELS[0].id ? '4px' : '50%',
                                 right: selectedModel === AVAILABLE_MODELS[0].id ? '50%' : '4px',
@@ -1005,8 +1005,8 @@ export default function EditorPage() {
                     <div className="mt-2 space-y-1">
                       <div className="flex items-center justify-between px-0.5">
                         <div className="flex items-center gap-1">
-                          <DollarSign className="w-4 h-4" style={{ color: 'hsl(199, 100%, 50%)' }} />
-                          <span className="text-xs font-medium text-gray-200">Cost: <span style={{ color: 'hsl(199, 100%, 50%)' }} className="font-bold">{estimatedCredits}</span> Credits</span>
+                          <DollarSign className="w-4 h-4" style={{ color: '#FFFF00' }} />
+                          <span className="text-xs font-medium text-gray-200">Cost: <span style={{ color: '#FFFF00' }} className="font-bold">{estimatedCredits}</span> Credits</span>
                         </div>
                         <div className="text-[10px] font-medium text-gray-400">{imageSize.width} × {imageSize.height} px</div>
                       </div>
@@ -1168,7 +1168,7 @@ export default function EditorPage() {
                                   <div className={cn(
                                     "w-8 h-5 rounded-full transition-all duration-300 flex items-center",
                                     value
-                                      ? "bg-[#FFFF00] shadow-sm shadow-blue-500/20"
+                                      ? "bg-[#FFFF00] shadow-sm shadow-[#FFFF00]/20"
                                       : "bg-gradient-to-r from-[#1c1c1e] to-[#1c1c1e]/80"
                                   )}>
                                     <div className={cn(
@@ -1207,7 +1207,7 @@ export default function EditorPage() {
                                   <div className={cn(
                                     "w-8 h-5 rounded-full transition-all duration-300 flex items-center",
                                     value
-                                      ? "bg-[#FFFF00] shadow-sm shadow-blue-500/20"
+                                      ? "bg-[#FFFF00] shadow-sm shadow-[#FFFF00]/20"
                                       : "bg-gradient-to-r from-[#1c1c1e] to-[#1c1c1e]/80"
                                   )}>
                                     <div className={cn(
