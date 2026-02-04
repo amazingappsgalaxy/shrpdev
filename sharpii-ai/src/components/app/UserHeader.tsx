@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth, signOut as simpleSignOut } from '@/lib/auth-client-simple'
 import { UnifiedCreditsService } from '@/lib/unified-credits'
+import { MainLogo } from '@/components/ui/main-logo'
 import {
   Sparkles,
   Settings,
@@ -112,8 +113,7 @@ export function UserHeader({ className }: UserHeaderProps) {
           {/* 1. Brand Logo */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center gap-1 group">
-              <span className="text-2xl font-bold tracking-tight text-white group-hover:text-white/90 transition-colors">Sharpii</span>
-              <span className="text-2xl font-bold text-[#FFFF00] drop-shadow-[0_0_8px_rgba(255,255,0,0.5)]">.ai</span>
+              <MainLogo />
             </Link>
           </div>
 
@@ -128,8 +128,8 @@ export function UserHeader({ className }: UserHeaderProps) {
                     key={item.href}
                     href={item.href}
                     className={`relative px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 ${isActiveLink
-                        ? 'text-black'
-                        : 'text-white/60 hover:text-white hover:bg-white/5'
+                      ? 'text-black'
+                      : 'text-white/60 hover:text-white hover:bg-white/5'
                       }`}
                   >
                     {isActiveLink && (
@@ -170,49 +170,90 @@ export function UserHeader({ className }: UserHeaderProps) {
             </button>
 
             {/* Profile Dropdown */}
-            <div className="relative">
+            <div className="relative group/profile">
               <button
                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                className="flex items-center gap-2 p-1 pr-3 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
+                className={`flex items-center gap-3 p-1.5 pr-4 rounded-full transition-all duration-300 border ${isProfileMenuOpen
+                    ? 'bg-white/10 border-[#FFFF00]/50 shadow-[0_0_15px_rgba(255,255,0,0.1)]'
+                    : 'bg-black/40 border-white/10 hover:bg-white/5 hover:border-white/20'
+                  }`}
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-700 to-black flex items-center justify-center border border-white/10 shadow-inner">
-                  <span className="text-xs font-bold text-white">{username.charAt(0).toUpperCase()}</span>
+                <div className="relative">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#1a1a1a] to-black flex items-center justify-center border border-white/10 shadow-inner group-hover/profile:border-[#FFFF00]/50 transition-colors">
+                    <span className="text-sm font-bold text-white group-hover/profile:text-[#FFFF00] transition-colors">
+                      {username.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-black" />
                 </div>
-                <ChevronDown className={`w-4 h-4 text-white/50 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
+
+                <div className="hidden md:flex flex-col items-start">
+                  <span className="text-sm font-bold text-white leading-none mb-1 group-hover/profile:text-[#FFFF00] transition-colors">
+                    {username}
+                  </span>
+                  <span className="text-[10px] font-medium text-white/40 uppercase tracking-wider leading-none">
+                    Creator
+                  </span>
+                </div>
+
+                <ChevronDown className={`w-4 h-4 text-white/30 transition-transform duration-300 group-hover/profile:text-white ${isProfileMenuOpen ? 'rotate-180 text-[#FFFF00]' : ''}`} />
               </button>
 
               <AnimatePresence>
                 {isProfileMenuOpen && (
                   <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute right-0 mt-2 w-64 bg-[#0A0A0A] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 p-2"
+                    initial={{ opacity: 0, y: 10, scale: 0.95, filter: 'blur(10px)' }}
+                    animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95, filter: 'blur(10px)' }}
+                    transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute right-0 mt-3 w-72 bg-[#050505]/90 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)] overflow-hidden z-50 ring-1 ring-white/5"
                   >
-                    <div className="px-3 py-2 border-b border-white/5 mb-2">
-                      <p className="text-sm font-medium text-white">{username}</p>
-                      <p className="text-xs text-white/40 truncate">{user?.email}</p>
-                    </div>
+                    {/* Header with decorative glow */}
+                    <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#FFFF00]/5 to-transparent pointer-events-none" />
 
-                    {userMenuItems.map((item) => (
-                      <Link href={item.href} key={item.name} onClick={() => setIsProfileMenuOpen(false)}>
-                        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 text-sm text-white/80 hover:text-white transition-colors">
-                          <item.icon className="w-4 h-4 opacity-70" />
-                          {item.name}
+                    <div className="p-5 relative z-10">
+                      <div className="flex items-center gap-4 mb-5">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1a1a1a] to-black border border-white/10 flex items-center justify-center shadow-lg">
+                          <span className="text-xl font-bold text-white">{username.charAt(0).toUpperCase()}</span>
                         </div>
-                      </Link>
-                    ))}
+                        <div className="overflow-hidden">
+                          <h4 className="text-white font-bold text-lg truncate">{username}</h4>
+                          <p className="text-white/40 text-xs truncate font-medium">{user?.email}</p>
+                        </div>
+                      </div>
 
-                    <div className="h-px bg-white/5 my-2" />
+                      <div className="space-y-1.5">
+                        {userMenuItems.map((item) => (
+                          <Link href={item.href} key={item.name} onClick={() => setIsProfileMenuOpen(false)}>
+                            <div className="group flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/5 transition-all duration-200 border border-transparent hover:border-white/5">
+                              <div className="p-2 rounded-lg bg-white/5 text-white/60 group-hover:text-[#FFFF00] group-hover:bg-[#FFFF00]/10 transition-colors">
+                                <item.icon className="w-4 h-4" />
+                              </div>
+                              <span className="text-sm font-medium text-white/80 group-hover:text-white transition-colors">
+                                {item.name}
+                              </span>
+                              <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0 duration-300">
+                                <ChevronDown className="w-4 h-4 text-[#FFFF00] -rotate-90" />
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
 
-                    <button
-                      onClick={handleSignOut}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-500/10 text-sm text-red-400 hover:text-red-300 transition-colors"
-                    >
-                      <LogOut className="w-4 h-4 opacity-70" />
-                      Sign Out
-                    </button>
+                      <div className="my-4 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+                      <button
+                        onClick={handleSignOut}
+                        className="w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-red-500/10 border border-transparent hover:border-red-500/20 group transition-all duration-200"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-white/5 text-white/40 group-hover:text-red-400 group-hover:bg-red-500/10 transition-colors">
+                            <LogOut className="w-4 h-4" />
+                          </div>
+                          <span className="text-sm font-medium text-white/60 group-hover:text-red-400 transition-colors">Sign Out</span>
+                        </div>
+                      </button>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -246,8 +287,8 @@ export function UserHeader({ className }: UserHeaderProps) {
                       href={item.href}
                       onClick={() => setIsMobileMenuOpen(false)}
                       className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActiveLink
-                          ? 'bg-[#FFFF00]/10 text-[#FFFF00] border border-[#FFFF00]/20'
-                          : 'bg-white/5 text-white/70 border border-white/5'
+                        ? 'bg-[#FFFF00]/10 text-[#FFFF00] border border-[#FFFF00]/20'
+                        : 'bg-white/5 text-white/70 border border-white/5'
                         }`}
                     >
                       <item.icon className="w-5 h-5" />

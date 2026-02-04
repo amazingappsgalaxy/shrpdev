@@ -84,7 +84,7 @@ function PricingFrequencyToggle({
             {freq === 'yearly' && (
               <span className={cn(
                 "text-[10px] px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider",
-                frequency === freq ? "bg-accent-neon/20 text-accent-blue" : "bg-accent-neon text-black"
+                frequency === freq ? "bg-[#FFFF00]/20 text-[#FFFF00]" : "bg-[#FFFF00] text-black"
               )}>
                 -{discountPercent}%
               </span>
@@ -122,7 +122,7 @@ function BorderTrail({
   return (
     <div className='pointer-events-none absolute inset-0 rounded-[inherit] border border-transparent [mask-clip:padding-box,border-box] [mask-composite:intersect] [mask-image:linear-gradient(transparent,transparent),linear-gradient(#000,#000)]'>
       <motion.div
-        className={cn('absolute aspect-square bg-gradient-to-r from-accent-neon via-white to-accent-purple rounded-full opacity-80', className)}
+        className={cn('absolute aspect-square bg-gradient-to-r from-[#FFFF00] via-white to-[#FFFF00] rounded-full opacity-80', className)}
         style={{
           width: size * 1.5,
           height: size,
@@ -185,8 +185,8 @@ function PricingCard({
         <BorderTrail
           style={{
             boxShadow: isProfessional
-              ? '0px 0px 60px 30px rgba(139, 92, 246, 0.15)'
-              : '0px 0px 60px 30px rgba(59, 130, 246, 0.15)',
+              ? '0px 0px 60px 30px rgba(255, 255, 0, 0.15)'
+              : '0px 0px 60px 30px rgba(255, 255, 255, 0.15)',
           }}
           size={120}
         />
@@ -196,9 +196,9 @@ function PricingCard({
       <div className="absolute inset-0 transition-opacity duration-500 opacity-0 group-hover:opacity-100 pointer-events-none">
         <div className={cn(
           "absolute inset-0 bg-gradient-to-br opacity-20",
-          isProfessional ? "from-accent-purple/30 to-transparent" :
-            isCreator ? "from-accent-blue/30 to-transparent" :
-              "from-white/10 to-transparent"
+          isProfessional ? "from-[#FFFF00]/10 to-transparent" :
+            isCreator ? "from-white/10 to-transparent" :
+              "from-white/5 to-transparent"
         )} />
       </div>
 
@@ -207,7 +207,7 @@ function PricingCard({
         {/* Badges */}
         <div className="absolute top-6 right-6 flex flex-col items-end gap-2">
           {isPopular && (
-            <div className="bg-gradient-to-r from-accent-purple to-accent-blue text-white flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider shadow-lg shadow-accent-purple/20">
+            <div className="bg-[#FFFF00] text-black flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider shadow-[0_0_20px_rgba(255,255,0,0.3)]">
               <Sparkles className="h-3 w-3 fill-current" />
               Popular
             </div>
@@ -240,8 +240,8 @@ function PricingCard({
             <li key={index} className="flex items-start gap-3 text-sm text-white/70 group/feature">
               <CheckCircle className={cn(
                 "h-5 w-5 flex-shrink-0 transition-colors duration-300",
-                isProfessional ? "text-accent-purple" :
-                  isCreator ? "text-accent-blue" : "text-white/40 group-hover:text-white"
+                isProfessional ? "text-[#FFFF00]" :
+                  isCreator ? "text-white" : "text-white/40 group-hover:text-white"
               )} />
               <span className="group-hover/feature:text-white transition-colors duration-300">{feature}</span>
             </li>
@@ -253,7 +253,7 @@ function PricingCard({
           className={cn(
             "w-full rounded-2xl py-4 text-sm font-bold transition-all duration-300 relative overflow-hidden group/btn shadow-lg hover:shadow-xl hover:scale-[1.02]",
             isProfessional
-              ? "bg-gradient-to-r from-accent-purple via-accent-blue to-accent-purple bg-[length:200%_auto] animate-gradient text-white"
+              ? "bg-[#FFFF00] text-black shadow-[0_0_20px_rgba(255,255,0,0.4)] hover:shadow-[0_0_30px_rgba(255,255,0,0.6)]"
               : isCreator
                 ? "bg-white text-black hover:bg-white/90"
                 : "bg-white/5 text-white border border-white/10 hover:bg-white/10"
@@ -383,7 +383,7 @@ export function MyPricingPlans2({
     >
       {/* Premium background elements */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-7xl h-[500px] bg-gradient-to-r from-accent-blue/10 via-accent-neon/5 to-accent-purple/10 blur-[120px] rounded-full opacity-40" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-7xl h-[500px] bg-gradient-to-r from-[#FFFF00]/5 via-white/5 to-[#FFFF00]/5 blur-[120px] rounded-full opacity-40" />
       </div>
 
       <div className="relative z-10 w-full container px-6">
@@ -395,7 +395,7 @@ export function MyPricingPlans2({
             variants={staggerContainer}
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-elevated border border-white/10 mb-2">
-              <Star className="h-4 w-4 text-accent-neon fill-accent-neon" />
+              <Star className="h-4 w-4 text-[#FFFF00] fill-[#FFFF00]" />
               <span className="text-sm font-bold text-white uppercase tracking-widest">Premium Plans</span>
             </div>
 
