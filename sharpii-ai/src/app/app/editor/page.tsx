@@ -348,7 +348,7 @@ export default function EditorPage() {
       <div className="flex-1 pt-24 w-full grid grid-cols-1 lg:grid-cols-[420px_1fr] items-start">
 
         {/* LEFT SIDEBAR - CONTROLS (Scrolls with page) */}
-        <div className="flex flex-col border-r border-white/5 bg-[#0c0c0e] z-20 relative min-h-[calc(100vh-6rem)]">
+        <div className="flex flex-col border-r border-white/5 bg-[#0c0c0e] z-20 relative min-h-[calc(100vh-6rem)] lg:pb-32">
 
           {/* 1. INPUT IMAGE SECTION (MOVED TO TOP) */}
           <div className="p-5 border-b border-white/5">
@@ -553,7 +553,7 @@ export default function EditorPage() {
           </div>
 
           {/* 4. FOOTER: CREDIT COST + ACTION */}
-          <div className="sticky bottom-0 w-full bg-[#0c0c0e] border-t border-white/5 z-40">
+          <div className="lg:fixed lg:bottom-0 lg:left-0 lg:w-[420px] relative w-full bg-[#0c0c0e] border-t border-white/5 z-40">
             {/* Credit Cost Display */}
             <div className="px-5 pt-4 pb-3">
               <div className="flex items-center justify-between text-sm">
