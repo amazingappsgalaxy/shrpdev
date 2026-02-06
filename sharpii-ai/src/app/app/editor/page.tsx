@@ -41,6 +41,7 @@ import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { CustomDropdown, DropdownOption } from "@/components/ui/custom-dropdown"
 import { ExpandViewModal } from "@/components/ui/expand-view-modal"
+import { CreditIcon } from "@/components/ui/CreditIcon"
 
 // --- TYPES ---
 interface AreaProtectionSettings {
@@ -173,26 +174,27 @@ function ComparisonView({
       <div className="absolute top-4 left-4 px-3 py-1 bg-black/50 backdrop-blur text-white/80 text-xs font-medium rounded border border-white/10 uppercase tracking-wider">Original</div>
       <div className="absolute top-4 right-4 px-3 py-1 bg-white/20 backdrop-blur text-white text-xs font-bold rounded border border-white/20 uppercase tracking-wider shadow-lg">Enhanced</div>
 
-      {/* Expand Button */}
-      {onExpand && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onExpand(); }}
-          className="absolute top-4 right-24 p-2 bg-white/10 backdrop-blur text-white rounded-lg border border-white/20 hover:bg-white/20 transition-all z-30"
-          title="Expand view"
-        >
-          <Expand className="w-4 h-4" />
-        </button>
-      )}
-
-      {/* Download Fab */}
-      {onDownload && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onDownload(); }}
-          className="absolute bottom-6 right-6 p-3 bg-white text-black rounded-full shadow-xl hover:scale-105 transition-transform z-30"
-        >
-          <Download className="w-5 h-5" />
-        </button>
-      )}
+      {/* Action Buttons */}
+      <div className="absolute bottom-6 right-6 flex gap-3 z-30">
+        {onExpand && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onExpand(); }}
+            className="p-3 bg-white text-black rounded-full shadow-xl hover:scale-105 transition-transform"
+            title="Expand view"
+          >
+            <Expand className="w-5 h-5" />
+          </button>
+        )}
+        
+        {onDownload && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDownload(); }}
+            className="p-3 bg-white text-black rounded-full shadow-xl hover:scale-105 transition-transform"
+          >
+            <Download className="w-5 h-5" />
+          </button>
+        )}
+      </div>
     </div>
   )
 }
@@ -208,7 +210,7 @@ export default function EditorPage() {
   const [imageMetadata, setImageMetadata] = useState({ width: 1024, height: 1024 })
 
   // Settings
-  const [selectedModel, setSelectedModel] = useState(AVAILABLE_MODELS[0].id)
+  const [selectedModel, setSelectedModel] = useState(AVAILABLE_MODELS[0]?.id || '')
   const [enhancementType, setEnhancementType] = useState<'face' | 'body'>('face')
   const [enhancementMode, setEnhancementMode] = useState<'standard' | 'detailed' | 'heavy'>('standard')
   const [modelSettings, setModelSettings] = useState<Record<string, any>>({})
@@ -328,17 +330,17 @@ export default function EditorPage() {
       />
 
       {/* Main Layout - Grid with Wider Sidebar & Sticky Canvas */}
-      <div className="flex-1 pt-24 w-full grid grid-cols-[420px_1fr] items-start">
+      <div className="flex-1 pt-24 w-full grid grid-cols-1 lg:grid-cols-[420px_1fr] items-start">
 
         {/* LEFT SIDEBAR - CONTROLS (Scrolls with page) */}
-        <div className="flex flex-col border-r border-white/5 bg-[#0c0c0e] z-20 min-h-[calc(100vh-6rem)]">
+        <div className="flex flex-col border-r border-white/5 bg-[#0c0c0e] z-20 relative pb-32">
 
           {/* 1. INPUT IMAGE SECTION (MOVED TO TOP) */}
           <div className="p-5 border-b border-white/5">
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 block">Input Image</label>
             <div className="flex gap-3 items-center">
               <div
-                className="w-20 h-20 rounded-xl bg-black border border-white/10 overflow-hidden relative cursor-pointer group hover:border-[#FFFF00]/50 transition-colors shrink-0"
+                className="w-32 h-32 rounded-xl bg-black border border-white/10 overflow-hidden relative cursor-pointer group hover:border-[#FFFF00]/50 transition-colors shrink-0"
                 onClick={() => fileInputRef.current?.click()}
               >
                 {uploadedImage ? (
@@ -430,7 +432,7 @@ export default function EditorPage() {
           </div>
 
           {/* 3. SETTINGS SCROLL AREA (Natural Flow) */}
-          <div className="p-5 space-y-6 flex-1 overflow-y-auto">
+          <div className="p-5 space-y-6 flex-1">
             <div>
               <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                 <Settings className="w-4 h-4 text-gray-400" />
@@ -536,12 +538,15 @@ export default function EditorPage() {
           </div>
 
           {/* 4. FOOTER: CREDIT COST + ACTION */}
-          <div className="mt-auto bg-[#0c0c0e] border-t border-white/5 z-20">
+          <div className="fixed bottom-0 left-0 w-full lg:w-[420px] bg-[#0c0c0e] border-t border-white/5 z-40">
             {/* Credit Cost Display */}
             <div className="px-5 pt-4 pb-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-400">Estimated Cost</span>
-                <span className="font-ubuntu font-bold text-white">{creditCost} credits</span>
+                <div className="flex items-center gap-2">
+                  <CreditIcon className="w-6 h-6 rounded-md" iconClassName="w-3 h-3" />
+                  <span className="text-gray-400">Estimated Cost</span>
+                </div>
+                <span className="font-mono font-bold text-white">{creditCost} credits</span>
               </div>
             </div>
 
@@ -569,7 +574,7 @@ export default function EditorPage() {
         </div>
 
         {/* RIGHT MAIN CANVAS - RESULT (Sticky) */}
-        <div className="relative flex flex-col p-4 sticky top-20 h-[calc(100vh-5rem)]">
+        <div className="relative flex flex-col p-4 lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] min-h-[500px]">
           <div className="flex-1 w-full h-full relative flex items-center justify-center bg-[#050505] custom-checkerboard rounded-2xl border border-white/5 overflow-hidden">
             {!uploadedImage ? (
               <div

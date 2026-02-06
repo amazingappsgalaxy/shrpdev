@@ -62,7 +62,7 @@ export function ExpandViewModal({
 
                 {/* Modal Content - Full Screen Comparison */}
                 <motion.div
-                    className="relative w-full h-full flex items-center justify-center"
+                    className="relative w-[95vw] h-[90vh] flex items-center justify-center bg-black/40 border border-white/10 p-2 rounded-[10px] overflow-hidden shadow-2xl"
                     initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.95, opacity: 0 }}
@@ -72,12 +72,9 @@ export function ExpandViewModal({
                     {/* Close Button */}
                     <button
                         onClick={onClose}
-                        className="absolute top-6 right-6 z-10 p-3 rounded-xl bg-white/10 backdrop-blur-xl border border-white/20 transition-all duration-300 hover:bg-red-500/20 hover:border-red-500/30"
-                        style={{
-                            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)"
-                        }}
+                        className="absolute top-4 right-4 z-50 p-2 rounded-lg bg-black/50 backdrop-blur text-white/70 hover:text-white hover:bg-white/10 border border-white/10 transition-all"
                     >
-                        <X className="h-5 w-5 text-white" />
+                        <X className="h-5 w-5" />
                     </button>
 
                     {/* Comparison Slider - Reusing the same pattern from ComparisonView */}
@@ -142,10 +139,10 @@ function ComparisonSlider({
             </div>
 
             {/* Labels */}
-            <div className="absolute top-6 left-6 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-lg text-xs font-bold text-white/80 border border-white/10 uppercase tracking-wider">
+            <div className="absolute top-4 left-4 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-lg text-xs font-bold text-white/80 border border-white/10 uppercase tracking-wider">
                 Original
             </div>
-            <div className="absolute top-6 right-6 px-3 py-1.5 bg-white/20 backdrop-blur-md rounded-lg text-xs font-bold text-white border border-white/20 uppercase tracking-wider shadow-lg">
+            <div className="absolute top-4 right-16 px-3 py-1.5 bg-white/20 backdrop-blur-md rounded-lg text-xs font-bold text-white border border-white/20 uppercase tracking-wider shadow-lg">
                 Enhanced
             </div>
 
