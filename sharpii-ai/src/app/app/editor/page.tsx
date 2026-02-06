@@ -298,12 +298,27 @@ export default function EditorPage() {
     setTimeout(() => setIsEnhancing(false), 500)
   }
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!enhancedImage) return
-    const a = document.createElement('a')
-    a.href = enhancedImage
-    a.download = `enhanced-${Date.now()}.png`
-    a.click()
+    try {
+      const response = await fetch(enhancedImage)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `enhanced-${Date.now()}.png`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (error) {
+      console.error('Download failed:', error)
+      // Fallback for same-origin or simple cases
+      const a = document.createElement('a')
+      a.href = enhancedImage
+      a.download = `enhanced-${Date.now()}.png`
+      a.click()
+    }
   }
 
   // Convert models to dropdown options
@@ -333,14 +348,14 @@ export default function EditorPage() {
       <div className="flex-1 pt-24 w-full grid grid-cols-1 lg:grid-cols-[420px_1fr] items-start">
 
         {/* LEFT SIDEBAR - CONTROLS (Scrolls with page) */}
-        <div className="flex flex-col border-r border-white/5 bg-[#0c0c0e] z-20 relative pb-32">
+        <div className="flex flex-col border-r border-white/5 bg-[#0c0c0e] z-20 relative min-h-[calc(100vh-6rem)]">
 
           {/* 1. INPUT IMAGE SECTION (MOVED TO TOP) */}
           <div className="p-5 border-b border-white/5">
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 block">Input Image</label>
             <div className="flex gap-3 items-center">
               <div
-                className="w-32 h-32 rounded-xl bg-black border border-white/10 overflow-hidden relative cursor-pointer group hover:border-[#FFFF00]/50 transition-colors shrink-0"
+                className="w-32 h-28 rounded-xl bg-black border border-white/10 overflow-hidden relative cursor-pointer group hover:border-[#FFFF00]/50 transition-colors shrink-0"
                 onClick={() => fileInputRef.current?.click()}
               >
                 {uploadedImage ? (
@@ -364,7 +379,7 @@ export default function EditorPage() {
                 {uploadedImage ? (
                   <p className="text-xs text-gray-500 flex items-center gap-1.5">
                     <CheckCircle2 className="w-3 h-3 text-green-500" />
-                    Ready to enhance
+                    Ready
                   </p>
                 ) : (
                   <p className="text-xs text-gray-500">Click to upload</p>
@@ -538,15 +553,15 @@ export default function EditorPage() {
           </div>
 
           {/* 4. FOOTER: CREDIT COST + ACTION */}
-          <div className="fixed bottom-0 left-0 w-full lg:w-[420px] bg-[#0c0c0e] border-t border-white/5 z-40">
+          <div className="sticky bottom-0 w-full bg-[#0c0c0e] border-t border-white/5 z-40">
             {/* Credit Cost Display */}
             <div className="px-5 pt-4 pb-3">
               <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-400">Estimated Cost</span>
                 <div className="flex items-center gap-2">
                   <CreditIcon className="w-6 h-6 rounded-md" iconClassName="w-3 h-3" />
-                  <span className="text-gray-400">Estimated Cost</span>
+                  <span className="font-mono font-bold text-white">{creditCost}</span>
                 </div>
-                <span className="font-mono font-bold text-white">{creditCost} credits</span>
               </div>
             </div>
 
@@ -574,7 +589,7 @@ export default function EditorPage() {
         </div>
 
         {/* RIGHT MAIN CANVAS - RESULT (Sticky) */}
-        <div className="relative flex flex-col p-4 lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] min-h-[500px]">
+        <div className="relative flex flex-col p-4 lg:sticky lg:top-20 lg:h-[80vh] h-[500px] lg:min-h-[500px]">
           <div className="flex-1 w-full h-full relative flex items-center justify-center bg-[#050505] custom-checkerboard rounded-2xl border border-white/5 overflow-hidden">
             {!uploadedImage ? (
               <div
