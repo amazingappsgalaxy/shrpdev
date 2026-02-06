@@ -229,6 +229,7 @@ module.exports = {
         sans: ['var(--font-manrope)', 'sans-serif'],
         heading: ['var(--font-syne)', 'sans-serif'],
         body: ['var(--font-manrope)', 'sans-serif'],
+        ubuntu: ['var(--font-ubuntu)', 'sans-serif'],
       },
       fontSize: {
         'hero': ['4.5rem', { lineHeight: '1.05', fontWeight: '800', letterSpacing: '-0.02em' }],

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Syne, Manrope } from "next/font/google";
+import { Syne, Manrope, Ubuntu } from "next/font/google";
 import { Toaster } from "sonner"; // Re-enable web notifications for auth feedback
 // Removed SupabaseProvider
 import "./globals.css";
@@ -13,6 +13,13 @@ const syne = Syne({
 const manrope = Manrope({
   variable: "--font-manrope",
   subsets: ["latin"],
+  display: "swap",
+});
+
+const ubuntu = Ubuntu({
+  variable: "--font-ubuntu",
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
   display: "swap",
 });
 
@@ -54,7 +61,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body
-        className={`${syne.variable} ${manrope.variable} antialiased bg-background text-foreground font-body`}
+        className={`${syne.variable} ${manrope.variable} ${ubuntu.variable} antialiased bg-background text-foreground font-body`}
         suppressHydrationWarning
       >
         {/* Removed SupabaseProvider wrapper */}

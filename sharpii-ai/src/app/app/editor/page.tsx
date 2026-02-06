@@ -39,6 +39,8 @@ import { ElegantLoading } from "@/components/ui/elegant-loading"
 import { ModelPricingEngine } from "@/lib/model-pricing-config"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
+import { CustomDropdown, DropdownOption } from "@/components/ui/custom-dropdown"
+import { ExpandViewModal } from "@/components/ui/expand-view-modal"
 
 // --- TYPES ---
 interface AreaProtectionSettings {
@@ -110,16 +112,25 @@ const MODEL_CONTROLS = {
   }
 }
 
+// Enhancement mode options
+const ENHANCEMENT_MODES: DropdownOption[] = [
+  { value: 'standard', label: 'Standard', description: 'Balanced enhancement' },
+  { value: 'detailed', label: 'Detailed', description: 'Maximum detail recovery' },
+  { value: 'heavy', label: 'Heavy', description: 'Aggressive processing' }
+]
+
 // --- COMPONENTS ---
 
 function ComparisonView({
   original,
   enhanced,
-  onDownload
+  onDownload,
+  onExpand
 }: {
   original: string
   enhanced: string
   onDownload?: () => void
+  onExpand?: () => void
 }) {
   const [sliderPos, setSliderPos] = useState(50)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -162,6 +173,17 @@ function ComparisonView({
       <div className="absolute top-4 left-4 px-3 py-1 bg-black/50 backdrop-blur text-white/80 text-xs font-medium rounded border border-white/10 uppercase tracking-wider">Original</div>
       <div className="absolute top-4 right-4 px-3 py-1 bg-white/20 backdrop-blur text-white text-xs font-bold rounded border border-white/20 uppercase tracking-wider shadow-lg">Enhanced</div>
 
+      {/* Expand Button */}
+      {onExpand && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onExpand(); }}
+          className="absolute top-4 right-24 p-2 bg-white/10 backdrop-blur text-white rounded-lg border border-white/20 hover:bg-white/20 transition-all z-30"
+          title="Expand view"
+        >
+          <Expand className="w-4 h-4" />
+        </button>
+      )}
+
       {/* Download Fab */}
       {onDownload && (
         <button
@@ -183,6 +205,7 @@ export default function EditorPage() {
   // State: Defaulting to USER PROVIDED DEMO IMAGES
   const [uploadedImage, setUploadedImage] = useState<string | null>("https://i.postimg.cc/gJHLjBwj/image.png")
   const [enhancedImage, setEnhancedImage] = useState<string | null>("https://i.postimg.cc/rspsmyXZ/image.png")
+  const [imageMetadata, setImageMetadata] = useState({ width: 1024, height: 1024 })
 
   // Settings
   const [selectedModel, setSelectedModel] = useState(AVAILABLE_MODELS[0].id)
@@ -191,12 +214,28 @@ export default function EditorPage() {
   const [modelSettings, setModelSettings] = useState<Record<string, any>>({})
   const [areaSettings, setAreaSettings] = useState<AreaProtectionSettings>(DEFAULT_AREA_PROTECTION)
 
-  // Loading
+  // UI State
   const [isEnhancing, setIsEnhancing] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [isExpandViewOpen, setIsExpandViewOpen] = useState(false)
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Calculate credits
+  const creditCost = React.useMemo(() => {
+    try {
+      const result = ModelPricingEngine.calculateCredits(
+        imageMetadata.width,
+        imageMetadata.height,
+        selectedModel,
+        modelSettings
+      )
+      return result.totalCredits
+    } catch (error) {
+      return 120 // fallback
+    }
+  }, [imageMetadata, selectedModel, modelSettings])
 
   // Initialize Default Settings
   useEffect(() => {
@@ -215,10 +254,21 @@ export default function EditorPage() {
     const file = files[0]
     const reader = new FileReader()
     reader.onload = (e) => {
-      setUploadedImage(e.target?.result as string)
-      setEnhancedImage(null) // Reset result
+      const img = new Image()
+      img.onload = () => {
+        setImageMetadata({ width: img.width, height: img.height })
+        setUploadedImage(e.target?.result as string)
+        setEnhancedImage(null) // Reset result
+      }
+      img.src = e.target?.result as string
     }
     reader.readAsDataURL(file)
+  }
+
+  const handleDeleteImage = () => {
+    setUploadedImage(null)
+    setEnhancedImage(null)
+    setImageMetadata({ width: 1024, height: 1024 })
   }
 
   const handleEnhance = async () => {
@@ -246,11 +296,36 @@ export default function EditorPage() {
     setTimeout(() => setIsEnhancing(false), 500)
   }
 
+  const handleDownload = () => {
+    if (!enhancedImage) return
+    const a = document.createElement('a')
+    a.href = enhancedImage
+    a.download = `enhanced-${Date.now()}.png`
+    a.click()
+  }
+
+  // Convert models to dropdown options
+  const modelOptions: DropdownOption[] = AVAILABLE_MODELS.map(m => ({
+    value: m.id,
+    label: m.name,
+    description: m.description,
+    icon: m.icon
+  }))
+
   if (isLoading || !user) return <ElegantLoading message="Initializing Editor..." />
 
   return (
     <div className="flex flex-col min-h-screen bg-[#09090b] text-white font-sans">
       <UserHeader />
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => handleUpload(e.target.files)}
+      />
 
       {/* Main Layout - Grid with Wider Sidebar & Sticky Canvas */}
       <div className="flex-1 pt-24 w-full grid grid-cols-[420px_1fr] items-start">
@@ -258,20 +333,71 @@ export default function EditorPage() {
         {/* LEFT SIDEBAR - CONTROLS (Scrolls with page) */}
         <div className="flex flex-col border-r border-white/5 bg-[#0c0c0e] z-20 min-h-[calc(100vh-6rem)]">
 
-          {/* 1. MODEL SELECTOR */}
+          {/* 1. INPUT IMAGE SECTION (MOVED TO TOP) */}
+          <div className="p-5 border-b border-white/5">
+            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 block">Input Image</label>
+            <div className="flex gap-3 items-center">
+              <div
+                className="w-20 h-20 rounded-xl bg-black border border-white/10 overflow-hidden relative cursor-pointer group hover:border-[#FFFF00]/50 transition-colors shrink-0"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {uploadedImage ? (
+                  <>
+                    <img src={uploadedImage} className="w-full h-full object-cover" alt="Input" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                      <Upload className="w-5 h-5 text-white" />
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full gap-1">
+                    <Upload className="w-5 h-5 text-gray-500" />
+                    <span className="text-[9px] text-gray-600 font-medium">Upload</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate mb-1">
+                  {uploadedImage ? `${imageMetadata.width}×${imageMetadata.height}` : 'No image selected'}
+                </p>
+                {uploadedImage ? (
+                  <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3 h-3 text-green-500" />
+                    Ready to enhance
+                  </p>
+                ) : (
+                  <p className="text-xs text-gray-500">Click to upload</p>
+                )}
+              </div>
+              {uploadedImage && (
+                <div className="flex gap-1">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                    className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
+                    title="Replace image"
+                  >
+                    <Upload className="w-4 h-4 text-gray-400" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDeleteImage(); }}
+                    className="p-2 rounded-lg bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-500/30 transition-colors"
+                    title="Delete image"
+                  >
+                    <X className="w-4 h-4 text-gray-400 hover:text-red-400" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 2. MODEL SELECTOR */}
           <div className="p-5 border-b border-white/5 space-y-4">
             <div>
               <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">Enhancement Model</label>
-              <div className="relative">
-                <select
-                  value={selectedModel}
-                  onChange={(e) => setSelectedModel(e.target.value)}
-                  className="w-full bg-[#18181b] border border-white/10 rounded-lg py-2.5 pl-3 pr-8 text-sm font-medium focus:ring-1 focus:ring-white/20 focus:border-white/30 appearance-none outline-none cursor-pointer hover:bg-[#202024] transition-colors"
-                >
-                  {AVAILABLE_MODELS.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-              </div>
+              <CustomDropdown
+                options={modelOptions}
+                value={selectedModel}
+                onChange={setSelectedModel}
+              />
             </div>
 
             <div className="flex gap-2">
@@ -294,21 +420,17 @@ export default function EditorPage() {
               </div>
               <div className="flex-1">
                 <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 block">Mode</label>
-                <select
+                <CustomDropdown
+                  options={ENHANCEMENT_MODES}
                   value={enhancementMode}
-                  onChange={(e) => setEnhancementMode(e.target.value as any)}
-                  className="w-full bg-[#18181b] border-none text-xs font-medium rounded-lg h-[34px] px-2 outline-none cursor-pointer hover:bg-[#202024]"
-                >
-                  <option value="standard">Standard</option>
-                  <option value="detailed">Detailed</option>
-                  <option value="heavy">Heavy</option>
-                </select>
+                  onChange={(v) => setEnhancementMode(v as any)}
+                />
               </div>
             </div>
           </div>
 
           {/* 3. SETTINGS SCROLL AREA (Natural Flow) */}
-          <div className="p-5 space-y-6">
+          <div className="p-5 space-y-6 flex-1 overflow-y-auto">
             <div>
               <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                 <Settings className="w-4 h-4 text-gray-400" />
@@ -413,38 +535,13 @@ export default function EditorPage() {
             </div>
           </div>
 
-          {/* 4. FOOTER: INPUT PREVIEW + ACTION */}
+          {/* 4. FOOTER: CREDIT COST + ACTION */}
           <div className="mt-auto bg-[#0c0c0e] border-t border-white/5 z-20">
-            {/* Large Input Preview */}
-            <div className="p-4 flex gap-4 items-center">
-              <div
-                className="w-20 h-20 rounded-xl bg-black border border-white/10 overflow-hidden relative cursor-pointer group hover:border-[#FFFF00]/50 transition-colors shrink-0"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {uploadedImage ? (
-                  <>
-                    <img src={uploadedImage} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                      <Upload className="w-5 h-5 text-white" />
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full gap-1">
-                    <Upload className="w-5 h-5 text-gray-500" />
-                    <span className="text-[9px] text-gray-600 font-medium">Upload</span>
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate mb-1">Input Image</p>
-                {uploadedImage ? (
-                  <p className="text-xs text-gray-500 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3 h-3 text-green-500" />
-                    Ready to enhance
-                  </p>
-                ) : (
-                  <p className="text-xs text-gray-500">No image selected</p>
-                )}
+            {/* Credit Cost Display */}
+            <div className="px-5 pt-4 pb-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-400">Estimated Cost</span>
+                <span className="font-ubuntu font-bold text-white">{creditCost} credits</span>
               </div>
             </div>
 
@@ -488,17 +585,13 @@ export default function EditorPage() {
                 <ComparisonView
                   original={uploadedImage}
                   enhanced={enhancedImage}
-                  onDownload={() => {
-                    const a = document.createElement('a')
-                    a.href = enhancedImage
-                    a.download = 'enhanced-image.png'
-                    a.click()
-                  }}
+                  onDownload={handleDownload}
+                  onExpand={() => setIsExpandViewOpen(true)}
                 />
               ) : (
                 // Only Uploaded Image (Preview Mode)
                 <div className="relative w-full h-full">
-                  <img src={uploadedImage} className="w-full h-full object-contain opacity-50 blur-sm" />
+                  <img src={uploadedImage} className="w-full h-full object-contain opacity-50 blur-sm" alt="Preview" />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="bg-black/80 backdrop-blur px-6 py-3 rounded-full border border-white/10 text-gray-300 text-sm">
                       Click enhance to process
@@ -512,7 +605,7 @@ export default function EditorPage() {
           {/* STATUS BAR */}
           <div className="mt-4 flex justify-between items-center text-xs text-gray-500 font-mono">
             <div>
-              {uploadedImage && <span>Source: 1024x1024 • PNG</span>}
+              {uploadedImage && <span>Source: {imageMetadata.width}×{imageMetadata.height} • PNG</span>}
             </div>
             <div>
               Sharpii Engine v2.0
@@ -521,6 +614,17 @@ export default function EditorPage() {
         </div>
 
       </div>
+
+      {/* Expand View Modal */}
+      {enhancedImage && uploadedImage && (
+        <ExpandViewModal
+          isOpen={isExpandViewOpen}
+          onClose={() => setIsExpandViewOpen(false)}
+          originalImage={uploadedImage}
+          enhancedImage={enhancedImage}
+          onDownload={handleDownload}
+        />
+      )}
     </div>
   )
 }
