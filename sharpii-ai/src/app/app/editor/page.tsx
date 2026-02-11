@@ -1,36 +1,22 @@
 "use client"
 
 import React, { useState, useRef, useCallback, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
 import {
   Upload,
   Download,
   X,
   Maximize2,
-  DollarSign,
-  Play,
-  Crop,
-  HelpCircle,
-  RotateCcw,
-  ArrowDown,
-  TrendingUp,
-  Eye,
-  Expand,
   CheckCircle2,
-  AlertCircle,
   Loader2,
   Zap,
   Sparkles,
   Info,
-  ChevronDown,
-  ChevronUp,
   Image as ImageIcon,
   Settings,
-  Layers,
-  Wand2,
-  ScanFace,
+  Shield,
   MoveHorizontal,
-  Shield
+  Wand2,
+  Expand
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/auth-client-simple"
@@ -101,15 +87,15 @@ const AVAILABLE_MODELS = [
 // Model-specific control configurations
 const MODEL_CONTROLS = {
   'runninghub-flux-upscaling': {
-    strength: { type: 'number', default: 0.3, min: 0.1, max: 1, step: 0.1, label: 'Denoise Strength' },
-    guidance_scale: { type: 'number', default: 3.5, min: 1, max: 20, step: 0.1, label: 'Guidance Scale' },
-    steps: { type: 'number', default: 20, min: 10, max: 50, label: 'Steps' },
+    strength: { type: 'number', default: 0.3, min: 0.1, max: 1, step: 0.1, label: 'Denoise Strength', leftLabel: 'Weak', rightLabel: 'Strong' },
+    guidance_scale: { type: 'number', default: 3.5, min: 1, max: 20, step: 0.1, label: 'Guidance Scale', leftLabel: 'Low', rightLabel: 'High' },
+    steps: { type: 'number', default: 20, min: 10, max: 50, label: 'Steps', leftLabel: 'Fast', rightLabel: 'Quality' },
     enable_upscale: { type: 'boolean', default: true, label: 'Enable Upscaling' },
   },
   'fermatresearch/magic-image-refiner': {
-    creativity: { type: 'number', default: 0.5, min: 0, max: 1, step: 0.1, label: 'Creativity' },
+    creativity: { type: 'number', default: 0.5, min: 0, max: 1, step: 0.1, label: 'Creativity', leftLabel: 'Low', rightLabel: 'High' },
     hdr: { type: 'boolean', default: false, label: 'HDR Mode' },
-    resemblance: { type: 'number', default: 0.8, min: 0, max: 1, step: 0.1, label: 'Source Fidelity' }
+    resemblance: { type: 'number', default: 0.8, min: 0, max: 1, step: 0.1, label: 'Source Fidelity', leftLabel: 'Low', rightLabel: 'High' }
   }
 }
 
@@ -185,11 +171,12 @@ function ComparisonView({
             <Expand className="w-5 h-5" />
           </button>
         )}
-        
+
         {onDownload && (
           <button
             onClick={(e) => { e.stopPropagation(); onDownload(); }}
             className="p-3 bg-white text-black rounded-full shadow-xl hover:scale-105 transition-transform"
+            title="Download"
           >
             <Download className="w-5 h-5" />
           </button>
@@ -352,7 +339,7 @@ export default function EditorPage() {
 
           {/* 1. INPUT IMAGE SECTION (MOVED TO TOP) */}
           <div className="p-5 border-b border-white/5">
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 block">Input Image</label>
+            <label className="text-xs font-medium text-white mb-3 block">Input Image</label>
             <div className="flex gap-3 items-center">
               <div
                 className="w-32 h-28 rounded-xl bg-black border border-white/10 overflow-hidden relative cursor-pointer group hover:border-[#FFFF00]/50 transition-colors shrink-0"
@@ -373,7 +360,7 @@ export default function EditorPage() {
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate mb-1">
+                <p className="text-sm font-medium text-white/90 truncate mb-1">
                   {uploadedImage ? `${imageMetadata.width}×${imageMetadata.height}` : 'No image selected'}
                 </p>
                 {uploadedImage ? (
@@ -406,10 +393,10 @@ export default function EditorPage() {
             </div>
           </div>
 
-          {/* 2. MODEL SELECTOR */}
+          {/* 2. MODEL & MODE */}
           <div className="p-5 border-b border-white/5 space-y-4">
             <div>
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">Enhancement Model</label>
+              <label className="text-xs font-medium text-white mb-2 block">Model Version</label>
               <CustomDropdown
                 options={modelOptions}
                 value={selectedModel}
@@ -419,7 +406,7 @@ export default function EditorPage() {
 
             <div className="flex gap-2">
               <div className="flex-1">
-                <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 block">Type</label>
+                <label className="text-xs font-medium text-white mb-1 block">Enhancement Type</label>
                 <div className="flex bg-[#18181b] p-1 rounded-lg">
                   {['face', 'body'].map(t => (
                     <button
@@ -427,7 +414,7 @@ export default function EditorPage() {
                       onClick={() => setEnhancementType(t as any)}
                       className={cn(
                         "flex-1 text-xs font-medium py-1.5 rounded-md capitalize transition-all",
-                        enhancementType === t ? "bg-white text-black shadow-sm" : "text-gray-400 hover:text-white"
+                        enhancementType === t ? "bg-white/10 text-white shadow-sm" : "text-gray-500 hover:text-gray-300"
                       )}
                     >
                       {t}
@@ -436,7 +423,7 @@ export default function EditorPage() {
                 </div>
               </div>
               <div className="flex-1">
-                <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 block">Mode</label>
+                <label className="text-xs font-medium text-white mb-1 block">Enhancement Mode</label>
                 <CustomDropdown
                   options={ENHANCEMENT_MODES}
                   value={enhancementMode}
@@ -446,142 +433,155 @@ export default function EditorPage() {
             </div>
           </div>
 
-          {/* 3. SETTINGS SCROLL AREA (Natural Flow) */}
+          {/* 3. SETTINGS SCROLL AREA */}
           <div className="p-5 space-y-6 flex-1">
-            <div>
-              <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                <Settings className="w-4 h-4 text-gray-400" />
-                Correction Settings
+
+            {/* GROUP 1: Primary Controls (Denoise, Guidance, Steps) */}
+            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-5">
+              <h3 className="text-xs font-medium text-white mb-4 flex items-center gap-2">
+                <Settings className="w-3 h-3 text-gray-400" />
+                Primary Settings
               </h3>
 
-              <div className="space-y-5">
-                {/* Render Model specific controls */}
-                {Object.entries(MODEL_CONTROLS[selectedModel as keyof typeof MODEL_CONTROLS] || {}).map(([key, config]) => {
-                  const conf = config as { type: string; default: any; label: string; min?: number; max?: number; step?: number }
-                  const currentValue = modelSettings[key] ?? conf.default
+              {/* Render Model specific controls */}
+              {Object.entries(MODEL_CONTROLS[selectedModel as keyof typeof MODEL_CONTROLS] || {}).map(([key, config]) => {
+                const conf = config as { type: string; default: any; label: string; min?: number; max?: number; step?: number; leftLabel?: string; rightLabel?: string }
+                const currentValue = modelSettings[key] ?? conf.default
 
-                  if (conf.type === 'boolean') {
-                    return (
-                      <div key={key} className="flex items-center justify-between group">
-                        <span className="text-sm text-gray-300 group-hover:text-white transition-colors">{conf.label}</span>
-                        <Switch
-                          checked={!!currentValue}
-                          onCheckedChange={(c) => setModelSettings(prev => ({ ...prev, [key]: c }))}
-                        />
-                      </div>
-                    )
-                  }
+                if (conf.type === 'boolean') {
+                  return (
+                    <div key={key} className="flex items-center justify-between group">
+                      <span className="text-xs font-medium text-white transition-colors">{conf.label}</span>
+                      <Switch
+                        checked={!!currentValue}
+                        onCheckedChange={(c) => setModelSettings(prev => ({ ...prev, [key]: c }))}
+                        className="scale-75 origin-right"
+                      />
+                    </div>
+                  )
+                }
 
-                  if (conf.type === 'number') {
-                    return (
-                      <div key={key} className="space-y-1 group">
-                        <div className="flex justify-between items-center px-1 mb-2">
-                          <span className="text-sm font-medium text-gray-200">{conf.label}</span>
-                          <span className="font-mono text-xs text-gray-400">{currentValue}</span>
-                        </div>
-                        <MechanicalSlider
-                          value={[Number(currentValue)]}
-                          min={conf.min} max={conf.max} step={conf.step || 1}
-                          onValueChange={([v]) => setModelSettings(prev => ({ ...prev, [key]: v }))}
-                        />
+                if (conf.type === 'number') {
+                  return (
+                    <div key={key} className="space-y-1 group">
+                      <div className="flex justify-between items-center px-1 mb-2">
+                        <span className="text-xs font-medium text-white transition-colors">{conf.label}</span>
+                        <span className="font-mono text-xs text-white">{Number(currentValue).toFixed(conf.step && conf.step < 1 ? 2 : 0)}</span>
                       </div>
-                    )
-                  }
-                  return null
-                })}
-              </div>
+                      <MechanicalSlider
+                        value={[Number(currentValue)]}
+                        min={conf.min} max={conf.max} step={conf.step || 1}
+                        leftLabel={conf.leftLabel}
+                        rightLabel={conf.rightLabel}
+                        onValueChange={([v]) => setModelSettings(prev => ({ ...prev, [key]: v }))}
+                      />
+                    </div>
+                  )
+                }
+                return null
+              })}
             </div>
 
-            {/* Area Protection */}
+            {/* GROUP 2: Area Protection (2 Column Layout) */}
             {enhancementType === 'face' && (
-              <div className="pt-4 border-t border-white/5 space-y-5">
-                <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-gray-400" />
-                  Area Protection
-                </h3>
+              <div className="space-y-4 px-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-medium text-white flex items-center gap-2">
+                    <Shield className="w-3 h-3 text-gray-400" />
+                    Area Preservation
+                  </h3>
+                  <button
+                    onClick={() => setAreaSettings(DEFAULT_AREA_PROTECTION)}
+                    className="text-[10px] text-gray-500 hover:text-white transition-colors uppercase tracking-wider font-medium"
+                  >
+                    Reset
+                  </button>
+                </div>
 
-                <div className="grid grid-cols-2 gap-x-6 gap-y-6">
-                  {/* Face Areas */}
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Left Column: Face */}
                   <div className="space-y-3">
-                    <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Face</p>
-                    {Object.entries(areaSettings.face).map(([key, val]) => (
-                      <div key={key} className="flex items-center justify-between group">
-                        <span className="text-xs text-gray-400 capitalize group-hover:text-white transition-colors">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                        <Switch
-                          checked={val}
-                          onCheckedChange={(c) => setAreaSettings(prev => ({ ...prev, face: { ...prev.face, [key]: c } }))}
-                          className="scale-75 origin-right"
-                        />
-                      </div>
-                    ))}
+                    <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider pl-1">Face</p>
+                    <div className="space-y-2">
+                      {Object.entries(areaSettings.face).map(([key, val]) => (
+                        <div key={key} className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group">
+                          <span className="text-xs text-gray-300 capitalize group-hover:text-white transition-colors">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                          <Switch
+                            checked={val}
+                            onCheckedChange={(c) => setAreaSettings(prev => ({ ...prev, face: { ...prev.face, [key]: c } }))}
+                            className="scale-75 origin-right"
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  {/* Eye Areas */}
+                  {/* Right Column: Eyes */}
                   <div className="space-y-3">
-                    <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Eyes</p>
-                    {Object.entries(areaSettings.eyes).map(([key, val]) => (
-                      <div key={key} className="flex items-center justify-between group">
-                        <span className="text-xs text-gray-400 capitalize group-hover:text-white transition-colors">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                        <Switch
-                          checked={val}
-                          onCheckedChange={(c) => setAreaSettings(prev => ({ ...prev, eyes: { ...prev.eyes, [key]: c } }))}
-                          className="scale-75 origin-right"
-                        />
-                      </div>
-                    ))}
+                    <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider pl-1">Eyes</p>
+                    <div className="space-y-2">
+                      {Object.entries(areaSettings.eyes).map(([key, val]) => (
+                        <div key={key} className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group">
+                          <span className="text-xs text-gray-300 capitalize group-hover:text-white transition-colors">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                          <Switch
+                            checked={val}
+                            onCheckedChange={(c) => setAreaSettings(prev => ({ ...prev, eyes: { ...prev.eyes, [key]: c } }))}
+                            className="scale-75 origin-right"
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Additional standard sliders matching the reference design */}
-            <div className="pt-4 border-t border-white/5 space-y-6">
-              
+            {/* GROUP 3: Skin Refinement (Single Box) */}
+            <div className="p-5 rounded-xl bg-white/[0.02] border border-white/5 space-y-8">
               {/* Skin Refinement Level */}
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <div className="flex justify-between items-center px-1 mb-2">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-medium text-gray-200">Skin Refinement Level</span>
-                    <Info className="w-3.5 h-3.5 text-blue-500" />
+                    <span className="text-xs font-medium text-white">Skin Refinement Level</span>
+                    <Info className="w-3.5 h-3.5 text-gray-500" />
                   </div>
-                  <span className="font-mono text-xs text-gray-400">50</span>
+                  <span className="font-mono text-xs text-white">50</span>
                 </div>
-                <MechanicalSlider 
-                  defaultValue={[50]} 
-                  max={100} 
-                  step={1} 
+                <MechanicalSlider
+                  defaultValue={[50]}
+                  max={100}
+                  step={1}
                   leftLabel="Refined"
                   rightLabel="Textured Skin"
                 />
               </div>
 
               {/* Skin Realism Level */}
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <div className="flex justify-between items-center px-1 mb-2">
-                  <span className="text-sm font-medium text-gray-200">Skin Realism Level</span>
-                  <span className="font-mono text-xs text-gray-400">0.00</span>
+                  <span className="text-xs font-medium text-white">Skin Realism Level</span>
+                  <span className="font-mono text-xs text-white">1.70</span>
                 </div>
-                <MechanicalSlider 
-                  defaultValue={[0]} 
-                  max={100} 
-                  step={1} 
+                <MechanicalSlider
+                  defaultValue={[17]}
+                  max={100}
+                  step={1}
                   leftLabel="Low"
                   rightLabel="High"
                 />
               </div>
-
             </div>
+
           </div>
 
-          {/* 4. FOOTER: CREDIT COST + ACTION */}
+          {/* 4. FOOTER */}
           <div className="lg:fixed lg:bottom-0 lg:left-0 lg:w-[420px] relative w-full bg-[#0c0c0e] border-t border-white/5 z-40">
-            {/* Credit Cost Display */}
             <div className="px-5 pt-4 pb-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-400">Estimated Cost</span>
+                <span className="text-gray-500 font-medium">Estimated Cost</span>
                 <div className="flex items-center gap-2">
                   <CreditIcon className="w-6 h-6 rounded-md" iconClassName="w-3 h-3" />
-                  <span className="font-mono font-bold text-white">{creditCost}</span>
+                  <span className="font-mono font-medium text-white/90">{creditCost.toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -590,7 +590,7 @@ export default function EditorPage() {
               <button
                 onClick={handleEnhance}
                 disabled={isEnhancing || !uploadedImage}
-                className="w-full bg-[#FFFF00] hover:bg-[#e6e600] text-black font-bold h-14 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(255,255,0,0.1)] hover:shadow-[0_0_30px_rgba(255,255,0,0.3)] text-base"
+                className="w-full bg-[#FFFF00] hover:bg-[#e6e600] text-black font-bold h-14 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(255,255,0,0.1)] hover:shadow-[0_0_30px_rgba(255,255,0,0.3)] text-base uppercase tracking-wider"
               >
                 {isEnhancing ? (
                   <>
@@ -600,7 +600,7 @@ export default function EditorPage() {
                 ) : (
                   <>
                     <Wand2 className="w-5 h-5 fill-black" />
-                    <span className="uppercase tracking-wide">Enhance Image</span>
+                    <span>Enhance Image</span>
                   </>
                 )}
               </button>
@@ -609,7 +609,7 @@ export default function EditorPage() {
 
         </div>
 
-        {/* RIGHT MAIN CANVAS - RESULT (Sticky) */}
+        {/* RIGHT MAIN CANVAS */}
         <div className="relative flex flex-col p-4 lg:sticky lg:top-20 lg:h-[80vh] h-[500px] lg:min-h-[500px]">
           <div className="flex-1 w-full h-full relative flex items-center justify-center bg-[#050505] custom-checkerboard rounded-2xl border border-white/5 overflow-hidden">
             {!uploadedImage ? (
@@ -630,7 +630,6 @@ export default function EditorPage() {
                   onExpand={() => setIsExpandViewOpen(true)}
                 />
               ) : (
-                // Only Uploaded Image (Preview Mode)
                 <div className="relative w-full h-full">
                   <img src={uploadedImage} className="w-full h-full object-contain opacity-50 blur-sm" alt="Preview" />
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -644,7 +643,7 @@ export default function EditorPage() {
           </div>
 
           {/* STATUS BAR */}
-          <div className="mt-4 flex justify-between items-center text-xs text-gray-500 font-mono">
+          <div className="mt-4 flex justify-between items-center text-[10px] text-gray-600 font-mono uppercase tracking-wider">
             <div>
               {uploadedImage && <span>Source: {imageMetadata.width}×{imageMetadata.height} • PNG</span>}
             </div>
