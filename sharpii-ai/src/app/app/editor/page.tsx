@@ -37,7 +37,7 @@ import { useAuth } from "@/lib/auth-client-simple"
 import UserHeader from "@/components/app/UserHeader"
 import { ElegantLoading } from "@/components/ui/elegant-loading"
 import { ModelPricingEngine } from "@/lib/model-pricing-config"
-import { Slider } from "@/components/ui/slider"
+import { MechanicalSlider } from "@/components/ui/mechanical-slider"
 import { Switch } from "@/components/ui/switch"
 import { CustomDropdown, DropdownOption } from "@/components/ui/custom-dropdown"
 import { ExpandViewModal } from "@/components/ui/expand-view-modal"
@@ -474,16 +474,15 @@ export default function EditorPage() {
 
                   if (conf.type === 'number') {
                     return (
-                      <div key={key} className="space-y-2 group">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-gray-400 group-hover:text-gray-200">{conf.label}</span>
-                          <span className="font-mono text-gray-500">{currentValue}</span>
+                      <div key={key} className="space-y-1 group">
+                        <div className="flex justify-between items-center px-1 mb-2">
+                          <span className="text-sm font-medium text-gray-200">{conf.label}</span>
+                          <span className="font-mono text-xs text-gray-400">{currentValue}</span>
                         </div>
-                        <Slider
+                        <MechanicalSlider
                           value={[Number(currentValue)]}
                           min={conf.min} max={conf.max} step={conf.step || 1}
                           onValueChange={([v]) => setModelSettings(prev => ({ ...prev, [key]: v }))}
-                          className="py-1"
                         />
                       </div>
                     )
@@ -504,7 +503,7 @@ export default function EditorPage() {
                 <div className="grid grid-cols-2 gap-x-6 gap-y-6">
                   {/* Face Areas */}
                   <div className="space-y-3">
-                    <p className="text-[10px] uppercase font-bold text-gray-600 tracking-wider">Face Features</p>
+                    <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Face</p>
                     {Object.entries(areaSettings.face).map(([key, val]) => (
                       <div key={key} className="flex items-center justify-between group">
                         <span className="text-xs text-gray-400 capitalize group-hover:text-white transition-colors">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
@@ -519,7 +518,7 @@ export default function EditorPage() {
 
                   {/* Eye Areas */}
                   <div className="space-y-3">
-                    <p className="text-[10px] uppercase font-bold text-gray-600 tracking-wider">Eyes & Brows</p>
+                    <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Eyes</p>
                     {Object.entries(areaSettings.eyes).map(([key, val]) => (
                       <div key={key} className="flex items-center justify-between group">
                         <span className="text-xs text-gray-400 capitalize group-hover:text-white transition-colors">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
@@ -535,20 +534,42 @@ export default function EditorPage() {
               </div>
             )}
 
-            {/* Additional standard sliders that user liked */}
-            <div className="pt-4 border-t border-white/5 space-y-5">
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs text-gray-400">
-                  <span>Artificial Noise Reduction</span>
+            {/* Additional standard sliders matching the reference design */}
+            <div className="pt-4 border-t border-white/5 space-y-6">
+              
+              {/* Skin Refinement Level */}
+              <div className="space-y-1">
+                <div className="flex justify-between items-center px-1 mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-medium text-gray-200">Skin Refinement Level</span>
+                    <Info className="w-3.5 h-3.5 text-blue-500" />
+                  </div>
+                  <span className="font-mono text-xs text-gray-400">50</span>
                 </div>
-                <Slider defaultValue={[40]} max={100} step={1} className="py-1" />
+                <MechanicalSlider 
+                  defaultValue={[50]} 
+                  max={100} 
+                  step={1} 
+                  leftLabel="Refined"
+                  rightLabel="Textured Skin"
+                />
               </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs text-gray-400">
-                  <span>Texture Synthesis</span>
+
+              {/* Skin Realism Level */}
+              <div className="space-y-1">
+                <div className="flex justify-between items-center px-1 mb-2">
+                  <span className="text-sm font-medium text-gray-200">Skin Realism Level</span>
+                  <span className="font-mono text-xs text-gray-400">0.00</span>
                 </div>
-                <Slider defaultValue={[65]} max={100} step={1} className="py-1" />
+                <MechanicalSlider 
+                  defaultValue={[0]} 
+                  max={100} 
+                  step={1} 
+                  leftLabel="Low"
+                  rightLabel="High"
+                />
               </div>
+
             </div>
           </div>
 
