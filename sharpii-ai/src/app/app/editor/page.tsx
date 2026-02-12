@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState, useRef, useCallback, useEffect } from "react"
+import React, { useState, useRef, useCallback, useEffect, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import {
   Upload,
   Download,
@@ -16,8 +17,14 @@ import {
   Shield,
   MoveHorizontal,
   Wand2,
-  Expand
+  Expand,
+  User,
+  Eye,
+  Shirt,
+  Scissors
 } from "lucide-react"
+// Removed STYLE_MAPPING and STYLE_LORAS as they are no longer supported
+
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/auth-client-simple"
 import UserHeader from "@/components/app/UserHeader"
@@ -45,6 +52,11 @@ interface AreaProtectionSettings {
     rightBrow: boolean
     leftEye: boolean
   }
+  other: {
+    hair: boolean
+    cloth: boolean
+    background: boolean
+  }
 }
 
 const DEFAULT_AREA_PROTECTION: AreaProtectionSettings = {
@@ -61,50 +73,58 @@ const DEFAULT_AREA_PROTECTION: AreaProtectionSettings = {
     leftBrow: true,
     rightBrow: false,
     leftEye: true
+  },
+  other: {
+    hair: false,
+    cloth: false,
+    background: false
   }
 }
 
 // Available models configuration
 const AVAILABLE_MODELS = [
   {
-    id: 'runninghub-flux-upscaling',
-    name: 'FLUX Professional',
+    id: 'skin-editor',
+    name: 'Skin Editor',
     provider: 'runninghub',
-    category: 'Professional',
-    description: 'Ultra-realistic detail recovery',
-    icon: Zap,
-  },
-  {
-    id: 'fermatresearch/magic-image-refiner',
-    name: 'Magic Standard',
-    provider: 'replicate',
-    category: 'Standard',
-    description: 'Balanced general enhancement',
+    category: 'Specialized',
+    description: 'Professional skin retouching',
     icon: Sparkles,
   }
 ]
 
 // Model-specific control configurations
 const MODEL_CONTROLS = {
-  'runninghub-flux-upscaling': {
-    strength: { type: 'number', default: 0.3, min: 0.1, max: 1, step: 0.1, label: 'Denoise Strength', leftLabel: 'Weak', rightLabel: 'Strong' },
-    guidance_scale: { type: 'number', default: 3.5, min: 1, max: 20, step: 0.1, label: 'Guidance Scale', leftLabel: 'Low', rightLabel: 'High' },
-    steps: { type: 'number', default: 20, min: 10, max: 50, label: 'Steps', leftLabel: 'Fast', rightLabel: 'Quality' },
-    enable_upscale: { type: 'boolean', default: true, label: 'Enable Upscaling' },
-  },
-  'fermatresearch/magic-image-refiner': {
-    creativity: { type: 'number', default: 0.5, min: 0, max: 1, step: 0.1, label: 'Creativity', leftLabel: 'Low', rightLabel: 'High' },
-    hdr: { type: 'boolean', default: false, label: 'HDR Mode' },
-    resemblance: { type: 'number', default: 0.8, min: 0, max: 1, step: 0.1, label: 'Source Fidelity', leftLabel: 'Low', rightLabel: 'High' }
+  'skin-editor': {
+    denoise: { type: 'number', default: 0.35, min: 0.1, max: 1, step: 0.05, label: 'Effect Strength', leftLabel: 'Subtle', rightLabel: 'Strong' },
+    guidance: { type: 'number', default: 80, min: 1, max: 200, step: 1, label: 'Guidance Scale', leftLabel: 'Low', rightLabel: 'High' },
+    megapixels: { type: 'number', default: 4, min: 1, max: 16, step: 1, label: 'Detail Level (MP)', leftLabel: 'Low', rightLabel: 'High' },
+    maxshift: { type: 'number', default: 1, min: 0, max: 5, step: 0.1, label: 'Max Shift', leftLabel: 'Low', rightLabel: 'High' }
   }
 }
 
-// Enhancement mode options
-const ENHANCEMENT_MODES: DropdownOption[] = [
-  { value: 'standard', label: 'Standard', description: 'Balanced enhancement' },
-  { value: 'detailed', label: 'Detailed', description: 'Maximum detail recovery' },
-  { value: 'heavy', label: 'Heavy', description: 'Aggressive processing' }
-]
+// Enhancement mode options by model
+const MODES_BY_MODEL: Record<string, DropdownOption[]> = {
+  'skin-editor': [
+    { value: 'Subtle', label: 'Subtle', description: 'Natural texture preservation' },
+    { value: 'Clear', label: 'Clear', description: 'Balanced smoothing' },
+    { value: 'Pimples', label: 'Blemish Removal', description: 'Focus on acne removal' },
+    { value: 'Freckles', label: 'Freckle Enhancer', description: 'Enhance natural freckles' }
+  ],
+  'default': [
+    { value: 'standard', label: 'Standard', description: 'Balanced enhancement' },
+    { value: 'detailed', label: 'Detailed', description: 'Maximum detail recovery' },
+    { value: 'heavy', label: 'Heavy', description: 'Aggressive processing' }
+  ]
+}
+
+// Default settings per mode for Skin Editor
+const SKIN_EDITOR_DEFAULTS = {
+  Subtle: { denoise: 0.20, maxshift: 1, megapixels: 4, guidance: 80 },
+  Clear: { denoise: 0.35, maxshift: 1.2, megapixels: 4, guidance: 100 },
+  Pimples: { denoise: 0.37, maxshift: 1.2, megapixels: 2, guidance: 100 },
+  Freckles: { denoise: 0.37, maxshift: 1.2, megapixels: 2, guidance: 100 }
+}
 
 // --- COMPONENTS ---
 
@@ -186,10 +206,9 @@ function ComparisonView({
   )
 }
 
-// --- MAIN PAGE ---
-
-export default function EditorPage() {
+function EditorContent() {
   const { user, isLoading } = useAuth()
+  const searchParams = useSearchParams()
 
   // State: Defaulting to USER PROVIDED DEMO IMAGES
   const [uploadedImage, setUploadedImage] = useState<string | null>("https://i.postimg.cc/gJHLjBwj/image.png")
@@ -197,9 +216,11 @@ export default function EditorPage() {
   const [imageMetadata, setImageMetadata] = useState({ width: 1024, height: 1024 })
 
   // Settings
-  const [selectedModel, setSelectedModel] = useState(AVAILABLE_MODELS[0]?.id || '')
-  const [enhancementType, setEnhancementType] = useState<'face' | 'body'>('face')
-  const [enhancementMode, setEnhancementMode] = useState<'standard' | 'detailed' | 'heavy'>('standard')
+  // Force Skin Editor as default and only model
+  const [selectedModel, setSelectedModel] = useState('skin-editor')
+
+  // Dynamic default mode based on model
+  const [enhancementMode, setEnhancementMode] = useState<string>('Subtle')
   const [modelSettings, setModelSettings] = useState<Record<string, any>>({})
   const [areaSettings, setAreaSettings] = useState<AreaProtectionSettings>(DEFAULT_AREA_PROTECTION)
 
@@ -210,6 +231,45 @@ export default function EditorPage() {
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Initialize from URL param
+  useEffect(() => {
+    const modelParam = searchParams.get('model')
+    if (modelParam && AVAILABLE_MODELS.find(m => m.id === modelParam)) {
+      setSelectedModel(modelParam)
+    }
+  }, [searchParams])
+
+  // Get available modes for current model
+  const currentModes = MODES_BY_MODEL[selectedModel] || MODES_BY_MODEL['default'] || []
+
+  // Update mode when model changes
+  useEffect(() => {
+    const modes = MODES_BY_MODEL[selectedModel] || MODES_BY_MODEL['default'] || []
+    if (modes.length > 0 && modes[0]) {
+      setEnhancementMode(modes[0].value)
+    }
+  }, [selectedModel])
+
+  // Update settings when mode changes (specifically for Skin Editor)
+  useEffect(() => {
+    if (selectedModel === 'skin-editor' && enhancementMode in SKIN_EDITOR_DEFAULTS) {
+      const defaults = SKIN_EDITOR_DEFAULTS[enhancementMode as keyof typeof SKIN_EDITOR_DEFAULTS]
+      setModelSettings(prev => ({ ...prev, ...defaults }))
+    }
+  }, [enhancementMode, selectedModel])
+
+  // Setup default settings when model changes
+  useEffect(() => {
+    const defaults: Record<string, any> = {}
+    const controls = MODEL_CONTROLS[selectedModel as keyof typeof MODEL_CONTROLS] || {}
+    Object.entries(controls).forEach(([k, v]) => {
+      // @ts-ignore
+      defaults[k] = v.default
+    })
+    setModelSettings(defaults)
+  }, [selectedModel])
+
 
   // Calculate credits
   const creditCost = React.useMemo(() => {
@@ -225,17 +285,6 @@ export default function EditorPage() {
       return 120 // fallback
     }
   }, [imageMetadata, selectedModel, modelSettings])
-
-  // Initialize Default Settings
-  useEffect(() => {
-    const defaults = {}
-    const controls = MODEL_CONTROLS[selectedModel as keyof typeof MODEL_CONTROLS] || {}
-    Object.entries(controls).forEach(([k, v]) => {
-      // @ts-ignore
-      defaults[k] = v.default
-    })
-    setModelSettings(defaults)
-  }, [selectedModel])
 
   // Handlers
   const handleUpload = (files: FileList | null) => {
@@ -261,28 +310,47 @@ export default function EditorPage() {
   }
 
   const handleEnhance = async () => {
+    if (!uploadedImage) return
     setIsEnhancing(true)
     setProgress(0)
 
-    // Fake Progress
-    const interval = setInterval(() => {
-      setProgress(p => Math.min(p + 5, 95))
-    }, 200)
+    try {
+      // 1. Upload image if it's base64 (already handled by RunningHub provider but let's send it)
+      // Actually RunningHub provider handles base64 upload to Tebi.
+      // So we just call the API route.
 
-    // Simulate API call delay for demo
-    await new Promise(r => setTimeout(r, 2000))
+      const response = await fetch('/api/enhance-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageUrl: uploadedImage,
+          modelId: 'skin-editor',
+          settings: {
+            prompt: 'Enhance skin details, preserve identity, high quality',
+            mode: enhancementMode,
+            protections: areaSettings,
+            ...modelSettings
+          }
+        })
+      })
 
-    clearInterval(interval)
-    setProgress(100)
+      if (!response.ok) {
+        throw new Error('Enhancement failed')
+      }
 
-    // In demo mode with these specific images, just "finish" instantly (or use the result image if not already set)
-    // If user uploaded a new image, this would actually call the API.
-    // precise check: if we are using the demo input, allow the demo output.
-    if (!enhancedImage || uploadedImage?.includes('postimg')) {
-      setEnhancedImage("https://i.postimg.cc/rspsmyXZ/image.png")
+      const data = await response.json()
+      if (data.success && data.enhancedUrl) {
+        setEnhancedImage(data.enhancedUrl)
+      } else {
+        console.error('Enhancement failed:', data.error)
+      }
+
+    } catch (error) {
+      console.error('Enhancement error:', error)
+    } finally {
+      setIsEnhancing(false)
+      setProgress(100)
     }
-
-    setTimeout(() => setIsEnhancing(false), 500)
   }
 
   const handleDownload = async () => {
@@ -395,48 +463,13 @@ export default function EditorPage() {
 
           {/* 2. MODEL & MODE */}
           <div className="p-5 border-b border-white/5 space-y-4">
-            <div>
-              <label className="text-xs font-medium text-white mb-2 block">Model Version</label>
-              <CustomDropdown
-                options={modelOptions}
-                value={selectedModel}
-                onChange={setSelectedModel}
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <label className="text-xs font-medium text-white mb-1 block">Enhancement Type</label>
-                <div className="flex bg-[#18181b] p-1 rounded-lg">
-                  {['face', 'body'].map(t => (
-                    <button
-                      key={t}
-                      onClick={() => setEnhancementType(t as any)}
-                      className={cn(
-                        "flex-1 text-xs font-medium py-1.5 rounded-md capitalize transition-all",
-                        enhancementType === t ? "bg-white/10 text-white shadow-sm" : "text-gray-500 hover:text-gray-300"
-                      )}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex-1">
-                <label className="text-xs font-medium text-white mb-1 block">Enhancement Mode</label>
-                <CustomDropdown
-                  options={ENHANCEMENT_MODES}
-                  value={enhancementMode}
-                  onChange={(v) => setEnhancementMode(v as any)}
-                />
-              </div>
-            </div>
+             {/* Styles Section Removed */}
           </div>
 
           {/* 3. SETTINGS SCROLL AREA */}
           <div className="p-5 space-y-6 flex-1">
 
-            {/* GROUP 1: Primary Controls (Denoise, Guidance, Steps) */}
+            {/* GROUP 1: Primary Controls */}
             <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-5">
               <h3 className="text-xs font-medium text-white mb-4 flex items-center gap-2">
                 <Settings className="w-3 h-3 text-gray-400" />
@@ -483,92 +516,72 @@ export default function EditorPage() {
             </div>
 
             {/* GROUP 2: Area Protection (2 Column Layout) */}
-            {enhancementType === 'face' && (
-              <div className="space-y-4 px-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-medium text-white flex items-center gap-2">
-                    <Shield className="w-3 h-3 text-gray-400" />
-                    Area Preservation
-                  </h3>
-                  <button
-                    onClick={() => setAreaSettings(DEFAULT_AREA_PROTECTION)}
-                    className="text-[10px] text-gray-500 hover:text-white transition-colors uppercase tracking-wider font-medium"
-                  >
-                    Reset
-                  </button>
+            {/* GROUP 2: Area Protection (3 Sections: Face, Eyes, Other) */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-medium text-white flex items-center gap-2">
+                  <Shield className="w-3 h-3 text-gray-400" />
+                  Area Preservation
+                </h3>
+                <button
+                  onClick={() => setAreaSettings(DEFAULT_AREA_PROTECTION)}
+                  className="text-[10px] text-gray-500 hover:text-white transition-colors uppercase tracking-wider font-medium"
+                >
+                  Reset
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Face Column */}
+                <div className="space-y-2">
+                  <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider pl-1 flex items-center gap-1"><User className="w-3 h-3" /> Face</p>
+                  <div className="space-y-1">
+                    {Object.entries(areaSettings.face).map(([key, val]) => (
+                      <div key={key} className="flex items-center justify-between p-1.5 rounded bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group">
+                        <span className="text-[10px] text-gray-400 capitalize group-hover:text-white transition-colors w-full">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                        <Switch
+                          checked={val}
+                          onCheckedChange={(c) => setAreaSettings(prev => ({ ...prev, face: { ...prev.face, [key]: c } }))}
+                          className="scale-50 origin-right"
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-6">
-                  {/* Left Column: Face */}
-                  <div className="space-y-3">
-                    <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider pl-1">Face</p>
-                    <div className="space-y-2">
-                      {Object.entries(areaSettings.face).map(([key, val]) => (
-                        <div key={key} className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group">
-                          <span className="text-xs text-gray-300 capitalize group-hover:text-white transition-colors">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                          <Switch
-                            checked={val}
-                            onCheckedChange={(c) => setAreaSettings(prev => ({ ...prev, face: { ...prev.face, [key]: c } }))}
-                            className="scale-75 origin-right"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Right Column: Eyes */}
-                  <div className="space-y-3">
-                    <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider pl-1">Eyes</p>
-                    <div className="space-y-2">
-                      {Object.entries(areaSettings.eyes).map(([key, val]) => (
-                        <div key={key} className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group">
-                          <span className="text-xs text-gray-300 capitalize group-hover:text-white transition-colors">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                          <Switch
-                            checked={val}
-                            onCheckedChange={(c) => setAreaSettings(prev => ({ ...prev, eyes: { ...prev.eyes, [key]: c } }))}
-                            className="scale-75 origin-right"
-                          />
-                        </div>
-                      ))}
-                    </div>
+                {/* Eyes Column */}
+                <div className="space-y-2">
+                  <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider pl-1 flex items-center gap-1"><Eye className="w-3 h-3" /> Eyes</p>
+                  <div className="space-y-1">
+                    {Object.entries(areaSettings.eyes).map(([key, val]) => (
+                      <div key={key} className="flex items-center justify-between p-1.5 rounded bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group">
+                        <span className="text-[10px] text-gray-400 capitalize group-hover:text-white transition-colors w-full">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                        <Switch
+                          checked={val}
+                          onCheckedChange={(c) => setAreaSettings(prev => ({ ...prev, eyes: { ...prev.eyes, [key]: c } }))}
+                          className="scale-50 origin-right"
+                        />
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
-            )}
 
-            {/* GROUP 3: Skin Refinement (Single Box) */}
-            <div className="p-5 rounded-xl bg-white/[0.02] border border-white/5 space-y-8">
-              {/* Skin Refinement Level */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center px-1 mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-medium text-white">Skin Refinement Level</span>
-                    <Info className="w-3.5 h-3.5 text-gray-500" />
-                  </div>
-                  <span className="font-mono text-xs text-white">50</span>
+              {/* Other Section */}
+              <div className="space-y-2 pt-2 border-t border-white/5">
+                <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider pl-1 flex items-center gap-1"><Settings className="w-3 h-3" /> Other</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {Object.entries(areaSettings.other).map(([key, val]) => (
+                    <div key={key} className="flex flex-col items-center justify-center p-2 rounded bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group gap-1">
+                      <span className="text-[10px] text-gray-400 capitalize group-hover:text-white transition-colors">{key}</span>
+                      <Switch
+                        checked={val}
+                        onCheckedChange={(c) => setAreaSettings(prev => ({ ...prev, other: { ...prev.other, [key]: c } }))}
+                        className="scale-50"
+                      />
+                    </div>
+                  ))}
                 </div>
-                <MechanicalSlider
-                  defaultValue={[50]}
-                  max={100}
-                  step={1}
-                  leftLabel="Refined"
-                  rightLabel="Textured Skin"
-                />
-              </div>
-
-              {/* Skin Realism Level */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center px-1 mb-2">
-                  <span className="text-xs font-medium text-white">Skin Realism Level</span>
-                  <span className="font-mono text-xs text-white">1.70</span>
-                </div>
-                <MechanicalSlider
-                  defaultValue={[17]}
-                  max={100}
-                  step={1}
-                  leftLabel="Low"
-                  rightLabel="High"
-                />
               </div>
             </div>
 
@@ -651,20 +664,75 @@ export default function EditorPage() {
               Sharpii Engine v2.0
             </div>
           </div>
-        </div>
 
+
+          {/* MODES SECTION - Right Side Below Output */}
+          <div className="mt-4 px-4 pb-8 w-full">
+            <h3 className="text-xs font-bold text-white/50 mb-3 flex items-center gap-2 uppercase tracking-wide">
+              Select Mode
+            </h3>
+            <div className="grid grid-cols-4 gap-3">
+              {[
+                { id: 'Subtle', label: 'Subtle' },
+                { id: 'Clear', label: 'Clear' },
+                { id: 'Pimples', label: 'Pimples' },
+                { id: 'Freckles', label: 'Freckles' }
+              ].map(mode => (
+                <button
+                  key={mode.id}
+                  onClick={() => setEnhancementMode(mode.id)}
+                  className={cn(
+                    "relative h-14 rounded-lg overflow-hidden group border transition-all flex items-center justify-center",
+                    enhancementMode === mode.id
+                      ? "border-yellow-400 shadow-[0_0_10px_rgba(255,255,0,0.2)] bg-white/5"
+                      : "border-white/5 bg-black/40 hover:border-white/20 hover:bg-white/5"
+                  )}
+                >
+                  {/* Background Image: Use user image or default if none */}
+                  {(uploadedImage || '/demo-image.jpg') && (
+                    <img
+                      src={uploadedImage || '/demo-image.jpg'}
+                      alt=""
+                      className={cn(
+                        "absolute inset-0 w-full h-full object-cover transition-opacity duration-500",
+                        enhancementMode === mode.id ? "opacity-30" : "opacity-10 group-hover:opacity-20"
+                      )}
+                    />
+                  )}
+
+                  <span className={cn(
+                    "relative z-10 text-xs font-medium uppercase tracking-wider transition-colors",
+                    enhancementMode === mode.id ? "text-yellow-400" : "text-gray-400 group-hover:text-gray-200"
+                  )}>
+                    {mode.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Expand View Modal */}
-      {enhancedImage && uploadedImage && (
-        <ExpandViewModal
-          isOpen={isExpandViewOpen}
-          onClose={() => setIsExpandViewOpen(false)}
-          originalImage={uploadedImage}
-          enhancedImage={enhancedImage}
-          onDownload={handleDownload}
-        />
-      )}
-    </div>
+      {
+        enhancedImage && uploadedImage && (
+          <ExpandViewModal
+            isOpen={isExpandViewOpen}
+            onClose={() => setIsExpandViewOpen(false)}
+            originalImage={uploadedImage}
+            enhancedImage={enhancedImage}
+            onDownload={handleDownload}
+          />
+        )
+      }
+    </div >
+  )
+}
+
+export default function EditorPage() {
+  return (
+    <Suspense fallback={<ElegantLoading message="Initializing Editor..." />}>
+      <EditorContent />
+    </Suspense>
   )
 }

@@ -6,7 +6,6 @@ export { AIProviderFactory } from './provider-factory'
 export * from './common'
 
 // Export specific providers
-export { ReplicateProvider } from './replicate'
 export { RunningHubProvider } from './runninghub'
 
 // Re-export commonly used types for convenience

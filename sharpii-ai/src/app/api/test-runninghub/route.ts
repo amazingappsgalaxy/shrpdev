@@ -12,50 +12,57 @@ export async function POST(request: NextRequest) {
     const providerStatus = enhancementService.getProviderStatus()
     console.log('🔍 Provider status:', providerStatus)
 
-    // Get available models
-    const models = enhancementService.getAvailableModels()
-    console.log('🔍 Available models:', models.length)
-
-    // Find RunningHub FLUX model
-    const runningHubModel = models.find(m => m.id.includes('flux-upscaling'))
-    console.log('🔍 RunningHub FLUX model:', runningHubModel ? 'Found' : 'Not found')
-
     const body = await request.json()
     const { imageUrl, settings } = body
-
-    if (!imageUrl) {
-      return NextResponse.json({
-        error: 'imageUrl is required',
-        providerStatus,
-        modelsCount: models.length,
-        hasFluxModel: !!runningHubModel
-      }, { status: 400 })
+    
+    // Use a real image converted to base64
+    let imageToUse = imageUrl
+    if (!imageToUse) {
+       try {
+         // Use a reliable image URL (Google Logo or similar stable image)
+         const resp = await fetch('https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png')
+         if (!resp.ok) throw new Error(`Failed to fetch image: ${resp.status}`)
+         const arrayBuffer = await resp.arrayBuffer()
+         const buffer = Buffer.from(arrayBuffer)
+         const base64 = buffer.toString('base64')
+         const mimeType = resp.headers.get('content-type') || 'image/png'
+         imageToUse = `data:${mimeType};base64,${base64}`
+         console.log('✅ Fetched and converted Google logo to base64')
+       } catch (e) {
+         console.error('Failed to fetch test image:', e)
+         // Fallback to 1x1 pixel if fetch fails
+         imageToUse = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+       }
     }
 
     // Create test enhancement request
     const testRequest = {
-      imageUrl,
+      imageUrl: imageToUse,
       settings: settings || {
-        prompt: 'high quality, detailed, enhanced',
-        steps: 10,
-        guidance_scale: 3.5,
-        denoise: 0.3
+        mode: 'Subtle',
+        denoise: 0.35,
+        megapixels: 4,
+        protections: {
+          face: { skin: true, nose: true, mouth: true, upperLip: true, lowerLip: true },
+          eyes: { eyeGeneral: true, rightEye: true, leftEye: true, rightBrow: true, leftBrow: true }
+        }
       },
       userId: 'test-user-123',
       imageId: `test-${Date.now()}`
     }
 
-    console.log('🧪 Test RunningHub: Making enhancement request...')
+    console.log(`🧪 Test RunningHub: Making enhancement request with model skin-editor...`)
 
-    // Try enhancing with RunningHub FLUX model
+    // Try enhancing with specified model
     const result = await enhancementService.enhanceImage(
       testRequest,
-      'runninghub-flux-upscaling'
+      'skin-editor'
     )
 
     console.log('✅ Test RunningHub: Enhancement result:', {
       success: result.success,
       hasUrl: !!result.enhancedUrl,
+      enhancedUrl: result.enhancedUrl,
       error: result.error,
       message: result.message
     })
@@ -64,10 +71,8 @@ export async function POST(request: NextRequest) {
       result,
       testInfo: {
         providerStatus,
-        modelsCount: models.length,
-        hasFluxModel: !!runningHubModel,
         testRequest: {
-          imageUrl: testRequest.imageUrl.substring(0, 50) + '...',
+          imageUrl: testRequest.imageUrl.startsWith('data:') ? 'base64 data...' : testRequest.imageUrl,
           userId: testRequest.userId,
           imageId: testRequest.imageId
         }
@@ -84,23 +89,5 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
-  try {
-    const enhancementService = EnhancementService.getInstance()
-    const providerStatus = enhancementService.getProviderStatus()
-    const models = enhancementService.getAvailableModels()
-
-    return NextResponse.json({
-      message: 'RunningHub Test Endpoint',
-      providerStatus,
-      models: models.filter(m => m.provider.name === 'runninghub'),
-      config: {
-        hasApiKey: !!process.env.RUNNINGHUB_API_KEY,
-        baseUrl: process.env.RUNNINGHUB_BASE_URL || 'https://www.runninghub.ai'
-      }
-    })
-  } catch (error) {
-    return NextResponse.json({
-      error: error instanceof Error ? error.message : String(error)
-    }, { status: 500 })
-  }
+  return NextResponse.json({ status: 'Test endpoint ready' })
 }

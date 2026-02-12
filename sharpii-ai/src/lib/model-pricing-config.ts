@@ -103,299 +103,78 @@ export interface PricingCalculationResult {
 
 // Default pricing configurations for each model
 export const MODEL_PRICING_CONFIGS: Record<string, ModelPricingConfiguration> = {
-  'runninghub-flux-upscaling': {
-    modelId: 'runninghub-flux-upscaling',
-    modelName: 'RunningHub FLUX Upscaling',
+  // Skin Editor Model Pricing
+  'skin-editor': {
+    modelId: 'skin-editor',
+    modelName: 'Skin Editor',
     enabled: true,
     globalMultiplier: 1.0,
     flatFee: 0,
     resolutionPricing: [
       {
-        resolution: '500x500',
-        width: 500,
-        height: 500,
-        megapixels: 0.25,
-        baseCredits: 50,
-        description: '0.25MP - Very Small Images'
+        resolution: '1024x1024',
+        width: 1024,
+        height: 1024,
+        megapixels: 1,
+        baseCredits: 40,
+        description: 'Standard HD (1MP)'
       },
       {
-        resolution: '1000x1000',
-        width: 1000,
-        height: 1000,
-        megapixels: 1.0,
-        baseCredits: 120,
-        description: '1MP - Standard Definition'
+        resolution: '2048x2048',
+        width: 2048,
+        height: 2048,
+        megapixels: 4,
+        baseCredits: 80,
+        description: '4K Ultra HD (4MP)'
       },
       {
-        resolution: '1500x1500',
-        width: 1500,
-        height: 1500,
-        megapixels: 2.25,
-        baseCredits: 180,
-        description: '2.25MP - High Definition'
-      },
-      {
-        resolution: '2000x2000',
-        width: 2000,
-        height: 2000,
-        megapixels: 4.0,
-        baseCredits: 300,
-        description: '4MP - 2K Resolution'
-      },
-      {
-        resolution: '3000x3000',
-        width: 3000,
-        height: 3000,
-        megapixels: 9.0,
-        baseCredits: 500,
-        description: '9MP - Ultra High Definition'
-      },
-      {
-        resolution: '4000x4000',
-        width: 4000,
-        height: 4000,
-        megapixels: 16.0,
-        baseCredits: 800,
-        description: '16MP - Professional Resolution'
+        resolution: '4096x4096',
+        width: 4096,
+        height: 4096,
+        megapixels: 16,
+        baseCredits: 160,
+        description: '8K Master (16MP)'
       }
     ],
     settingIncrements: [
-      {
-        settingKey: 'enable_myupscaler',
-        settingName: 'MyUpscaler Node',
-        incrementType: 'percentage',
-        defaultIncrement: 35, // +35% as requested
-        enabled: true,
-        defaultValue: 0, // false = 0, true = 1
-        description: 'MyUpscaler processing increases cost by 35%'
-      },
       {
         settingKey: 'megapixels',
-        settingName: 'Target Megapixels',
+        settingName: 'Detail Level',
         incrementType: 'conditional',
         defaultIncrement: 0,
         enabled: true,
-        defaultValue: 1.0,
+        defaultValue: 4,
         conditions: [
-          {
-            when: (val: number, base: number) => val > base + 1,
-            increment: 10, // +10% per increment as requested
-            description: '+10% for each megapixel increment above base'
-          },
-          {
-            when: (val: number, base: number) => val > base + 5,
-            increment: 25, // Higher increment for significant increases
-            description: '+25% for megapixel increases above 5MP from base'
-          }
+          { when: (val: number) => val <= 4, increment: 0, description: 'Standard Detail' },
+          { when: (val: number) => val > 4 && val <= 8, increment: 50, description: '+50% for High Detail' },
+          { when: (val: number) => val > 8, increment: 100, description: '+100% for Max Detail' }
         ],
-        description: 'Target Megapixels increases cost based on the target resolution'
+        description: 'Higher detail levels require more processing power'
       },
       {
-        settingKey: 'steps',
-        settingName: 'Processing Steps',
-        incrementType: 'flat_credits',
-        defaultIncrement: 5, // 5 credits per step above default
-        enabled: true,
-        defaultValue: 10,
-        description: '5 credits per step above default (10)'
-      },
-      {
-        settingKey: 'guidance_scale',
-        settingName: 'Guidance Scale',
+        settingKey: 'seedvrupscaler',
+        settingName: 'VR Upscaler',
         incrementType: 'conditional',
         defaultIncrement: 0,
         enabled: true,
-        defaultValue: 3.5,
+        defaultValue: 1, // Using 1 as truthy number if type is number, or handling boolean logic
         conditions: [
-          {
-            when: (val: number) => val > 5.0,
-            increment: 5,
-            description: '+5% for guidance scale above 5.0'
-          },
-          {
-            when: (val: number) => val > 10.0,
-            increment: 15,
-            description: '+15% for guidance scale above 10.0'
-          }
+          { when: (val: boolean) => val === true, increment: 20, description: '+20% for VR Upscaler' },
+          { when: (val: boolean) => val === false, increment: 0, description: 'Standard Upscaler' }
         ],
-        description: 'Higher guidance scale increases processing cost'
-      },
-      {
-        settingKey: 'denoise',
-        settingName: 'Denoise Strength',
-        incrementType: 'conditional',
-        defaultIncrement: 0,
-        enabled: true,
-        defaultValue: 0.3,
-        conditions: [
-          {
-            when: (val: number) => val > 0.5,
-            increment: 8,
-            description: '+8% for denoise strength above 0.5'
-          },
-          {
-            when: (val: number) => val > 0.8,
-            increment: 20,
-            description: '+20% for high denoise strength above 0.8'
-          }
-        ],
-        description: 'Higher denoise strength requires more processing'
-      },
-      {
-        settingKey: 'enable_upscale',
-        settingName: 'Enable Upscaling',
-        incrementType: 'conditional',
-        defaultIncrement: 0,
-        enabled: true,
-        defaultValue: 0,
-        conditions: [
-          {
-            when: (val: boolean) => val === true,
-            increment: 0,
-            description: 'No additional cost for upscaling'
-          },
-          {
-            when: (val: boolean) => val === false,
-            increment: -30, // 30% discount when upscaling is disabled
-            description: '-30% discount when upscaling is disabled'
-          }
-        ],
-        description: 'Disabling upscaling provides a discount'
-      },
-      {
-        settingKey: 'upscale_model',
-        settingName: 'Upscale Model',
-        incrementType: 'conditional',
-        defaultIncrement: 0,
-        enabled: true,
-        defaultValue: 0,
-        conditions: [
-          {
-            when: (val: string) => val === '4xRealWebPhoto_v4_dat2.pth',
-            increment: 0,
-            description: 'Standard upscale model'
-          },
-          {
-            when: (val: string) => val === '4x-UltraSharp.pth',
-            increment: 15,
-            description: '+15% for UltraSharp model'
-          },
-          {
-            when: (val: string) => val === 'RealESRGAN_x4plus.pth',
-            increment: 10,
-            description: '+10% for RealESRGAN model'
-          }
-        ],
-        description: 'Different upscale models have different costs'
-      },
-      {
-        settingKey: 'sampler_name',
-        settingName: 'Sampling Method',
-        incrementType: 'conditional',
-        defaultIncrement: 0,
-        enabled: true,
-        defaultValue: 0,
-        conditions: [
-          {
-            when: (val: string) => ['dpmpp_2m', 'euler'].includes(val),
-            increment: 0,
-            description: 'Standard sampling methods'
-          },
-          {
-            when: (val: string) => ['dpmpp_sde', 'dpmpp_2s_ancestral'].includes(val),
-            increment: 5,
-            description: '+5% for advanced sampling methods'
-          }
-        ],
-        description: 'Advanced sampling methods may increase cost'
-      },
-      {
-        settingKey: 'scheduler',
-        settingName: 'Noise Scheduler',
-        incrementType: 'conditional',
-        defaultIncrement: 0,
-        enabled: true,
-        defaultValue: 0,
-        conditions: [
-          {
-            when: (val: string) => ['simple', 'sgm_uniform'].includes(val),
-            increment: 0,
-            description: 'Standard schedulers'
-          },
-          {
-            when: (val: string) => ['karras', 'exponential', 'beta'].includes(val),
-            increment: 3,
-            description: '+3% for advanced schedulers'
-          }
-        ],
-        description: 'Advanced noise schedulers may increase cost'
+        description: 'VR Upscaler provides better quality but costs more'
       }
     ],
-    description: 'FLUX Advanced Upscaling model with granular pricing control',
-    lastUpdated: Date.now()
-  },
-
-  // Example for other models - you can expand these
-  'fermatresearch/magic-image-refiner': {
-    modelId: 'fermatresearch/magic-image-refiner',
-    modelName: 'Magic Image Refiner',
-    enabled: true,
-    globalMultiplier: 0.8, // 20% cheaper than FLUX
-    flatFee: 0,
-    resolutionPricing: [
-      {
-        resolution: '1000x1000',
-        width: 1000,
-        height: 1000,
-        megapixels: 1.0,
-        baseCredits: 80,
-        description: '1MP - Standard Definition'
-      },
-      {
-        resolution: '2000x2000',
-        width: 2000,
-        height: 2000,
-        megapixels: 4.0,
-        baseCredits: 200,
-        description: '4MP - High Definition'
-      }
-    ],
-    settingIncrements: [
-      {
-        settingKey: 'creativity',
-        settingName: 'Creativity Level',
-        incrementType: 'conditional',
-        defaultIncrement: 0,
-        enabled: true,
-        defaultValue: 0.5,
-        conditions: [
-          {
-            when: (val: number) => val > 0.5,
-            increment: 20,
-            description: '+20% for high creativity'
-          }
-        ],
-        description: 'Higher creativity increases processing cost'
-      },
-      {
-        settingKey: 'hdr',
-        settingName: 'HDR Enhancement',
-        incrementType: 'percentage',
-        defaultIncrement: 10,
-        enabled: true,
-        defaultValue: 0,
-        description: 'HDR processing adds 10% to cost'
-      }
-    ],
-    description: 'Balanced enhancement model with good quality',
     lastUpdated: Date.now()
   }
-}
+};
 
 /**
  * Pricing Engine for calculating credits based on per-model configuration
  */
 export class ModelPricingEngine {
+  // Registry of model configurations
+  private static configs: Record<string, ModelPricingConfiguration> = MODEL_PRICING_CONFIGS;
   // Storage key for persisting configurations
   private static STORAGE_KEY = 'model-pricing-configs'
 

@@ -1,8 +1,5 @@
 import { ProviderType, type ProviderConfig } from './common/types'
-import { ReplicateProvider } from './replicate/replicate-provider'
 import { RunningHubProvider } from './runninghub/runninghub-provider'
-import { FalAIProvider } from './fal/fal-provider'
-import { OpenAIProvider } from './openai/openai-provider'
 import { config } from '../../lib/config'
 import { BaseAIProvider } from './common/base-provider'
 
@@ -24,10 +21,10 @@ export class AIProviderFactory {
 
     // Create new provider instance
     const provider = this.createProvider(type, config)
-    
+
     // Cache the provider instance
     this.providers.set(type, provider)
-    
+
     return provider
   }
 
@@ -38,18 +35,9 @@ export class AIProviderFactory {
     const providerConfig = config || this.getDefaultConfig(type)
 
     switch (type) {
-      case ProviderType.REPLICATE:
-        return new ReplicateProvider(providerConfig)
-      
       case ProviderType.RUNNINGHUB:
         return new RunningHubProvider(providerConfig)
-      
-      case ProviderType.FAL_AI:
-        return new FalAIProvider(providerConfig)
 
-      case ProviderType.OPENAI:
-        return new OpenAIProvider(providerConfig)
-      
       default:
         throw new Error(`Unsupported provider type: ${type}`)
     }
@@ -60,13 +48,6 @@ export class AIProviderFactory {
    */
   private static getDefaultConfig(type: ProviderType): ProviderConfig {
     switch (type) {
-      case ProviderType.REPLICATE:
-        return {
-          apiKey: config.ai.replicate.apiToken,
-          timeout: config.ai.replicate.timeout,
-          retries: config.ai.replicate.retries
-        }
-      
       case ProviderType.RUNNINGHUB:
         return {
           apiKey: config.ai.runninghub.apiToken,
@@ -74,23 +55,7 @@ export class AIProviderFactory {
           timeout: config.ai.runninghub.timeout,
           retries: config.ai.runninghub.retries
         }
-      
-      case ProviderType.FAL_AI:
-        return {
-          apiKey: process.env.FAL_API_TOKEN || '',
-          baseUrl: 'https://fal.run',
-          timeout: 300000,
-          retries: 3
-        }
-      
-      case ProviderType.OPENAI:
-        return {
-          apiKey: process.env.OPENAI_API_KEY || '',
-          baseUrl: 'https://api.openai.com/v1',
-          timeout: 120000,
-          retries: 3
-        }
-      
+
       default:
         throw new Error(`No default config available for provider type: ${type}`)
     }
@@ -133,18 +98,7 @@ export class AIProviderFactory {
    * Get provider by model ID (useful when model ID contains provider info)
    */
   static getProviderByModelId(modelId: string): ProviderType {
-    // For now, we'll use a simple mapping based on model ID patterns
-    // This can be enhanced with a proper model registry later
-    
-    if (modelId.includes('batoure') || modelId.includes('femat') || modelId.includes('magic-image-refiner')) {
-      return ProviderType.REPLICATE
-    }
-    
-    if (modelId.includes('runninghub') || modelId.includes('flux-upscaling')) {
-      return ProviderType.RUNNINGHUB
-    }
-    
-    // Default to Replicate for backward compatibility
-    return ProviderType.REPLICATE
+    // Only RunningHub is supported now
+    return ProviderType.RUNNINGHUB
   }
 }

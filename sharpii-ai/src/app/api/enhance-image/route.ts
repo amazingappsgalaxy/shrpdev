@@ -4,6 +4,7 @@ import type { EnhancementRequest } from '../../../services/ai-providers';
 import { createClient } from '@supabase/supabase-js';
 import { config } from '../../../lib/config';
 import { cookies } from 'next/headers';
+import { AIProviderFactory } from '../../../services/ai-providers/provider-factory';
 import { getSession } from '@/lib/simple-auth';
 import { getImageMetadata, calculateCreditsConsumed, getModelDisplayName } from '@/lib/image-metadata'
 import { PricingEngine } from '@/lib/pricing-engine';
@@ -16,10 +17,13 @@ import { v4 as uuidv4 } from 'uuid';
 export async function POST(request: NextRequest) {
   try {
     console.log('🚀 API: Enhancement request received')
-    
+
     // TEMPORARY: Skip authentication for testing
     console.log('⚠️  TESTING MODE: Authentication bypassed')
-    
+
+    // TEMPORARY: Clear provider cache to force reload of RunningHubProvider (hot fix for dev)
+    AIProviderFactory.clearCache()
+
     // Initialize Supabase client
     const supabase = createClient(
       config.database.supabaseUrl,
@@ -113,7 +117,7 @@ export async function POST(request: NextRequest) {
         provider: 'replicate',
         timestamp: now
       })
-      
+
       const { data: createdTask, error: insertError } = await supabase
         .from('enhancement_tasks')
         .insert({
@@ -133,35 +137,35 @@ export async function POST(request: NextRequest) {
         })
         .select()
         .single()
-      
+
       if (insertError) {
         throw new Error(`Failed to create task: ${insertError.message}`)
       }
-      
+
       console.log('✅ API: Task created successfully in Supabase:', {
         taskId,
         userId,
         status: 'processing',
         timestamp: new Date(now).toISOString()
       })
-      
+
       // Verify task was created by querying it back
       const { data: verifyTask, error: verifyError } = await supabase
         .from('enhancement_tasks')
         .select('*')
         .eq('id', taskId)
         .single()
-      
+
       if (verifyError || !verifyTask) {
         throw new Error('Task creation verification failed - task not found in database')
       }
-      
+
       console.log('✅ API: Task creation verified:', {
         taskId: verifyTask.id,
         status: verifyTask.status,
         userId: verifyTask.user_id
       })
-      
+
     } catch (error) {
       console.error('❌ API: Failed to create task in Supabase:', error)
       return NextResponse.json(
@@ -188,25 +192,25 @@ export async function POST(request: NextRequest) {
     const progressCallback = async (progress: number, status: string) => {
       try {
         const updateTime = Date.now()
-        
+
         // Validate progress and status values
         if (typeof progress !== 'number' || progress < 0 || progress > 100) {
           console.warn('⚠️ API: Invalid progress value:', progress)
           progress = Math.max(0, Math.min(100, progress || 0))
         }
-        
+
         if (!status || typeof status !== 'string') {
           console.warn('⚠️ API: Invalid status value:', status)
           status = 'processing'
         }
-        
+
         console.log(`📊 API: Updating task progress...`, {
           taskId,
           progress,
           status,
           timestamp: new Date(updateTime).toISOString()
         })
-        
+
         const { error } = await supabase
           .from('enhancement_tasks')
           .update({
@@ -215,13 +219,13 @@ export async function POST(request: NextRequest) {
             updated_at: new Date(updateTime).toISOString()
           })
           .eq('id', taskId)
-        
+
         if (error) {
           throw error
         }
-        
+
         console.log(`✅ API: Progress updated successfully - ${progress}% (${status})`, { taskId })
-        
+
       } catch (error) {
         console.error('❌ API: Failed to update progress:', {
           taskId,
@@ -310,7 +314,8 @@ export async function POST(request: NextRequest) {
 
     // Check user credit balance before enhancement
     const userCreditBalance = await CreditManager.getUserCreditBalance(authenticatedUserId)
-    
+
+    /*
     if (userCreditBalance < estimatedCredits && estimatedCredits > 0) {
       console.log('❌ API: Insufficient credits for enhancement:', {
         userId: authenticatedUserId,
@@ -340,6 +345,9 @@ export async function POST(request: NextRequest) {
         { status: 402 }
       )
     }
+    */
+    // TEMPORARY: Bypass credit check for all users as per request
+    console.log('⚠️ API: Credit check bypassed temporarily')
 
     // Perform enhancement using the new modular system
     const result = await enhancementService.enhanceImage(enhancementRequest, modelId, progressCallback)
@@ -348,7 +356,7 @@ export async function POST(request: NextRequest) {
     let originalMetadata = null
     let enhancedMetadata = null
     let creditsConsumed = 0
-    
+
     // Prioritize request dimensions for credit calculation (same as estimation)
     if (settings?.imageWidth && settings?.imageHeight) {
       try {
@@ -436,7 +444,7 @@ export async function POST(request: NextRequest) {
     try {
       const completionTime = Date.now()
       const finalStatus = result.success ? 'completed' : 'failed'
-      
+
       console.log('📝 API: Updating task completion in database...', {
         taskId,
         status: finalStatus,
@@ -445,7 +453,7 @@ export async function POST(request: NextRequest) {
         hasEnhancedUrl: !!result.enhancedUrl,
         timestamp: new Date(completionTime).toISOString()
       })
-      
+
       const updateData: any = {
         status: finalStatus,
         progress: 100,
@@ -484,17 +492,17 @@ export async function POST(request: NextRequest) {
             taskId,
             originalUrl: result.enhancedUrl.substring(0, 100) + '...'
           })
-          
+
           // Fetch the enhanced image and convert to file
           const imageResponse = await fetch(result.enhancedUrl)
           if (!imageResponse.ok) {
             throw new Error(`Failed to fetch enhanced image: ${imageResponse.statusText}`)
           }
-          
+
           const imageBlob = await imageResponse.blob()
           const fileName = `enhanced-${taskId}-${Date.now()}.jpg`
           const imageFile = new File([imageBlob], fileName, { type: 'image/jpeg' })
-          
+
           // Upload to Tebi.io under 'enhanced' category
           const tebiUploadResult = await tebiApi.uploadFile(
             imageFile,
@@ -508,16 +516,16 @@ export async function POST(request: NextRequest) {
               processingTime: processingTime.toString()
             }
           )
-          
+
           tebiUrl = tebiUploadResult.url
-          
+
           console.log('✅ API: Enhanced image uploaded to Tebi.io:', {
             taskId,
             tebiKey: tebiUploadResult.key,
             tebiUrl: tebiUrl,
             fileSize: tebiUploadResult.size
           })
-          
+
         } catch (tebiError) {
           console.error('❌ API: Failed to upload enhanced image to Tebi.io:', {
             taskId,
@@ -525,9 +533,9 @@ export async function POST(request: NextRequest) {
           })
           // Continue with original URL if Tebi upload fails
         }
-        
+
         updateData.enhanced_image_url = tebiUrl
-        
+
         if (enhancedMetadata) {
           updateData.output_width = enhancedMetadata.width || 0
           updateData.output_height = enhancedMetadata.height || 0
@@ -561,11 +569,11 @@ export async function POST(request: NextRequest) {
         .from('enhancement_tasks')
         .update(updateData)
         .eq('id', taskId)
-      
+
       if (updateError) {
         throw new Error(`Failed to update task: ${updateError.message}`)
       }
-      
+
       console.log('✅ API: Task completion updated successfully in Supabase:', {
         taskId,
         status: finalStatus,
@@ -577,8 +585,9 @@ export async function POST(request: NextRequest) {
         },
         timestamp: new Date(completionTime).toISOString()
       })
-      
+
       // Deduct credits from user account if enhancement was successful
+      /*
       if (result.success && creditsConsumed > 0) {
         try {
           const creditDeductionResult = await CreditManager.deductCredits({
@@ -598,14 +607,14 @@ export async function POST(request: NextRequest) {
               processingTime
             }
           })
-          
+
           console.log('💳 API: Credits deducted successfully:', {
             taskId,
             creditsDeducted: creditsConsumed,
             newBalance: creditDeductionResult.remainingBalance,
             transactionId: creditDeductionResult.transactionId
           })
-          
+
         } catch (creditError) {
           console.error('❌ API: Failed to deduct credits:', {
             taskId,
@@ -616,14 +625,16 @@ export async function POST(request: NextRequest) {
           // Don't fail the enhancement if credit deduction fails
         }
       }
-      
+      */
+      console.log('⚠️ API: Credit deduction temporarily disabled')
+
       // Verify the update by querying the task back
       const { data: updatedTask, error: verifyError } = await supabase
         .from('enhancement_tasks')
         .select('*')
         .eq('id', taskId)
         .single()
-      
+
       if (!updatedTask || verifyError) {
         console.error('❌ API: Task update verification failed - task not found')
       } else {
@@ -631,14 +642,14 @@ export async function POST(request: NextRequest) {
         const verifyCredits = updatedTask.original_width && updatedTask.original_height
           ? calculateCreditsConsumed(updatedTask.original_width, updatedTask.original_height)
           : 0
-        
+
         console.log('✅ API: Task update verified:', {
           taskId: updatedTask.id,
           status: updatedTask.status,
           progress: updatedTask.progress
         })
       }
-      
+
     } catch (updateError) {
       console.error('❌ API: Failed to update task completion in Supabase:', {
         taskId,
@@ -670,7 +681,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ API: Image enhancement failed:', error)
-    
+
     const errorResponse = {
       success: false,
       error: 'Image enhancement failed',
@@ -721,7 +732,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { 
+      {
         message: 'Supported actions: models, status (with jobId), providers',
         examples: [
           '?action=models',

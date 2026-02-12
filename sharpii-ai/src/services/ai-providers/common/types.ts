@@ -9,10 +9,18 @@ export interface EnhancementSettings {
   resemblance?: number
   hdr?: number
   resolution?: 'original' | '1024' | '2048'
-  scheduler?: 'DDIM' | 'DPMSolverMultistep' | 'K_EULER_ANCESTRAL' | 'K_EULER'
+  scheduler?: 'DDIM' | 'DPMSolverMultistep' | 'K_EULER_ANCESTRAL' | 'K_EULER' | 'sgm_uniform' | 'simple' | 'normal'
+  sampler_name?: string
   guess_mode?: boolean
   seed?: number
   mask?: string
+  strength?: number
+  denoise?: number
+  enable_upscale?: boolean
+  upscaler?: string
+  mode?: string
+  // Dynamic properties for node overrides
+  [key: string]: any
 }
 
 export interface EnhancementRequest {
@@ -79,9 +87,6 @@ export interface ModelInfo {
 }
 
 export enum ProviderType {
-  REPLICATE = 'replicate',
-  FAL_AI = 'fal-ai',
-  OPENAI = 'openai',
   RUNNINGHUB = 'runninghub'
 }
 

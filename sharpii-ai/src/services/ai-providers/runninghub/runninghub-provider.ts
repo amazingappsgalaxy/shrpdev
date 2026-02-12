@@ -10,14 +10,33 @@ import {
 import { formatErrorMessage } from '../common/utils'
 
 // Local types and guards to avoid using `any`
-type RunningHubSettings = Partial<EnhancementSettings> & {
+type RunningHubSettings = Omit<Partial<EnhancementSettings>, 'scheduler'> & {
   denoise?: number
   sampler_name?: string
   scheduler?: string
   node_191_mode?: string | number | boolean
   node_192_mode?: string | number | boolean
   node_193_mode?: string | number | boolean
+  style?: string
+  protections?: {
+    face?: {
+      skin: boolean
+      mouth: boolean
+      lowerLip: boolean
+      upperLip: boolean
+      nose: boolean
+    }
+    eyes?: {
+      eyeGeneral: boolean
+      rightEye: boolean
+      leftBrow: boolean
+      rightBrow: boolean
+      leftEye: boolean
+    }
+  }
 }
+
+
 
 interface RunningHubOutputItem {
   nodeId?: string | number
@@ -52,6 +71,7 @@ export class RunningHubProvider extends BaseAIProvider {
     this.apiKey = config.apiKey
     this.baseUrl = config.baseUrl || 'https://www.runninghub.ai'
     this.initializeModels()
+    console.log('✅ RunningHubProvider initialized with models:', this.models.map(m => m.id))
   }
 
   getProviderName(): string {
@@ -73,98 +93,62 @@ export class RunningHubProvider extends BaseAIProvider {
   private initializeModels(): void {
     this.models = [
       {
-        id: 'runninghub-flux-upscaling',
-        name: 'FLUX Upscaling Model',
-        displayName: 'RunningHub FLUX Upscaling',
-        description: 'Advanced ComfyUI-based image upscaling and enhancement model with FLUX architecture.',
+        id: 'skin-editor',
+        name: 'Skin Editor',
+        displayName: 'Skin Editor',
+        description: 'Advanced skin retraining and enhancement model with customizable modes for texture, blemishes, and more.',
         provider: {
           name: ProviderType.RUNNINGHUB,
           displayName: 'RunningHub.ai',
           description: 'ComfyUI cloud platform for advanced image processing',
-          supportedFeatures: ['image-upscaling', 'enhancement', 'flux-processing']
+          supportedFeatures: ['skin-enhancement', 'face-retouching', 'flux-processing']
         },
         version: '1.0',
         capabilities: [
-          'image-upscaling',
-          'quality-enhancement',
-          'flux-processing',
-          'comfyui-workflow',
-          'advanced-enhancement'
+          'skin-enhancement',
+          'face-retouching',
+          'texture-control',
+          'blemish-control'
         ],
         parameters: {
-          prompt: {
-            type: 'string',
-            default: 'high quality, detailed, enhanced',
-            description: 'Text prompt to guide the enhancement process'
-          },
-          seed: {
-            type: 'number',
-            default: 0,
-            description: 'Random seed for reproducible results (leave empty for random)'
-          },
-          steps: {
-            type: 'number',
-            default: 10,
-            min: 1,
-            max: 50,
-            description: 'Number of denoising steps'
-          },
-          guidance_scale: {
-            type: 'number',
-            default: 3.5,
-            min: 1.0,
-            max: 20.0,
-            step: 0.1,
-            description: 'Guidance scale for FLUX model'
+          mode: {
+            type: 'select',
+            default: 'Subtle',
+            options: ['Subtle', 'Clear', 'Pimples', 'Freckles'],
+            description: 'Enhancement mode determining base settings'
           },
           denoise: {
             type: 'number',
-            default: 0.3,
-            min: 0.0,
+            default: 0.35,
+            min: 0.01,
             max: 1.0,
             step: 0.01,
-            description: 'Denoising strength (0.0 = no change, 1.0 = complete regeneration)'
+            description: 'Denoising strength for img2img mode'
           },
-          sampler_name: {
-            type: 'select',
-            default: 'dpmpp_2m',
-            options: ['dpmpp_2m', 'euler', 'euler_ancestral', 'heun', 'dpm_2', 'dpm_2_ancestral', 'lms', 'dpmpp_sde', 'dpmpp_2s_ancestral'],
-            description: 'Sampling method for generation'
-          },
-          scheduler: {
-            type: 'select',
-            default: 'sgm_uniform',
-            options: ['simple', 'sgm_uniform', 'karras', 'exponential', 'ddim_uniform', 'beta', 'normal', 'linear_quadratic', 'kl_optimal', 'bong_tangent', 'beta57', 'ays', 'ays+', 'ays_30', 'ays_30+', 'gits', 'power_shift'],
-            description: 'Noise scheduler type'
-          },
-          upscale_model: {
-            type: 'select',
-            default: '4xRealWebPhoto_v4_dat2.pth',
-            options: ['4xRealWebPhoto_v4_dat2.pth', '4x_NMKD-Siax_200k.pth', '4x-UltraSharp.pth', 'RealESRGAN_x4plus.pth'],
-            description: 'Upscaling model to use'
-          },
-          upscale_method: {
-            type: 'select',
-            default: 'lanczos',
-            options: ['lanczos', 'nearest', 'bilinear', 'bicubic', 'area'],
-            description: 'Upscaling interpolation method'
+          maxshift: {
+            type: 'number',
+            default: 1.0,
+            min: 0.8,
+            max: 1.2,
+            step: 0.1,
+            description: 'Max shift parameter'
           },
           megapixels: {
             type: 'number',
-            default: 5.0,
-            min: 1.0,
-            max: 20.0,
-            step: 0.1,
-            description: 'Target megapixels for final image'
+            default: 4,
+            min: 2,
+            max: 10,
+            step: 1,
+            description: 'Target megapixels'
           },
-          enable_upscale: {
+          seedvrupscaler: {
             type: 'boolean',
-            default: true,
-            description: 'Enable upscaling (if disabled, only enhancement is applied)'
+            default: false,
+            description: 'Enable Seed VR Upscaler (generates multiple outputs)'
           }
         },
         pricing: {
-          costPerImage: 0.005,
+          costPerImage: 0.01,
           currency: 'USD'
         }
       }
@@ -176,13 +160,21 @@ export class RunningHubProvider extends BaseAIProvider {
     modelId: string
   ): Promise<EnhancementResponse> {
     try {
+      console.log(`🚀 RunningHub: enhancing image with modelId: ${modelId}`)
+      console.log(`📋 RunningHub: Available models:`, this.models.map(m => m.id))
+
       // Validate request
       this.validateRequest(request)
 
       // Get model info
       const model = this.getModel(modelId)
       if (!model) {
+        console.error(`❌ RunningHub: Model ${modelId} not found via getModel()`)
         return this.createErrorResponse(`Model ${modelId} not found`)
+      }
+
+      if (modelId === 'skin-editor') {
+        return this.handleSkinEditorRequest(request, model)
       }
 
       console.log('🚀 RunningHub: Enhancement request received', {
@@ -193,24 +185,24 @@ export class RunningHubProvider extends BaseAIProvider {
       })
 
       // Sanitize and validate settings with correct parameter mapping
-      const settings = {
+      const settings: RunningHubSettings = {
         prompt: request.settings.prompt || 'high quality, detailed, enhanced',
         steps: request.settings.steps || 10,
         guidance_scale: request.settings.guidance_scale || 3.5,
         denoise: request.settings.strength || request.settings.denoise || 0.3,
-        sampler_name: this.mapSamplerName(request.settings.sampler_name) || 'dpmpp_2m',
-        scheduler: this.mapSchedulerName(request.settings.scheduler) || 'sgm_uniform',
+        sampler_name: this.mapSamplerName(String(request.settings.sampler_name || 'dpmpp_2m')),
+        scheduler: this.mapSchedulerName(String(request.settings.scheduler || 'sgm_uniform')),
         seed: request.settings.seed,
         enable_upscale: request.settings.enable_upscale !== undefined ? request.settings.enable_upscale : true,
-        upscaler: request.settings.upscaler || '4xRealWebPhoto_v4_dat2.pth'
+        upscaler: String(request.settings.upscaler || '4xRealWebPhoto_v4_dat2.pth')
       }
-      
+
       // Validate parameter ranges
-      if (settings.steps && (settings.steps < 1 || settings.steps > 50)) {
+      if (typeof settings.steps === 'number' && (settings.steps < 1 || settings.steps > 50)) {
         return this.createErrorResponse('Steps must be between 1 and 50')
       }
 
-      if (settings.guidance_scale && (settings.guidance_scale < 1 || settings.guidance_scale > 20)) {
+      if (typeof settings.guidance_scale === 'number' && (settings.guidance_scale < 1 || settings.guidance_scale > 20)) {
         return this.createErrorResponse('Guidance scale must be between 1 and 20')
       }
 
@@ -218,26 +210,26 @@ export class RunningHubProvider extends BaseAIProvider {
         return this.createErrorResponse('Seed must be a valid number')
       }
 
-      if (settings.denoise && (settings.denoise < 0.1 || settings.denoise > 1)) {
+      if (typeof settings.denoise === 'number' && (settings.denoise < 0.1 || settings.denoise > 1)) {
         return this.createErrorResponse('Denoise strength must be between 0.1 and 1')
       }
 
       // Validate upscaler model selection
       const validUpscalers = ['4xRealWebPhoto_v4_dat2.pth', '4x_NMKD-Siax_200k.pth', '4x-UltraSharp.pth', 'RealESRGAN_x4plus.pth']
-      if (settings.upscaler && !validUpscalers.includes(settings.upscaler)) {
+      if (typeof settings.upscaler === 'string' && !validUpscalers.includes(settings.upscaler)) {
         return this.createErrorResponse(`Invalid upscaler model. Must be one of: ${validUpscalers.join(', ')}`)
       }
 
       // Create ComfyUI task with RunningHub API
       const taskResponse = await this.createTask(request.imageUrl, settings)
-      
+
       if (!taskResponse.success) {
         return this.createErrorResponse(taskResponse.error || 'Failed to create task')
       }
 
       // Poll for task completion
       const result = await this.pollTaskCompletion(taskResponse.taskId!)
-      
+
       if (!result.success) {
         return this.createErrorResponse(result.error || 'Task failed')
       }
@@ -253,7 +245,7 @@ export class RunningHubProvider extends BaseAIProvider {
         metadata: {
           modelVersion: model.version,
           processingTime: result.processingTime,
-          settings,
+          settings: settings as EnhancementSettings,
           userId: request.userId,
           imageId: request.imageId,
           outputFormat: 'png',
@@ -275,6 +267,140 @@ export class RunningHubProvider extends BaseAIProvider {
     }
   }
 
+  private async handleSkinEditorRequest(
+    request: EnhancementRequest,
+    model: ModelInfo
+  ): Promise<EnhancementResponse> {
+    const settings = request.settings as RunningHubSettings
+    const { SKIN_EDITOR_MODES } = await import('../../../models/skin-editor/config')
+
+    // Apply mode defaults if not overridden
+    const mode = (settings.mode as keyof typeof SKIN_EDITOR_MODES) || 'Subtle'
+    const modeDefaults = SKIN_EDITOR_MODES[mode]
+
+    const finalSettings = {
+      ...modeDefaults,
+      ...settings, // User overrides
+      prompt: modeDefaults.prompt // Force prompt from mode as it's complex
+    }
+
+    console.log('🚀 RunningHub: Processing Skin Editor request', {
+      mode,
+      finalSettings
+    })
+
+    // Prepare node overrides for Skin Editor workflow
+    const nodeInfoList = [
+      {
+        nodeId: '97', // Input Image
+        fieldName: 'image',
+        fieldValue: request.imageUrl // Will be processed in createTask but we need to pass it
+      },
+      {
+        nodeId: '140', // Prompt
+        fieldName: 'text',
+        fieldValue: finalSettings.prompt
+      },
+      {
+        nodeId: '90', // Denoise
+        fieldName: 'denoise',
+        fieldValue: String(finalSettings.denoise)
+      },
+      {
+        nodeId: '167', // Max Shift
+        fieldName: 'max_shift',
+        fieldValue: String(finalSettings.maxshift)
+      },
+      {
+        nodeId: '85', // Megapixels
+        fieldName: 'megapixels',
+        fieldValue: String(finalSettings.megapixels)
+      },
+      {
+        nodeId: '88', // Guidance
+        fieldName: 'guidance',
+        fieldValue: String(finalSettings.guidance)
+      }
+    ]
+    // Add more node mappings as needed based on skineditor.json
+    // Style Mapping (LoraLoader Node 166) - Removed as invalid for current workflow
+    
+    // Protection Mapping (FaceParsingResultsParser Node 138)
+    // Default protections if not provided
+    const p = settings.protections || {
+      face: { skin: true, nose: true, mouth: true, upperLip: true, lowerLip: true },
+      eyes: { eyeGeneral: true, rightEye: true, leftEye: true, rightBrow: true, leftBrow: true }
+    };
+
+    const protectionFields = [
+      { field: 'skin', val: p.face?.skin },
+      { field: 'nose', val: p.face?.nose },
+      { field: 'mouth', val: p.face?.mouth },
+      { field: 'u_lip', val: p.face?.upperLip },
+      { field: 'l_lip', val: p.face?.lowerLip },
+      { field: 'eye_g', val: p.eyes?.eyeGeneral },
+      { field: 'r_eye', val: p.eyes?.rightEye },
+      { field: 'l_eye', val: p.eyes?.leftEye },
+      { field: 'r_brow', val: p.eyes?.rightBrow },
+      { field: 'l_brow', val: p.eyes?.leftBrow },
+      // Add defaults for others if needed
+      { field: 'background', val: false }, // Default
+      { field: 'hair', val: false },
+      { field: 'cloth', val: false }
+    ];
+
+    protectionFields.forEach(({ field, val }) => {
+      if (val !== undefined) {
+        nodeInfoList.push({
+          nodeId: '138',
+          fieldName: field,
+          fieldValue: String(val)
+        })
+      }
+    })
+
+    // Seed VR Upscaler Toggle (Node 172) - Removed as invalid for current workflow
+
+
+
+    // Create task
+    const taskResponse = await this.createTask(request.imageUrl, {
+      ...settings,
+      workflowId: '2021189307448434690', // Skin Editor Workflow ID
+      nodeInfoListOverride: nodeInfoList
+    } as any)
+
+    if (!taskResponse.success) {
+      return this.createErrorResponse(taskResponse.error || 'Failed to create Skin Editor task')
+    }
+
+    const result = await this.pollTaskCompletion(taskResponse.taskId!)
+
+    if (!result.success) {
+      return this.createErrorResponse(result.error || 'Task failed')
+    }
+
+    return {
+      success: true,
+      enhancedUrl: result.outputUrl,
+      metadata: {
+        modelVersion: model.version,
+        processingTime: result.processingTime,
+        settings: finalSettings as unknown as EnhancementSettings,
+        userId: request.userId,
+        imageId: request.imageId,
+        outputFormat: 'png',
+        provider: this.getProviderName(),
+        model: model.id,
+        timestamp: Date.now(),
+        details: {
+          taskId: taskResponse.taskId,
+          workflowId: '2021189307448434690'
+        }
+      }
+    }
+  }
+
   private async createTask(imageUrl: string, settings: RunningHubSettings): Promise<{
     success: boolean
     taskId?: string
@@ -286,29 +412,39 @@ export class RunningHubProvider extends BaseAIProvider {
       // Check if imageUrl is a base64 data URL and convert it
       if (imageUrl.startsWith('data:')) {
         console.log('RunningHub: Converting base64 image to public URL...')
-        
+
         try {
           // Convert base64 to buffer for server-side upload
           const base64Data = imageUrl.split(',')[1]
           const mimeType = imageUrl.match(/data:([^;]+)/)?.[1] || 'image/jpeg'
           const extension = mimeType.split('/')[1] || 'jpg'
-          
+
+          console.log(`RunningHub: Base64 data length: ${base64Data?.length}, Mime: ${mimeType}`)
+
           if (!base64Data) {
+            console.error('RunningHub: Invalid base64 data')
             return {
               success: false,
               error: 'Invalid base64 data URL'
             }
           }
-          
+
           // Convert base64 to Buffer (Node.js compatible)
           const buffer = Buffer.from(base64Data, 'base64')
-          
+
           // Create a server-side compatible file object
           const fileName = `enhancement-input.${extension}`
           const key = `uploads/${Date.now()}-${fileName}`
-          
+
+          console.log('RunningHub: Importing Tebi client...')
           // Upload directly using tebiClient (bypassing File requirement)
           const { default: tebiClient, tebiUtils } = await import('../../../lib/tebi')
+          
+          if (!tebiClient) {
+             console.error('RunningHub: Tebi client import failed (default is undefined)')
+             throw new Error('Tebi client import failed')
+          }
+
           const bucketName = process.env.NEXT_PUBLIC_TEBI_BUCKET_NAME || 'sharpii-ai'
           const uploadParams = {
             Bucket: bucketName,
@@ -317,43 +453,49 @@ export class RunningHubProvider extends BaseAIProvider {
             ContentType: mimeType,
             Metadata: {
               originalName: fileName,
-             uploadedAt: new Date().toISOString(),
-             category: 'uploads'
-           }
-         }
-          
+              uploadedAt: new Date().toISOString(),
+              category: 'uploads'
+            }
+          }
+
+          console.log(`RunningHub: Uploading to Tebi bucket ${bucketName} key ${key}...`)
           await tebiClient.putObject(uploadParams).promise()
-          
+          console.log('RunningHub: Upload completed')
+
           // Generate the public URL
           const uploadResult = {
             key,
             url: tebiUtils.getFileUrl(key),
             size: buffer.length
           }
-           
-           if (!uploadResult.url) {
-             return {
-               success: false,
-               error: 'Failed to upload image to storage service'
-             }
-           }
-          
+
+          console.log('RunningHub: Generated URL:', uploadResult.url)
+
+          if (!uploadResult.url) {
+            return {
+              success: false,
+              error: 'Failed to upload image to storage service'
+            }
+          }
+
           processedImageUrl = uploadResult.url
           console.log('RunningHub: Successfully converted base64 to URL:', processedImageUrl)
         } catch (uploadError) {
           console.error('RunningHub: Failed to convert base64 image:', uploadError)
           return {
             success: false,
-            error: 'Failed to process base64 image'
+            error: 'Failed to process base64 image: ' + (uploadError instanceof Error ? uploadError.message : String(uploadError))
           }
         }
+      } else {
+        console.log('RunningHub: Image is not base64, using as is:', imageUrl.substring(0, 50) + '...')
       }
-      
+
       // Generate random seed if not provided
       const seed = settings.seed ? parseInt(String(settings.seed)) : Math.floor(Math.random() * 1000000000000000)
-      
+
       console.log('🔗 RunningHub: Creating task with image URL:', processedImageUrl.substring(0, 100) + '...')
-      
+
       // Simplified node mapping focusing on essential parameters
       const nodeInfoList = [
         {
@@ -424,7 +566,7 @@ export class RunningHubProvider extends BaseAIProvider {
           fieldValue: String(settings.node_191_mode)
         })
       }
-      
+
       if (settings.node_192_mode !== undefined) {
         nodeInfoList.push({
           nodeId: '192',
@@ -432,7 +574,7 @@ export class RunningHubProvider extends BaseAIProvider {
           fieldValue: String(settings.node_192_mode)
         })
       }
-      
+
       if (settings.node_193_mode !== undefined) {
         nodeInfoList.push({
           nodeId: '193',
@@ -443,15 +585,28 @@ export class RunningHubProvider extends BaseAIProvider {
 
       console.log('🔍 RunningHub: Node mappings being sent:', JSON.stringify(nodeInfoList, null, 2))
 
-      const requestPayload = {
-        apiKey: this.apiKey,
-        workflowId: '1965053107388432385', // Original workflow - try this first
-        nodeInfoList,
-        addMetadata: true
+      const workflowId = (settings as any).workflowId || '1965053107388432385'
+      let finalNodeInfoList = (settings as any).nodeInfoListOverride || nodeInfoList
+
+      // Ensure the processed image URL is used in the final list (especially if override was used)
+      if ((settings as any).nodeInfoListOverride && processedImageUrl !== imageUrl) {
+        console.log('RunningHub: Updating image URL in override list with processed URL')
+        finalNodeInfoList = finalNodeInfoList.map((node: any) => {
+          if (node.nodeId === '97' && node.fieldName === 'image') {
+            return { ...node, fieldValue: processedImageUrl }
+          }
+          return node
+        })
       }
 
-      console.log('🔍 RunningHub: Trying primary workflow ID: 1965053107388432385')
-      console.log('🔍 RunningHub: Node info list length:', nodeInfoList.length)
+      const requestPayload = {
+        apiKey: this.apiKey,
+        workflowId,
+        nodeInfoList: finalNodeInfoList
+      }
+
+      console.log(`🔍 RunningHub: Trying workflow ID: ${workflowId}`)
+      console.log('🔍 RunningHub: Node info list length:', finalNodeInfoList.length)
 
       console.log('🔍 RunningHub: API Request Details:', {
         url: `${this.baseUrl}/task/openapi/create`,
@@ -462,8 +617,8 @@ export class RunningHubProvider extends BaseAIProvider {
         },
         payloadSize: JSON.stringify(requestPayload).length,
         apiKeyLength: this.apiKey.length,
-        workflowId: '1965053107388432385',
-        nodeCount: nodeInfoList.length
+        workflowId,
+        nodeCount: finalNodeInfoList.length
       })
 
       let response: Response
@@ -471,7 +626,6 @@ export class RunningHubProvider extends BaseAIProvider {
         response = await fetch(`${this.baseUrl}/task/openapi/create`, {
           method: 'POST',
           headers: {
-            'Host': 'www.runninghub.ai',
             'Content-Type': 'application/json'
           },
           body: JSON.stringify(requestPayload)
@@ -555,13 +709,15 @@ export class RunningHubProvider extends BaseAIProvider {
     let attempts = 0
     const startTime = Date.now()
 
+    let consecutiveErrors = 0
+    const maxConsecutiveErrors = 5
+
     while (attempts < maxAttempts) {
       try {
         // Check task status
         const statusResponse = await fetch(`${this.baseUrl}/task/openapi/status`, {
           method: 'POST',
           headers: {
-            'Host': 'www.runninghub.ai',
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -570,61 +726,74 @@ export class RunningHubProvider extends BaseAIProvider {
           })
         })
 
+        if (!statusResponse.ok) {
+           throw new Error(`Status check failed: ${statusResponse.status} ${statusResponse.statusText}`)
+        }
+
         const statusData = await statusResponse.json()
         
+        // Reset error counter on success
+        consecutiveErrors = 0
+
         console.log('🔍 RunningHub: Polling attempt', attempts + 1, 'Status response:', JSON.stringify(statusData, null, 2))
-        
+
         if (statusData.code === 0) {
           const status = statusData.data
-          
+
           console.log('🔍 RunningHub: Task status:', status)
-          
+
           if (status === 'SUCCESS') {
             console.log('✅ RunningHub: Task completed successfully, waiting before fetching outputs...')
             // Wait longer for outputs to be fully processed
             await new Promise(resolve => setTimeout(resolve, 5000))
-            
+
             console.log('🔍 RunningHub: Now fetching outputs...')
-            
+
             // Try fetching outputs multiple times with increasing delays
-            let outputData: unknown = null
+            let outputData: any = null // Changed to any to avoid strict type checking issues with data access
             let outputAttempts = 0
             const maxOutputAttempts = 3
-            
-            while (outputAttempts < maxOutputAttempts) {
-              const outputResponse = await fetch(`${this.baseUrl}/task/openapi/outputs`, {
-                method: 'POST',
-                headers: {
-                  'Host': 'www.runninghub.ai',
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  apiKey: this.apiKey,
-                  taskId
-                })
-              })
 
-              outputData = await outputResponse.json()
-              
-              console.log(`🔍 RunningHub: Output attempt ${outputAttempts + 1}/${maxOutputAttempts}:`, JSON.stringify(outputData, null, 2))
-              
-              // If we have outputs, break out of the loop
-              if (isRunningHubOutputsResponse(outputData) && Array.isArray(outputData.data) && outputData.code === 0 && outputData.data.length > 0) {
-                 console.log('✅ RunningHub: Found outputs on attempt', outputAttempts + 1)
-                 break
-               }
-              
+            while (outputAttempts < maxOutputAttempts) {
+              try {
+                const outputResponse = await fetch(`${this.baseUrl}/task/openapi/outputs`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    apiKey: this.apiKey,
+                    taskId
+                  })
+                })
+                
+                if (outputResponse.ok) {
+                    outputData = await outputResponse.json()
+                    console.log(`🔍 RunningHub: Output attempt ${outputAttempts + 1}/${maxOutputAttempts}:`, JSON.stringify(outputData, null, 2))
+
+                    // If we have outputs, break out of the loop
+                    if (isRunningHubOutputsResponse(outputData) && Array.isArray(outputData.data) && outputData.code === 0 && outputData.data.length > 0) {
+                        console.log('✅ RunningHub: Found outputs on attempt', outputAttempts + 1)
+                        break
+                    }
+                } else {
+                    console.warn(`⚠️ RunningHub: Output fetch failed with status ${outputResponse.status}`)
+                }
+              } catch (e) {
+                console.warn(`⚠️ RunningHub: Output fetch error:`, e)
+              }
+
               outputAttempts++
               if (outputAttempts < maxOutputAttempts) {
                 console.log(`⏳ RunningHub: No outputs yet, waiting ${3000 * outputAttempts}ms before retry...`)
                 await new Promise(resolve => setTimeout(resolve, 3000 * outputAttempts))
               }
             }
-            
+
             if (isRunningHubOutputsResponse(outputData) && Array.isArray(outputData.data) && outputData.code === 0 && outputData.data.length > 0) {
               console.log('🔍 RunningHub: Output data found, checking for final output node...')
               console.log('🔍 RunningHub: Available outputs:', outputData.data.map((o) => ({ nodeId: o.nodeId, hasFileUrl: !!o.fileUrl })))
-              
+
               // Log all available outputs for debugging
               console.log('🔍 RunningHub: All available outputs:', outputData.data.map(o => ({
                 nodeId: o.nodeId,
@@ -633,7 +802,8 @@ export class RunningHubProvider extends BaseAIProvider {
               })))
 
               // Look for actual output node IDs from this workflow (prioritize common output nodes)
-              const priorityNodeIds = ['102', '136', '144', '138', '143'] // Main workflow outputs
+              // Added 98 and 139 based on outputs_to_execute from task creation response
+              const priorityNodeIds = ['102', '136', '144', '138', '143', '98', '139'] // Main workflow outputs
               const fallbackNodeIds = ['99', '100', '101', '103', '104', '105'] // Common ComfyUI output nodes
               const allPossibleNodeIds = [...priorityNodeIds, ...fallbackNodeIds]
 
@@ -666,7 +836,33 @@ export class RunningHubProvider extends BaseAIProvider {
                   console.log('✅ RunningHub: Found any output from node', finalOutput.nodeId, ':', finalOutput.fileUrl)
                 }
               }
-              
+
+              // Debug: Log the structure of the first item to check for property names
+              if (outputData.data && outputData.data.length > 0) {
+                 const firstItem = outputData.data[0]
+                 if (firstItem) {
+                    console.log('🔍 RunningHub: First output item keys:', Object.keys(firstItem))
+                    
+                    // Check if maybe the property is named differently (e.g. file_url, url, image, etc.)
+                    const itemAny = firstItem as any
+                    if (!finalOutput && (itemAny.file_url || itemAny.url || itemAny.image)) {
+                        console.log('⚠️ RunningHub: Possible property mismatch. Found:', {
+                          file_url: itemAny.file_url,
+                          url: itemAny.url,
+                          image: itemAny.image
+                        })
+                        // Try to use alternative property names
+                        const altOutput = outputData.data.find((output: any) => output.file_url || output.url || output.image)
+                        if (altOutput) {
+                          const altItemAny = altOutput as any
+                          const altUrl = altItemAny.file_url || altItemAny.url || altItemAny.image
+                          console.log('✅ RunningHub: Found output using alternative property:', altUrl)
+                          finalOutput = { ...altOutput, fileUrl: altUrl } as RunningHubOutputItem
+                        }
+                    }
+                 }
+              }
+
               if (finalOutput && finalOutput.fileUrl) {
                 return {
                   success: true,
@@ -674,7 +870,7 @@ export class RunningHubProvider extends BaseAIProvider {
                   processingTime: Date.now() - startTime
                 }
               }
-              
+
               console.log('❌ RunningHub: No valid output found in response')
               console.log('🔍 RunningHub: All outputs:', JSON.stringify(outputData.data, null, 2))
               return {
@@ -728,10 +924,20 @@ export class RunningHubProvider extends BaseAIProvider {
           await new Promise(resolve => setTimeout(resolve, pollInterval))
         }
       } catch (error: unknown) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : 'Error polling task status'
+        console.warn('⚠️ RunningHub: Polling error:', error)
+        consecutiveErrors++
+        
+        if (consecutiveErrors >= maxConsecutiveErrors) {
+          console.error(`❌ RunningHub: Max consecutive errors (${maxConsecutiveErrors}) reached. Aborting.`)
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Error polling task status (max retries reached)'
+          }
         }
+        
+        console.log(`⏳ RunningHub: Retrying polling (error ${consecutiveErrors}/${maxConsecutiveErrors})...`)
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, pollInterval))
       }
     }
 
@@ -817,11 +1023,16 @@ export class RunningHubProvider extends BaseAIProvider {
     return schedulerMap[schedulerName] || 'sgm_uniform'
   }
 
-  protected createErrorResponse(error: string): EnhancementResponse {
+  protected createErrorResponse(error: string, details?: unknown): EnhancementResponse {
     return {
       success: false,
       error,
-      message: 'RunningHub enhancement failed'
+      message: 'RunningHub enhancement failed',
+      metadata: {
+        provider: this.getProviderName(),
+        timestamp: Date.now(),
+        details
+      }
     }
   }
 }

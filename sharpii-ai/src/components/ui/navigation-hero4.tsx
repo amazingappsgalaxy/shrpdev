@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth-client-simple'
 import { MainLogo } from '@/components/ui/main-logo'
 
 const menuItems = [
+  { name: 'Models', href: '/models' },
   { name: 'Gallery', href: '#comparison-section' },
   { name: 'Pricing', href: '#pricing-section' },
   { name: 'FAQ', href: '#faq' },

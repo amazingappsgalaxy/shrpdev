@@ -55,7 +55,7 @@ export class EnhancementService {
    */
   async enhanceImage(
     request: EnhancementRequest,
-    modelId: string = 'femat-magic-image-refiner',
+    modelId: string = 'skin-editor',
     progressCallback?: (progress: number, status: string) => Promise<void>
   ): Promise<EnhancementResponse> {
     let jobId: string = ''

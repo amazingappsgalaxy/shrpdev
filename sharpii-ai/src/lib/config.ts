@@ -41,11 +41,6 @@ export const config = {
   
   // AI Services Configuration
   ai: {
-    replicate: {
-      apiToken: process.env.REPLICATE_API_TOKEN || '',
-      timeout: 300000, // 5 minutes
-      retries: 3
-    },
     runninghub: {
       apiToken: process.env.RUNNINGHUB_API_KEY || '',
       baseUrl: process.env.RUNNINGHUB_BASE_URL || 'https://www.runninghub.ai',
@@ -61,9 +56,6 @@ if (process.env.NODE_ENV === 'production') {
   config.app.url = process.env.NEXTAUTH_URL || 'https://your-domain.com';
   
   // In production, require proper environment variables
-  if (!process.env.REPLICATE_API_TOKEN) {
-    console.warn('⚠️ REPLICATE_API_TOKEN not set in production environment');
-  }
   if (!process.env.RUNNINGHUB_API_KEY) {
     console.warn('⚠️ RUNNINGHUB_API_KEY not set in production environment');
   }
