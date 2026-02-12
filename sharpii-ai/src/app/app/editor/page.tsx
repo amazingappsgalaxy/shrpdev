@@ -10,6 +10,7 @@ import {
   IconPhoto,
   IconSettings,
   IconShield,
+  IconShieldCheck,
   IconArrowsHorizontal,
   IconWand,
   IconArrowsMaximize,
@@ -94,9 +95,7 @@ const MODEL_CONTROLS = {
   'skin-editor': {
     denoise: { type: 'number', default: 0.35, min: 0.1, max: 0.38, step: 0.01, label: 'Effect Strength', leftLabel: 'Subtle', rightLabel: 'Strong' },
     megapixels: { type: 'number', default: 4, min: 2, max: 10, step: 1, label: 'Detail Level (MP)', leftLabel: 'Low', rightLabel: 'High' },
-    maxshift: { type: 'number', default: 1, min: 0.8, max: 1.2, step: 0.1, label: 'Max Shift', leftLabel: 'Low', rightLabel: 'High' },
-    seed: { type: 'number', default: -1, min: -1, max: 9999999999, step: 1, label: 'Seed (-1 for random)' },
-    vr_upscale: { type: 'boolean', default: false, label: 'VR Upscale' }
+    maxshift: { type: 'number', default: 1, min: 0.8, max: 1.2, step: 0.1, label: 'Max Shift', leftLabel: 'Low', rightLabel: 'High' }
   }
 }
 
@@ -401,7 +400,7 @@ function EditorContent() {
         <div className="flex flex-col border-r border-white/5 bg-[#0c0c0e] z-20 relative min-h-[calc(100vh-6rem)] lg:pb-32">
 
           {/* 1. TOP SECTION: INPUT & STYLES (SIDE BY SIDE) */}
-          <div className="grid grid-cols-2 border-b border-white/5">
+          <div className="grid grid-cols-[35%_65%] border-b border-white/5">
             
             {/* LEFT: INPUT IMAGE */}
             <div className="p-4 border-r border-white/5 flex flex-col gap-3">
@@ -441,25 +440,25 @@ function EditorContent() {
             </div>
 
             {/* RIGHT: STYLES */}
-            <div className="p-4 flex flex-col gap-3">
+            <div className="p-3 flex flex-col gap-3">
               <label className="text-xs font-medium text-white">Style</label>
-              <div className="grid grid-cols-1 gap-2 overflow-y-auto max-h-[160px] pr-1">
+              <div className="grid grid-cols-2 gap-2">
                 {STYLES.map(style => (
                   <button
                     key={style.id}
                     onClick={() => setSelectedStyle(style.id)}
                     className={cn(
-                      "flex items-center gap-2 p-2 rounded-lg border transition-all text-[10px] font-medium text-left",
+                      "flex flex-col items-center justify-center p-2 rounded-lg border transition-all text-[10px] font-bold uppercase tracking-wide gap-1.5",
                       selectedStyle === style.id
-                        ? "bg-white/10 border-yellow-400/50 text-white"
-                        : "bg-white/5 border-white/5 text-gray-400 hover:text-white hover:bg-white/10"
+                        ? "bg-[#FFFF00] border-[#FFFF00] text-black shadow-[0_0_20px_rgba(255,255,0,0.3)]"
+                        : "bg-white/5 border-white/5 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/10"
                     )}
                   >
                     <div className={cn(
-                        "w-1.5 h-1.5 rounded-full shrink-0",
-                        selectedStyle === style.id ? "bg-yellow-400" : "bg-gray-600"
+                      "w-1.5 h-1.5 rounded-full",
+                      selectedStyle === style.id ? "bg-black" : "bg-gray-600"
                     )} />
-                    <span className="truncate">{style.name}</span>
+                    <span>{style.name}</span>
                   </button>
                 ))}
               </div>
@@ -468,26 +467,26 @@ function EditorContent() {
           </div>
 
           {/* 3. SETTINGS SCROLL AREA */}
-          <div className="p-5 space-y-6 flex-1">
+          <div className="p-3 space-y-3 flex-1">
 
             {/* GROUP 1: Primary Controls */}
-            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-5">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xs font-medium text-white flex items-center gap-2">
-                  <IconSettings className="w-3 h-3 text-gray-400" />
-                  Primary Settings
-                </h3>
-                <button
-                  onClick={() => {
-                    if (selectedModel === 'skin-editor' && enhancementMode in SKIN_EDITOR_DEFAULTS) {
-                      const defaults = SKIN_EDITOR_DEFAULTS[enhancementMode as keyof typeof SKIN_EDITOR_DEFAULTS]
-                      setModelSettings(prev => ({ ...prev, ...defaults }))
-                    }
-                  }}
-                  className="text-[10px] text-gray-500 hover:text-white transition-colors uppercase tracking-wider font-medium"
-                >
-                  Reset
-                </button>
+            <div className="space-y-2 px-1">
+              
+              {/* VR Upscale Special Setting - MOVED HERE */}
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 group hover:border-purple-500/40 transition-colors">
+                  <div className="flex items-center gap-2">
+                      <div className="p-1 rounded bg-purple-500/20 text-purple-400 group-hover:text-purple-300 transition-colors">
+                          <IconSparkles className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="flex flex-col">
+                          <span className="text-[11px] font-bold text-white group-hover:text-purple-200 transition-colors">VR Upscale</span>
+                      </div>
+                  </div>
+                  <Switch
+                    checked={!!modelSettings['vr_upscale']}
+                    onCheckedChange={(c) => setModelSettings(prev => ({ ...prev, 'vr_upscale': c }))}
+                    className="scale-75 data-[state=checked]:bg-purple-500"
+                  />
               </div>
 
               {/* Render Model specific controls */}
@@ -497,7 +496,7 @@ function EditorContent() {
 
                 if (conf.type === 'boolean') {
                   return (
-                    <div key={key} className="flex items-center justify-between group">
+                    <div key={key} className="flex items-center justify-between group p-2.5 rounded-lg bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all">
                       <span className="text-xs font-medium text-white transition-colors">{conf.label}</span>
                       <Switch
                         checked={!!currentValue}
@@ -510,10 +509,10 @@ function EditorContent() {
 
                 if (conf.type === 'number') {
                   return (
-                    <div key={key} className="space-y-1 group">
-                      <div className="flex justify-between items-center px-1 mb-2">
+                    <div key={key} className="space-y-2 group p-2.5 rounded-lg bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all">
+                      <div className="flex justify-between items-center px-1">
                         <span className="text-xs font-medium text-white transition-colors">{conf.label}</span>
-                        <span className="font-mono text-xs text-white">{Number(currentValue).toFixed(conf.step && conf.step < 1 ? 2 : 0)}</span>
+                        <span className="font-mono text-[10px] text-white/70 bg-white/5 px-1.5 py-0.5 rounded">{Number(currentValue).toFixed(conf.step && conf.step < 1 ? 2 : 0)}</span>
                       </div>
                       <MechanicalSlider
                         value={[Number(currentValue)]}
@@ -530,21 +529,14 @@ function EditorContent() {
             </div>
 
             {/* GROUP 2: Area Protection (3 Sections: Face, Eyes, Other) */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-medium text-white flex items-center gap-2">
-                  <IconShield className="w-3 h-3 text-gray-400" />
-                  Area Protection
-                </h3>
-                <button
-                  onClick={() => setAreaSettings(DEFAULT_AREA_PROTECTION)}
-                  className="text-[10px] text-gray-500 hover:text-white transition-colors uppercase tracking-wider font-medium"
-                >
-                  Reset
-                </button>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-1 pt-2 border-t border-white/5">
+                <IconShieldCheck className="w-3.5 h-3.5 text-white/50" />
+                <span className="text-xs font-bold text-white/50 uppercase tracking-wide">Area Protection</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              {/* Face Features */}
+              <div className="grid grid-cols-2 gap-2">
                 {/* Face Column */}
                 <div className="space-y-2">
                   <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider pl-1 flex items-center gap-1"><IconUser className="w-3 h-3" /> Face</p>
@@ -581,9 +573,8 @@ function EditorContent() {
               </div>
 
               {/* Other Section */}
-              <div className="space-y-2 pt-2 border-t border-white/5">
-                <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider pl-1 flex items-center gap-1"><IconSettings className="w-3 h-3" /> Other</p>
-                <div className="grid grid-cols-3 gap-2">
+              <div className="pt-2">
+                <div className="grid grid-cols-4 gap-2">
                   {Object.entries(areaSettings.other).map(([key, val]) => (
                     <div key={key} className="flex flex-col items-center justify-center p-2 rounded bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group gap-1">
                       <span className="text-[10px] text-gray-400 capitalize group-hover:text-white transition-colors">{key}</span>
@@ -684,7 +675,7 @@ function EditorContent() {
             <h3 className="text-xs font-bold text-white/50 mb-3 flex items-center gap-2 uppercase tracking-wide">
               Select Mode
             </h3>
-            <div className="grid grid-cols-4 gap-3">
+            <div className="flex bg-black/40 p-1 rounded-lg border border-white/5">
               {[
                 { id: 'Subtle', label: 'Subtle' },
                 { id: 'Clear', label: 'Clear' },
@@ -695,30 +686,13 @@ function EditorContent() {
                   key={mode.id}
                   onClick={() => setEnhancementMode(mode.id)}
                   className={cn(
-                    "relative h-14 rounded-lg overflow-hidden group border transition-all flex items-center justify-center",
+                    "flex-1 py-2.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all",
                     enhancementMode === mode.id
-                      ? "border-yellow-400 shadow-[0_0_10px_rgba(255,255,0,0.2)] bg-white/5"
-                      : "border-white/5 bg-black/40 hover:border-white/20 hover:bg-white/5"
+                      ? "bg-[#FFFF00] text-black shadow-[0_0_15px_rgba(255,255,0,0.2)]"
+                      : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
                   )}
                 >
-                  {/* Background Image: Use user image or default if none */}
-                  {(uploadedImage || '/demo-image.jpg') && (
-                    <img
-                      src={uploadedImage || '/demo-image.jpg'}
-                      alt=""
-                      className={cn(
-                        "absolute inset-0 w-full h-full object-cover transition-opacity duration-500",
-                        enhancementMode === mode.id ? "opacity-30" : "opacity-10 group-hover:opacity-20"
-                      )}
-                    />
-                  )}
-
-                  <span className={cn(
-                    "relative z-10 text-xs font-medium uppercase tracking-wider transition-colors",
-                    enhancementMode === mode.id ? "text-yellow-400" : "text-gray-400 group-hover:text-gray-200"
-                  )}>
-                    {mode.label}
-                  </span>
+                  {mode.label}
                 </button>
               ))}
             </div>
