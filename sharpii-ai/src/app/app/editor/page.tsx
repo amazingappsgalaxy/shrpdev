@@ -7,16 +7,16 @@ import {
   IconDownload,
   IconLoader2,
   IconSparkles,
-  IconPhoto,
-  IconSettings,
-  IconShield,
-  IconShieldCheck,
   IconArrowsHorizontal,
   IconWand,
   IconArrowsMaximize,
-  IconUser,
-  IconEye,
-  IconTrash
+  IconTrash,
+  IconPolygon,
+  IconMoodSmile,
+  IconPalette,
+  IconBrush,
+  IconShield,
+  IconAdjustmentsHorizontal
 } from "@tabler/icons-react"
 // Removed STYLE_MAPPING and STYLE_LORAS as they are no longer supported
 
@@ -93,17 +93,17 @@ const AVAILABLE_MODELS = [
 // Model-specific control configurations
 const MODEL_CONTROLS = {
   'skin-editor': {
-    denoise: { type: 'number', default: 0.35, min: 0.1, max: 0.38, step: 0.01, label: 'Effect Strength', leftLabel: 'Subtle', rightLabel: 'Strong' },
-    megapixels: { type: 'number', default: 4, min: 2, max: 10, step: 1, label: 'Detail Level (MP)', leftLabel: 'Low', rightLabel: 'High' },
-    maxshift: { type: 'number', default: 1, min: 0.8, max: 1.2, step: 0.1, label: 'Max Shift', leftLabel: 'Low', rightLabel: 'High' }
+    maxshift: { type: 'number', default: 1, min: 0.8, max: 1.2, step: 0.1, label: 'Detail Level', leftLabel: 'Low', rightLabel: 'High' },
+    megapixels: { type: 'number', default: 4, min: 2, max: 10, step: 1, label: 'Skin Texture Size', leftLabel: 'Low', rightLabel: 'High' },
+    denoise: { type: 'number', default: 0.35, min: 0.1, max: 0.38, step: 0.01, label: 'Transformation Strength', leftLabel: 'Subtle', rightLabel: 'Strong' }
   }
 }
 
 const STYLES = [
-  { id: 'style1', name: 'Polyhedron', value: 'FLUX_Polyhedron_all_Kohya_ss-000001.safetensors' },
-  { id: 'style2', name: 'Skin', value: 'skin.safetensors' },
-  { id: 'style3', name: 'Freckles', value: 'freckles-flux.safetensors' },
-  { id: 'style4', name: 'Realism', value: 'Realim_Lora_BSY_IL_V1_RA42.safetensors' }
+  { id: 'style1', name: 'Poly', value: 'FLUX_Polyhedron_all_Kohya_ss-000001.safetensors', icon: IconPolygon },
+  { id: 'style2', name: 'Skin', value: 'skin.safetensors', icon: IconMoodSmile },
+  { id: 'style3', name: 'Freckle', value: 'freckles-flux.safetensors', icon: IconPalette },
+  { id: 'style4', name: 'Real', value: 'Realim_Lora_BSY_IL_V1_RA42.safetensors', icon: IconBrush }
 ]
 
 // Enhancement mode options by model
@@ -112,7 +112,8 @@ const MODES_BY_MODEL: Record<string, DropdownOption[]> = {
     { value: 'Subtle', label: 'Subtle', description: 'Natural texture preservation' },
     { value: 'Clear', label: 'Clear', description: 'Balanced smoothing' },
     { value: 'Pimples', label: 'Blemish Removal', description: 'Focus on acne removal' },
-    { value: 'Freckles', label: 'Freckle Enhancer', description: 'Enhance natural freckles' }
+    { value: 'Freckles', label: 'Freckle Enhancer', description: 'Enhance natural freckles' },
+    { value: 'Custom', label: 'Custom', description: 'Custom prompt' }
   ],
   'default': [
     { value: 'standard', label: 'Standard', description: 'Balanced enhancement' },
@@ -126,7 +127,8 @@ const SKIN_EDITOR_DEFAULTS = {
   Subtle: { denoise: 0.20, maxshift: 1, megapixels: 4 },
   Clear: { denoise: 0.35, maxshift: 1.2, megapixels: 4 },
   Pimples: { denoise: 0.37, maxshift: 1.2, megapixels: 2 },
-  Freckles: { denoise: 0.37, maxshift: 1.2, megapixels: 2 }
+  Freckles: { denoise: 0.37, maxshift: 1.2, megapixels: 2 },
+  Custom: { denoise: 0.24, maxshift: 1, megapixels: 4 }
 }
 
 // --- COMPONENTS ---
@@ -215,7 +217,11 @@ function EditorContent() {
 
   // State: Defaulting to USER PROVIDED DEMO IMAGES
   const [uploadedImage, setUploadedImage] = useState<string | null>("https://i.postimg.cc/gJHLjBwj/image.png")
-  const [enhancedImage, setEnhancedImage] = useState<string | null>("https://i.postimg.cc/rspsmyXZ/image.png")
+  const [enhancedImages, setEnhancedImages] = useState<string[]>(["https://i.postimg.cc/85Q350wG/output.png"])
+  const [selectedOutputIndex, setSelectedOutputIndex] = useState(0)
+  // Backward compatibility accessor
+  const enhancedImage = enhancedImages[selectedOutputIndex] || null
+  
   const [imageMetadata, setImageMetadata] = useState({ width: 1024, height: 1024 })
 
   // Settings
@@ -225,8 +231,12 @@ function EditorContent() {
 
   // Dynamic default mode based on model
   const [enhancementMode, setEnhancementMode] = useState<string>('Subtle')
+  const [customPrompt, setCustomPrompt] = useState("")
   const [modelSettings, setModelSettings] = useState<Record<string, any>>({})
   const [areaSettings, setAreaSettings] = useState<AreaProtectionSettings>(DEFAULT_AREA_PROTECTION)
+
+  // Smart Upscale Settings
+  const [upscaleResolution, setUpscaleResolution] = useState<'4k' | '8k'>('4k')
 
   // UI State
   const [isEnhancing, setIsEnhancing] = useState(false)
@@ -297,7 +307,8 @@ function EditorContent() {
       img.onload = () => {
         setImageMetadata({ width: img.width, height: img.height })
         setUploadedImage(e.target?.result as string)
-        setEnhancedImage(null) // Reset result
+        setEnhancedImages([]) // Reset result
+        setSelectedOutputIndex(0)
       }
       img.src = e.target?.result as string
     }
@@ -306,7 +317,8 @@ function EditorContent() {
 
   const handleDeleteImage = () => {
     setUploadedImage(null)
-    setEnhancedImage(null)
+    setEnhancedImages([])
+    setSelectedOutputIndex(0)
     setImageMetadata({ width: 1024, height: 1024 })
   }
 
@@ -316,10 +328,6 @@ function EditorContent() {
     setProgress(0)
 
     try {
-      // 1. Upload image if it's base64 (already handled by RunningHub provider but let's send it)
-      // Actually RunningHub provider handles base64 upload to Tebi.
-      // So we just call the API route.
-
       const response = await fetch('/api/enhance-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -329,8 +337,11 @@ function EditorContent() {
           settings: {
             prompt: 'Enhance skin details, preserve identity, high quality',
             mode: enhancementMode,
+            customPrompt: enhancementMode === 'Custom' ? customPrompt : undefined,
             protections: areaSettings,
             style: STYLES.find(s => s.id === selectedStyle)?.value,
+            smartUpscale: modelSettings['vr_upscale'],
+            upscaleResolution,
             ...modelSettings
           }
         })
@@ -342,7 +353,10 @@ function EditorContent() {
 
       const data = await response.json()
       if (data.success && data.enhancedUrl) {
-        setEnhancedImage(data.enhancedUrl)
+        // Handle single string or array of strings
+        const images = Array.isArray(data.enhancedUrl) ? data.enhancedUrl : [data.enhancedUrl]
+        setEnhancedImages(images)
+        setSelectedOutputIndex(0)
       } else {
         console.error('Enhancement failed:', data.error)
       }
@@ -403,18 +417,20 @@ function EditorContent() {
           <div className="grid grid-cols-[35%_65%] border-b border-white/5">
             
             {/* LEFT: INPUT IMAGE */}
-            <div className="p-4 border-r border-white/5 flex flex-col gap-3">
-              <div className="flex justify-between items-center">
-                 <label className="text-xs font-medium text-white">Input</label>
+            <div className="p-4 flex flex-col gap-3 h-full">
+              <div className="flex justify-between items-center px-1">
+                 <div className="flex items-center gap-2">
+                   <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Input Image</span>
+                 </div>
                  {uploadedImage && (
-                    <button onClick={(e) => { e.stopPropagation(); handleDeleteImage(); }} className="text-gray-500 hover:text-red-400" title="Delete">
-                      <IconTrash className="w-3 h-3" />
+                    <button onClick={(e) => { e.stopPropagation(); handleDeleteImage(); }} className="text-gray-500 hover:text-red-400 transition-colors" title="Delete">
+                      <IconTrash className="w-3.5 h-3.5" />
                     </button>
                  )}
               </div>
               
               <div 
-                className="w-full aspect-square rounded-xl bg-black border border-white/10 overflow-hidden relative cursor-pointer group hover:border-[#FFFF00]/50 transition-colors"
+                className="w-full aspect-square rounded-lg bg-black border border-white/10 overflow-hidden relative cursor-pointer group hover:border-[#FFFF00]/50 transition-colors"
                 onClick={() => fileInputRef.current?.click()}
               >
                 {uploadedImage ? (
@@ -425,43 +441,42 @@ function EditorContent() {
                     </div>
                   </>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full gap-1">
-                    <IconUpload className="w-5 h-5 text-gray-500" />
-                    <span className="text-[9px] text-gray-600 font-medium">Upload</span>
+                  <div className="flex flex-col items-center justify-center h-full gap-2">
+                    <IconUpload className="w-6 h-6 text-gray-500" />
+                    <span className="text-[10px] text-gray-600 font-medium">Select Image</span>
                   </div>
                 )}
-              </div>
-              
-              <div className="text-center">
-                <p className="text-[10px] text-gray-500 truncate">
-                  {uploadedImage ? `${imageMetadata.width}×${imageMetadata.height}` : 'Select Image'}
-                </p>
               </div>
             </div>
 
             {/* RIGHT: STYLES */}
-            <div className="p-3 flex flex-col gap-3">
-              <label className="text-xs font-medium text-white">Style</label>
-              <div className="grid grid-cols-2 gap-2">
+            <div className="p-4 flex flex-col gap-3 h-full">
+              <div className="flex items-center px-1">
+                 <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Skin Style</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 flex-1">
                 {STYLES.map(style => (
                   <button
                     key={style.id}
                     onClick={() => setSelectedStyle(style.id)}
                     className={cn(
-                      "flex flex-col items-center justify-center p-2 rounded-lg border transition-all text-[10px] font-bold uppercase tracking-wide gap-1.5",
+                      "flex flex-row items-center justify-start px-3 rounded-md border transition-all gap-3 h-full",
                       selectedStyle === style.id
                         ? "bg-[#FFFF00] border-[#FFFF00] text-black shadow-[0_0_20px_rgba(255,255,0,0.3)]"
                         : "bg-white/5 border-white/5 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/10"
                     )}
                   >
-                    <div className={cn(
-                      "w-1.5 h-1.5 rounded-full",
-                      selectedStyle === style.id ? "bg-black" : "bg-gray-600"
+                    <style.icon className={cn(
+                      "w-5 h-5 flex-shrink-0",
+                      selectedStyle === style.id ? "text-black" : "text-gray-500"
                     )} />
-                    <span>{style.name}</span>
+                    <span className="text-xs font-bold">{style.name}</span>
                   </button>
                 ))}
               </div>
+              <p className="text-[10px] text-gray-500 text-center px-2">
+                Enhances natural detail for the highest visual fidelity
+              </p>
             </div>
 
           </div>
@@ -472,21 +487,42 @@ function EditorContent() {
             {/* GROUP 1: Primary Controls */}
             <div className="space-y-2 px-1">
               
-              {/* VR Upscale Special Setting - MOVED HERE */}
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 group hover:border-purple-500/40 transition-colors">
-                  <div className="flex items-center gap-2">
-                      <div className="p-1 rounded bg-purple-500/20 text-purple-400 group-hover:text-purple-300 transition-colors">
-                          <IconSparkles className="w-3.5 h-3.5" />
-                      </div>
-                      <div className="flex flex-col">
-                          <span className="text-[11px] font-bold text-white group-hover:text-purple-200 transition-colors">VR Upscale</span>
-                      </div>
+              {/* Smart Upscale Special Setting */}
+              <div className="rounded-xl bg-white/[0.03] border border-white/5 overflow-hidden">
+                <div className="flex items-center justify-between p-3 border-b border-white/5 bg-white/[0.02]">
+                    <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded bg-[#FFFF00]/20 text-[#FFFF00]">
+                            <IconSparkles className="w-4 h-4" />
+                        </div>
+                        <span className="text-xs font-bold text-white">Smart Upscale</span>
+                    </div>
+                    <Switch
+                      checked={!!modelSettings['vr_upscale']}
+                      onCheckedChange={(c) => setModelSettings(prev => ({ ...prev, 'vr_upscale': c }))}
+                      className="scale-90 data-[state=checked]:bg-[#FFFF00]"
+                    />
+                </div>
+
+                {/* Cupertino Segmented Control for 4K/8K - ALWAYS VISIBLE */}
+                <div className={cn("p-2 bg-black/20 transition-opacity duration-200", !modelSettings['vr_upscale'] && "opacity-50 pointer-events-none")}>
+                  <div className="flex bg-black/40 p-1 rounded-lg border border-white/5">
+                    {(['4k', '8k'] as const).map((res) => (
+                      <button
+                        key={res}
+                        disabled={!modelSettings['vr_upscale']}
+                        onClick={() => setUpscaleResolution(res)}
+                        className={cn(
+                          "flex-1 py-2 text-[11px] font-black rounded-md transition-all uppercase tracking-wider",
+                          upscaleResolution === res
+                            ? "bg-[#FFFF00] text-black shadow-md scale-[1.02]"
+                            : "text-gray-500 hover:text-gray-300"
+                        )}
+                      >
+                        {res === '4k' ? '4K Crisp' : '8K Ultra'}
+                      </button>
+                    ))}
                   </div>
-                  <Switch
-                    checked={!!modelSettings['vr_upscale']}
-                    onCheckedChange={(c) => setModelSettings(prev => ({ ...prev, 'vr_upscale': c }))}
-                    className="scale-75 data-[state=checked]:bg-purple-500"
-                  />
+                </div>
               </div>
 
               {/* Render Model specific controls */}
@@ -496,12 +532,12 @@ function EditorContent() {
 
                 if (conf.type === 'boolean') {
                   return (
-                    <div key={key} className="flex items-center justify-between group p-2.5 rounded-lg bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all">
+                    <div key={key} className="flex items-center justify-between group p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all">
                       <span className="text-xs font-medium text-white transition-colors">{conf.label}</span>
                       <Switch
                         checked={!!currentValue}
                         onCheckedChange={(c) => setModelSettings(prev => ({ ...prev, [key]: c }))}
-                        className="scale-75 origin-right"
+                        className="scale-90 origin-right"
                       />
                     </div>
                   )
@@ -509,7 +545,7 @@ function EditorContent() {
 
                 if (conf.type === 'number') {
                   return (
-                    <div key={key} className="space-y-2 group p-2.5 rounded-lg bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all">
+                    <div key={key} className="space-y-3 group p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all">
                       <div className="flex justify-between items-center px-1">
                         <span className="text-xs font-medium text-white transition-colors">{conf.label}</span>
                         <span className="font-mono text-[10px] text-white/70 bg-white/5 px-1.5 py-0.5 rounded">{Number(currentValue).toFixed(conf.step && conf.step < 1 ? 2 : 0)}</span>
@@ -529,25 +565,25 @@ function EditorContent() {
             </div>
 
             {/* GROUP 2: Area Protection (3 Sections: Face, Eyes, Other) */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 px-1 pt-2 border-t border-white/5">
-                <IconShieldCheck className="w-3.5 h-3.5 text-white/50" />
-                <span className="text-xs font-bold text-white/50 uppercase tracking-wide">Area Protection</span>
+            <div className="space-y-2 px-1">
+              <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                <IconShield className="w-3.5 h-3.5 text-gray-400" />
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Area Protection</span>
               </div>
 
               {/* Face Features */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 {/* Face Column */}
                 <div className="space-y-2">
-                  <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider pl-1 flex items-center gap-1"><IconUser className="w-3 h-3" /> Face</p>
+                  <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider pl-1 flex items-center gap-1">Face</p>
                   <div className="space-y-1">
                     {Object.entries(areaSettings.face).map(([key, val]) => (
-                      <div key={key} className="flex items-center justify-between p-1.5 rounded bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group">
-                        <span className="text-[10px] text-gray-400 capitalize group-hover:text-white transition-colors w-full">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                      <div key={key} className="flex items-center justify-between p-2 rounded bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group">
+                        <span className="text-[10px] font-medium text-gray-300 capitalize group-hover:text-white transition-colors w-full">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
                         <Switch
                           checked={val}
                           onCheckedChange={(c) => setAreaSettings(prev => ({ ...prev, face: { ...prev.face, [key]: c } }))}
-                          className="scale-50 origin-right"
+                          className="scale-75 origin-right"
                         />
                       </div>
                     ))}
@@ -556,15 +592,15 @@ function EditorContent() {
 
                 {/* Eyes Column */}
                 <div className="space-y-2">
-                  <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider pl-1 flex items-center gap-1"><IconEye className="w-3 h-3" /> Eyes</p>
+                  <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider pl-1 flex items-center gap-1">Eyes</p>
                   <div className="space-y-1">
                     {Object.entries(areaSettings.eyes).map(([key, val]) => (
-                      <div key={key} className="flex items-center justify-between p-1.5 rounded bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group">
-                        <span className="text-[10px] text-gray-400 capitalize group-hover:text-white transition-colors w-full">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                      <div key={key} className="flex items-center justify-between p-2 rounded bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group">
+                        <span className="text-[10px] font-medium text-gray-300 capitalize group-hover:text-white transition-colors w-full">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
                         <Switch
                           checked={val}
                           onCheckedChange={(c) => setAreaSettings(prev => ({ ...prev, eyes: { ...prev.eyes, [key]: c } }))}
-                          className="scale-50 origin-right"
+                          className="scale-75 origin-right"
                         />
                       </div>
                     ))}
@@ -572,20 +608,18 @@ function EditorContent() {
                 </div>
               </div>
 
-              {/* Other Section */}
-              <div className="pt-2">
-                <div className="grid grid-cols-4 gap-2">
-                  {Object.entries(areaSettings.other).map(([key, val]) => (
-                    <div key={key} className="flex flex-col items-center justify-center p-2 rounded bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group gap-1">
-                      <span className="text-[10px] text-gray-400 capitalize group-hover:text-white transition-colors">{key}</span>
+              {/* Other Section - Single Row, 4 Columns */}
+              <div className="grid grid-cols-4 gap-2">
+                 {Object.entries(areaSettings.other).map(([key, val]) => (
+                    <div key={key} className="flex flex-col items-center justify-center p-2 rounded bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group gap-2">
+                      <span className="text-[9px] font-medium text-gray-300 capitalize group-hover:text-white transition-colors text-center">{key}</span>
                       <Switch
                         checked={val}
                         onCheckedChange={(c) => setAreaSettings(prev => ({ ...prev, other: { ...prev.other, [key]: c } }))}
-                        className="scale-50"
+                        className="scale-75"
                       />
                     </div>
-                  ))}
-                </div>
+                 ))}
               </div>
             </div>
 
@@ -627,14 +661,14 @@ function EditorContent() {
         </div>
 
         {/* RIGHT MAIN CANVAS */}
-        <div className="relative flex flex-col p-4 lg:sticky lg:top-20 lg:h-[80vh] h-[500px] lg:min-h-[500px]">
-          <div className="flex-1 w-full h-full relative flex items-center justify-center bg-[#050505] custom-checkerboard rounded-2xl border border-white/5 overflow-hidden">
+        <div className="relative flex flex-col p-4 lg:sticky lg:top-24 lg:h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar">
+          <div className="w-full relative flex items-center justify-center bg-[#050505] custom-checkerboard rounded-2xl border border-white/5 overflow-hidden min-h-[400px] flex-shrink-0">
             {!uploadedImage ? (
               <div
                 className="text-center cursor-pointer p-12 rounded-2xl border-2 border-dashed border-white/10 hover:border-white/20 hover:bg-white/5 transition-all"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <IconPhoto className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                <IconUpload className="w-16 h-16 text-gray-600 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-300">No Image Selected</h3>
                 <p className="text-sm text-gray-500 mt-2">Upload an image to start editing</p>
               </div>
@@ -659,6 +693,28 @@ function EditorContent() {
             )}
           </div>
 
+          {/* Multiple Output Selection - Only if more than 1 image */}
+          {enhancedImages.length > 1 && (
+            <div className="mt-4 flex justify-center animate-in fade-in slide-in-from-bottom-2 duration-300">
+               <div className="flex bg-black/40 p-1 rounded-lg border border-white/5">
+                 {enhancedImages.map((_, idx) => (
+                   <button
+                     key={idx}
+                     onClick={() => setSelectedOutputIndex(idx)}
+                     className={cn(
+                       "px-4 py-1.5 text-[10px] font-bold rounded-md transition-all uppercase tracking-wide min-w-[80px]",
+                       selectedOutputIndex === idx
+                         ? "bg-white text-black shadow-sm"
+                         : "text-gray-500 hover:text-gray-300"
+                     )}
+                   >
+                     Result {idx + 1}
+                   </button>
+                 ))}
+               </div>
+            </div>
+          )}
+
           {/* STATUS BAR */}
           <div className="mt-4 flex justify-between items-center text-[10px] text-gray-600 font-mono uppercase tracking-wider">
             <div>
@@ -671,31 +727,84 @@ function EditorContent() {
 
 
           {/* MODES SECTION - Right Side Below Output */}
-          <div className="mt-4 px-4 pb-8 w-full">
-            <h3 className="text-xs font-bold text-white/50 mb-3 flex items-center gap-2 uppercase tracking-wide">
-              Select Mode
-            </h3>
-            <div className="flex bg-black/40 p-1 rounded-lg border border-white/5">
-              {[
-                { id: 'Subtle', label: 'Subtle' },
-                { id: 'Clear', label: 'Clear' },
-                { id: 'Pimples', label: 'Pimples' },
-                { id: 'Freckles', label: 'Freckles' }
-              ].map(mode => (
+          <div className="mt-4 px-4 pb-8 w-full space-y-4">
+            <div>
+              <h3 className="text-xs font-bold text-gray-400 mb-3 flex items-center gap-2 uppercase tracking-wider">
+                Select Mode
+              </h3>
+              <div className="flex items-start gap-2">
+                <div className="grid grid-cols-4 gap-2 flex-1">
+                  {[
+                    { id: 'Subtle', label: 'Subtle' },
+                    { id: 'Clear', label: 'Clear' },
+                    { id: 'Pimples', label: 'Pimples' },
+                    { id: 'Freckles', label: 'Freckle' }
+                  ].map(mode => (
+                    <button
+                      key={mode.id}
+                      onClick={() => setEnhancementMode(mode.id)}
+                      className={cn(
+                        "relative h-14 rounded-lg overflow-hidden group border transition-all flex items-center justify-center",
+                        enhancementMode === mode.id
+                          ? "border-[#FFFF00] shadow-[0_0_10px_rgba(255,255,0,0.2)] bg-white/5"
+                          : "border-white/5 bg-black/40 hover:border-white/20 hover:bg-white/5"
+                      )}
+                    >
+                      {/* Background Image: Use user image or default if none */}
+                      {(uploadedImage || '/demo-image.jpg') && (
+                        <img
+                          src={uploadedImage || '/demo-image.jpg'}
+                          alt=""
+                          className={cn(
+                            "absolute inset-0 w-full h-full object-cover transition-opacity duration-500",
+                            enhancementMode === mode.id ? "opacity-30" : "opacity-10 group-hover:opacity-20"
+                          )}
+                        />
+                      )}
+
+                      <span className={cn(
+                        "relative z-10 text-[10px] font-medium uppercase tracking-wider transition-colors truncate px-1",
+                        enhancementMode === mode.id ? "text-[#FFFF00]" : "text-gray-400 group-hover:text-gray-200"
+                      )}>
+                        {mode.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
                 <button
-                  key={mode.id}
-                  onClick={() => setEnhancementMode(mode.id)}
+                  onClick={() => setEnhancementMode('Custom')}
                   className={cn(
-                    "flex-1 py-2.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all",
-                    enhancementMode === mode.id
-                      ? "bg-[#FFFF00] text-black shadow-[0_0_15px_rgba(255,255,0,0.2)]"
-                      : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
+                    "w-auto px-4 h-14 rounded-lg flex items-center justify-center transition-all border shrink-0 gap-2",
+                    enhancementMode === 'Custom'
+                      ? "border-[#FFFF00] text-[#FFFF00] bg-white/5 shadow-[0_0_10px_rgba(255,255,0,0.2)]"
+                      : "border-white/5 text-gray-500 hover:text-white hover:border-white/20 bg-black/40"
                   )}
+                  title="Custom Mode"
                 >
-                  {mode.label}
+                  <IconAdjustmentsHorizontal className="w-6 h-6" />
+                  <span className="text-[10px] font-medium uppercase tracking-wider">Custom</span>
                 </button>
-              ))}
+              </div>
             </div>
+
+            {/* Custom Prompt Input - Only visible when Custom mode is selected */}
+            {enhancementMode === 'Custom' && (
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-white/70 px-1">Custom Prompt</label>
+                <div className="relative">
+                  <textarea
+                    value={customPrompt}
+                    onChange={(e) => setCustomPrompt(e.target.value)}
+                    placeholder="Enter additional prompt details..."
+                    className="w-full bg-white/[0.03] border border-white/10 rounded-lg p-3 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-yellow-400/50 focus:bg-white/[0.05] min-h-[80px] resize-none"
+                  />
+                  <div className="absolute bottom-2 right-2 text-[9px] text-white/30">
+                    Will be appended to base prompt
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

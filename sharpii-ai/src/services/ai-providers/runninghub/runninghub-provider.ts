@@ -18,6 +18,9 @@ type RunningHubSettings = Omit<Partial<EnhancementSettings>, 'scheduler'> & {
   node_192_mode?: string | number | boolean
   node_193_mode?: string | number | boolean
   style?: string
+  customPrompt?: string
+  smartUpscale?: boolean
+  upscaleResolution?: '4k' | '8k'
   protections?: {
     face?: {
       skin: boolean
@@ -32,6 +35,12 @@ type RunningHubSettings = Omit<Partial<EnhancementSettings>, 'scheduler'> & {
       leftBrow: boolean
       rightBrow: boolean
       leftEye: boolean
+    }
+    other?: {
+      background: boolean
+      hair: boolean
+      cloth: boolean
+      neck: boolean
     }
   }
 }
@@ -254,7 +263,7 @@ export class RunningHubProvider extends BaseAIProvider {
           timestamp: Date.now(),
           details: {
             taskId: taskResponse.taskId,
-            workflowId: '1965053107388432385'
+            workflowId: (settings as any).workflowId || '1965053107388432385'
           }
         }
       }
@@ -278,10 +287,18 @@ export class RunningHubProvider extends BaseAIProvider {
     const mode = (settings.mode as keyof typeof SKIN_EDITOR_MODES) || 'Subtle'
     const modeDefaults = SKIN_EDITOR_MODES[mode]
 
+    // Handle Custom mode prompt
+    let prompt = modeDefaults.prompt
+    if (mode === 'Custom' && settings.customPrompt) {
+        // Base part of the custom prompt (the suffixes about skin texture application)
+        const baseSuffix = ", apply skin texture only for skin, apply skin texture only for face and skin and not on hair or dress, skin texture creates subtle micro-shadows and highlights under lighting"
+        prompt = `${settings.customPrompt}${baseSuffix}`
+    }
+
     const finalSettings = {
       ...modeDefaults,
       ...settings, // User overrides
-      prompt: modeDefaults.prompt // Force prompt from mode as it's complex
+      prompt // Use the constructed prompt
     }
 
     console.log('🚀 RunningHub: Processing Skin Editor request', {
@@ -322,8 +339,15 @@ export class RunningHubProvider extends BaseAIProvider {
         fieldValue: String(finalSettings.guidance)
       }
     ]
-    // Add more node mappings as needed based on skineditor.json
-    // Style Mapping (LoraLoader Node 166) - Removed as invalid for current workflow
+    
+    // Style Mapping (LoraLoader Node 166)
+    if (settings.style) {
+        nodeInfoList.push({
+            nodeId: '166',
+            fieldName: 'lora_name',
+            fieldValue: settings.style
+        })
+    }
     
     // Protection Mapping (FaceParsingResultsParser Node 138)
     // Default protections if not provided
@@ -344,9 +368,10 @@ export class RunningHubProvider extends BaseAIProvider {
       { field: 'r_brow', val: p.eyes?.rightBrow },
       { field: 'l_brow', val: p.eyes?.leftBrow },
       // Add defaults for others if needed
-      { field: 'background', val: false }, // Default
-      { field: 'hair', val: false },
-      { field: 'cloth', val: false }
+      { field: 'background', val: p.other?.background ?? false },
+      { field: 'hair', val: p.other?.hair ?? false },
+      { field: 'cloth', val: p.other?.cloth ?? false },
+      { field: 'neck', val: p.other?.neck ?? false }
     ];
 
     protectionFields.forEach(({ field, val }) => {
@@ -359,9 +384,38 @@ export class RunningHubProvider extends BaseAIProvider {
       }
     })
 
-    // Seed VR Upscaler Toggle (Node 172) - Removed as invalid for current workflow
+    // Seed VR Upscaler Toggle (Node 172)
+    const isSmartUpscale = settings.smartUpscale || false
+    nodeInfoList.push({
+        nodeId: '172',
+        fieldName: 'enable',
+        fieldValue: String(isSmartUpscale)
+    })
 
-
+    if (isSmartUpscale) {
+        const resolution = settings.upscaleResolution || '4k'
+        const is8k = resolution === '8k'
+        
+        // Node 213: Scale By
+        nodeInfoList.push({
+            nodeId: '213',
+            fieldName: 'scale_by',
+            fieldValue: String(is8k ? 4 : 2)
+        })
+        
+        // Node 214: Width & Height
+        const size = is8k ? 8192 : 4096
+        nodeInfoList.push({
+            nodeId: '214',
+            fieldName: 'width',
+            fieldValue: String(size)
+        })
+        nodeInfoList.push({
+            nodeId: '214',
+            fieldName: 'height',
+            fieldValue: String(size)
+        })
+    }
 
     // Create task
     const taskResponse = await this.createTask(request.imageUrl, {
@@ -374,15 +428,31 @@ export class RunningHubProvider extends BaseAIProvider {
       return this.createErrorResponse(taskResponse.error || 'Failed to create Skin Editor task')
     }
 
-    const result = await this.pollTaskCompletion(taskResponse.taskId!)
+    // Define expected output nodes based on mode
+    // #174(1st output) and #136(2nd output) if smartUpscale is true
+    // #136 if smartUpscale is false
+    const expectedNodeIds = isSmartUpscale ? ['174', '136'] : ['136']
+
+    const result = await this.pollTaskCompletion(taskResponse.taskId!, expectedNodeIds)
 
     if (!result.success) {
       return this.createErrorResponse(result.error || 'Task failed')
     }
 
+    // Determine final output(s)
+    let finalOutput: string | string[] | undefined = result.outputUrl
+    
+    if (result.outputUrls && result.outputUrls.length > 0) {
+        if (isSmartUpscale) {
+             finalOutput = result.outputUrls
+        } else {
+             finalOutput = result.outputUrls[0]
+        }
+    }
+
     return {
       success: true,
-      enhancedUrl: result.outputUrl,
+      enhancedUrl: finalOutput,
       metadata: {
         modelVersion: model.version,
         processingTime: result.processingTime,
@@ -585,7 +655,7 @@ export class RunningHubProvider extends BaseAIProvider {
 
       console.log('🔍 RunningHub: Node mappings being sent:', JSON.stringify(nodeInfoList, null, 2))
 
-      const workflowId = (settings as any).workflowId || '1965053107388432385'
+      const workflowId = (settings as any).workflowId || '2021189307448434690'
       let finalNodeInfoList = (settings as any).nodeInfoListOverride || nodeInfoList
 
       // Ensure the processed image URL is used in the final list (especially if override was used)
@@ -698,9 +768,10 @@ export class RunningHubProvider extends BaseAIProvider {
     }
   }
 
-  private async pollTaskCompletion(taskId: string): Promise<{
+  private async pollTaskCompletion(taskId: string, expectedNodeIds?: string[]): Promise<{
     success: boolean
     outputUrl?: string
+    outputUrls?: string[]
     processingTime?: number
     error?: string
   }> {
@@ -801,11 +872,37 @@ export class RunningHubProvider extends BaseAIProvider {
                 fileUrl: o.fileUrl ? o.fileUrl.substring(0, 100) + '...' : 'No URL'
               })))
 
+              // Handle multiple expected outputs if provided
+              if (expectedNodeIds && expectedNodeIds.length > 0) {
+                  const sortedOutputs: string[] = []
+                  
+                  // Try to find outputs in the order of expectedNodeIds
+                  for (const expectedId of expectedNodeIds) {
+                      // Find output matching the node ID
+                      const match = outputData.data.find(o => String(o.nodeId) === String(expectedId) && !!o.fileUrl)
+                      if (match && match.fileUrl) {
+                          sortedOutputs.push(match.fileUrl)
+                      }
+                  }
+                  
+                  // If we found any matching outputs
+                  if (sortedOutputs.length > 0) {
+                      console.log(`✅ RunningHub: Found ${sortedOutputs.length} expected outputs based on requested node IDs`)
+                      return {
+                          success: true,
+                          outputUrl: sortedOutputs[0], // Primary output
+                          outputUrls: sortedOutputs,   // All outputs
+                          processingTime: Date.now() - startTime
+                      }
+                  } else {
+                      console.warn('⚠️ RunningHub: Expected node IDs provided but no matching outputs found, falling back to default logic')
+                  }
+              }
+
               // Look for actual output node IDs from this workflow (prioritize common output nodes)
               // Added 98 and 139 based on outputs_to_execute from task creation response
               const priorityNodeIds = ['102', '136', '144', '138', '143', '98', '139'] // Main workflow outputs
               const fallbackNodeIds = ['99', '100', '101', '103', '104', '105'] // Common ComfyUI output nodes
-              const allPossibleNodeIds = [...priorityNodeIds, ...fallbackNodeIds]
 
               let finalOutput: RunningHubOutputItem | undefined
 

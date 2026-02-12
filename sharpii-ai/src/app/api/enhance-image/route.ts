@@ -408,7 +408,10 @@ export async function POST(request: NextRequest) {
       try {
         originalMetadata = await getImageMetadata(imageUrl)
         if (result.success && result.enhancedUrl) {
-          enhancedMetadata = await getImageMetadata(result.enhancedUrl)
+          const urlToMetadata = Array.isArray(result.enhancedUrl) ? result.enhancedUrl[0] : result.enhancedUrl
+          if (urlToMetadata) {
+            enhancedMetadata = await getImageMetadata(urlToMetadata)
+          }
         }
       } catch (error) {
         console.warn('⚠️ API: Could not extract image metadata (using request dimensions for credits):', error)
@@ -428,7 +431,10 @@ export async function POST(request: NextRequest) {
 
         // Get enhanced image metadata if successful
         if (result.success && result.enhancedUrl) {
-          enhancedMetadata = await getImageMetadata(result.enhancedUrl)
+          const urlToMetadata = Array.isArray(result.enhancedUrl) ? result.enhancedUrl[0] : result.enhancedUrl
+          if (urlToMetadata) {
+            enhancedMetadata = await getImageMetadata(urlToMetadata)
+          }
         }
       } catch (error) {
         console.error('❌ API: Failed to extract image metadata and no request dimensions available:', error)
@@ -485,56 +491,79 @@ export async function POST(request: NextRequest) {
 
       // Add enhanced image metadata with validation
       if (result.success && result.enhancedUrl) {
-        // Upload enhanced image to Tebi.io for permanent storage
-        let tebiUrl = result.enhancedUrl // Default to original URL
+        // Upload enhanced image(s) to Tebi.io for permanent storage
+        let tebiUrls: string[] = []
+        const originalUrls = Array.isArray(result.enhancedUrl) ? result.enhancedUrl : [result.enhancedUrl]
+        
         try {
-          console.log('📤 API: Uploading enhanced image to Tebi.io...', {
-            taskId,
-            originalUrl: result.enhancedUrl.substring(0, 100) + '...'
-          })
-
-          // Fetch the enhanced image and convert to file
-          const imageResponse = await fetch(result.enhancedUrl)
-          if (!imageResponse.ok) {
-            throw new Error(`Failed to fetch enhanced image: ${imageResponse.statusText}`)
+          if (originalUrls.length > 0 && originalUrls[0]) {
+             console.log(`📤 API: Uploading ${originalUrls.length} enhanced image(s) to Tebi.io...`, {
+               taskId,
+               firstUrl: originalUrls[0].substring(0, 100) + '...'
+             })
           }
 
-          const imageBlob = await imageResponse.blob()
-          const fileName = `enhanced-${taskId}-${Date.now()}.jpg`
-          const imageFile = new File([imageBlob], fileName, { type: 'image/jpeg' })
+          for (let i = 0; i < originalUrls.length; i++) {
+              const url = originalUrls[i]
+              if (!url) continue
 
-          // Upload to Tebi.io under 'enhanced' category
-          const tebiUploadResult = await tebiApi.uploadFile(
-            imageFile,
-            FILE_CATEGORIES.ENHANCED,
-            {
-              taskId,
-              userId: authenticatedUserId,
-              originalImageUrl: imageUrl,
-              enhancementDate: new Date().toISOString(),
-              modelId,
-              processingTime: processingTime.toString()
-            }
-          )
+              // Fetch the enhanced image and convert to file
+              const imageResponse = await fetch(url)
+              if (!imageResponse.ok) {
+                console.warn(`Failed to fetch enhanced image ${i}: ${imageResponse.statusText}`)
+                tebiUrls.push(url) // Fallback to original URL
+                continue
+              }
 
-          tebiUrl = tebiUploadResult.url
+              const imageBlob = await imageResponse.blob()
+              const fileName = `enhanced-${taskId}-${Date.now()}-${i}.jpg`
+              const imageFile = new File([imageBlob], fileName, { type: 'image/jpeg' })
 
-          console.log('✅ API: Enhanced image uploaded to Tebi.io:', {
-            taskId,
-            tebiKey: tebiUploadResult.key,
-            tebiUrl: tebiUrl,
-            fileSize: tebiUploadResult.size
-          })
+              // Upload to Tebi.io under 'enhanced' category
+              const tebiUploadResult = await tebiApi.uploadFile(
+                imageFile,
+                FILE_CATEGORIES.ENHANCED,
+                {
+                  taskId,
+                  userId: authenticatedUserId,
+                  originalImageUrl: imageUrl,
+                  enhancementDate: new Date().toISOString(),
+                  modelId,
+                  processingTime: processingTime.toString(),
+                  index: i.toString()
+                }
+              )
+              
+              tebiUrls.push(tebiUploadResult.url)
+              
+              console.log(`✅ API: Enhanced image ${i} uploaded to Tebi.io:`, {
+                taskId,
+                tebiKey: tebiUploadResult.key,
+                tebiUrl: tebiUploadResult.url,
+                fileSize: tebiUploadResult.size
+              })
+          }
 
         } catch (tebiError) {
           console.error('❌ API: Failed to upload enhanced image to Tebi.io:', {
             taskId,
             error: tebiError instanceof Error ? tebiError.message : String(tebiError)
           })
-          // Continue with original URL if Tebi upload fails
+          // Continue with original URLs if Tebi upload fails completely
+          if (tebiUrls.length === 0) {
+              tebiUrls = originalUrls.filter(u => !!u)
+          }
         }
 
-        updateData.enhanced_image_url = tebiUrl
+        // Update result with permanent URLs
+        if (Array.isArray(result.enhancedUrl)) {
+            result.enhancedUrl = tebiUrls
+        } else {
+            result.enhancedUrl = tebiUrls[0]
+        }
+        
+        // Update database record
+        updateData.enhanced_image_url = tebiUrls[0] // Primary image
 
         if (enhancedMetadata) {
           updateData.output_width = enhancedMetadata.width || 0

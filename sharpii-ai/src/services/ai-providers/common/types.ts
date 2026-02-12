@@ -32,7 +32,7 @@ export interface EnhancementRequest {
 
 export interface EnhancementResponse {
   success: boolean
-  enhancedUrl?: string
+  enhancedUrl?: string | string[]
   error?: string
   message?: string
   metadata?: {
