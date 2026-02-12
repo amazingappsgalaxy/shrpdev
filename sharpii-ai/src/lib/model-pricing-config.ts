@@ -152,17 +152,17 @@ export const MODEL_PRICING_CONFIGS: Record<string, ModelPricingConfiguration> = 
         description: 'Higher detail levels require more processing power'
       },
       {
-        settingKey: 'seedvrupscaler',
-        settingName: 'VR Upscaler',
+        settingKey: 'vr_upscale',
+        settingName: 'VR Upscale',
         incrementType: 'conditional',
         defaultIncrement: 0,
         enabled: true,
-        defaultValue: 1, // Using 1 as truthy number if type is number, or handling boolean logic
+        defaultValue: 0,
         conditions: [
-          { when: (val: boolean) => val === true, increment: 20, description: '+20% for VR Upscaler' },
-          { when: (val: boolean) => val === false, increment: 0, description: 'Standard Upscaler' }
+          { when: (val: boolean) => val === true, increment: 20, description: '+20% for VR Upscale' },
+          { when: (val: boolean) => val === false, increment: 0, description: 'Standard Upscale' }
         ],
-        description: 'VR Upscaler provides better quality but costs more'
+        description: 'VR Upscale provides better quality but costs more'
       }
     ],
     lastUpdated: Date.now()
@@ -486,6 +486,8 @@ export class ModelPricingEngine {
       const incrementIndex = config.settingIncrements.findIndex(inc => inc.settingKey === settingKey)
       if (incrementIndex >= 0) {
         const currentIncrement = config.settingIncrements[incrementIndex]
+        if (!currentIncrement) return false
+
         config.settingIncrements[incrementIndex] = {
           settingKey: currentIncrement.settingKey,
           settingName: currentIncrement.settingName,

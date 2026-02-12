@@ -3,26 +3,20 @@
 import React, { useState, useRef, useCallback, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import {
-  Upload,
-  Download,
-  X,
-  Maximize2,
-  CheckCircle2,
-  Loader2,
-  Zap,
-  Sparkles,
-  Info,
-  Image as ImageIcon,
-  Settings,
-  Shield,
-  MoveHorizontal,
-  Wand2,
-  Expand,
-  User,
-  Eye,
-  Shirt,
-  Scissors
-} from "lucide-react"
+  IconUpload,
+  IconDownload,
+  IconLoader2,
+  IconSparkles,
+  IconPhoto,
+  IconSettings,
+  IconShield,
+  IconArrowsHorizontal,
+  IconWand,
+  IconArrowsMaximize,
+  IconUser,
+  IconEye,
+  IconTrash
+} from "@tabler/icons-react"
 // Removed STYLE_MAPPING and STYLE_LORAS as they are no longer supported
 
 import { cn } from "@/lib/utils"
@@ -32,7 +26,7 @@ import { ElegantLoading } from "@/components/ui/elegant-loading"
 import { ModelPricingEngine } from "@/lib/model-pricing-config"
 import { MechanicalSlider } from "@/components/ui/mechanical-slider"
 import { Switch } from "@/components/ui/switch"
-import { CustomDropdown, DropdownOption } from "@/components/ui/custom-dropdown"
+import { DropdownOption } from "@/components/ui/custom-dropdown"
 import { ExpandViewModal } from "@/components/ui/expand-view-modal"
 import { CreditIcon } from "@/components/ui/CreditIcon"
 
@@ -56,13 +50,14 @@ interface AreaProtectionSettings {
     hair: boolean
     cloth: boolean
     background: boolean
+    neck: boolean
   }
 }
 
 const DEFAULT_AREA_PROTECTION: AreaProtectionSettings = {
   face: {
     skin: false,
-    mouth: true,
+    mouth: false,
     lowerLip: true,
     upperLip: true,
     nose: false
@@ -70,14 +65,15 @@ const DEFAULT_AREA_PROTECTION: AreaProtectionSettings = {
   eyes: {
     eyeGeneral: false,
     rightEye: true,
-    leftBrow: true,
+    leftBrow: false,
     rightBrow: false,
     leftEye: true
   },
   other: {
     hair: false,
     cloth: false,
-    background: false
+    background: false,
+    neck: false
   }
 }
 
@@ -89,19 +85,27 @@ const AVAILABLE_MODELS = [
     provider: 'runninghub',
     category: 'Specialized',
     description: 'Professional skin retouching',
-    icon: Sparkles,
+    icon: IconSparkles,
   }
 ]
 
 // Model-specific control configurations
 const MODEL_CONTROLS = {
   'skin-editor': {
-    denoise: { type: 'number', default: 0.35, min: 0.1, max: 1, step: 0.05, label: 'Effect Strength', leftLabel: 'Subtle', rightLabel: 'Strong' },
-    guidance: { type: 'number', default: 80, min: 1, max: 200, step: 1, label: 'Guidance Scale', leftLabel: 'Low', rightLabel: 'High' },
-    megapixels: { type: 'number', default: 4, min: 1, max: 16, step: 1, label: 'Detail Level (MP)', leftLabel: 'Low', rightLabel: 'High' },
-    maxshift: { type: 'number', default: 1, min: 0, max: 5, step: 0.1, label: 'Max Shift', leftLabel: 'Low', rightLabel: 'High' }
+    denoise: { type: 'number', default: 0.35, min: 0.1, max: 0.38, step: 0.01, label: 'Effect Strength', leftLabel: 'Subtle', rightLabel: 'Strong' },
+    megapixels: { type: 'number', default: 4, min: 2, max: 10, step: 1, label: 'Detail Level (MP)', leftLabel: 'Low', rightLabel: 'High' },
+    maxshift: { type: 'number', default: 1, min: 0.8, max: 1.2, step: 0.1, label: 'Max Shift', leftLabel: 'Low', rightLabel: 'High' },
+    seed: { type: 'number', default: -1, min: -1, max: 9999999999, step: 1, label: 'Seed (-1 for random)' },
+    vr_upscale: { type: 'boolean', default: false, label: 'VR Upscale' }
   }
 }
+
+const STYLES = [
+  { id: 'style1', name: 'Polyhedron', value: 'FLUX_Polyhedron_all_Kohya_ss-000001.safetensors' },
+  { id: 'style2', name: 'Skin', value: 'skin.safetensors' },
+  { id: 'style3', name: 'Freckles', value: 'freckles-flux.safetensors' },
+  { id: 'style4', name: 'Realism', value: 'Realim_Lora_BSY_IL_V1_RA42.safetensors' }
+]
 
 // Enhancement mode options by model
 const MODES_BY_MODEL: Record<string, DropdownOption[]> = {
@@ -120,10 +124,10 @@ const MODES_BY_MODEL: Record<string, DropdownOption[]> = {
 
 // Default settings per mode for Skin Editor
 const SKIN_EDITOR_DEFAULTS = {
-  Subtle: { denoise: 0.20, maxshift: 1, megapixels: 4, guidance: 80 },
-  Clear: { denoise: 0.35, maxshift: 1.2, megapixels: 4, guidance: 100 },
-  Pimples: { denoise: 0.37, maxshift: 1.2, megapixels: 2, guidance: 100 },
-  Freckles: { denoise: 0.37, maxshift: 1.2, megapixels: 2, guidance: 100 }
+  Subtle: { denoise: 0.20, maxshift: 1, megapixels: 4 },
+  Clear: { denoise: 0.35, maxshift: 1.2, megapixels: 4 },
+  Pimples: { denoise: 0.37, maxshift: 1.2, megapixels: 2 },
+  Freckles: { denoise: 0.37, maxshift: 1.2, megapixels: 2 }
 }
 
 // --- COMPONENTS ---
@@ -172,7 +176,7 @@ function ComparisonView({
         style={{ left: `${sliderPos}%` }}
       >
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center">
-          <MoveHorizontal className="w-4 h-4 text-black" />
+          <IconArrowsHorizontal className="w-4 h-4 text-black" />
         </div>
       </div>
 
@@ -188,7 +192,7 @@ function ComparisonView({
             className="p-3 bg-white text-black rounded-full shadow-xl hover:scale-105 transition-transform"
             title="Expand view"
           >
-            <Expand className="w-5 h-5" />
+            <IconArrowsMaximize className="w-5 h-5" />
           </button>
         )}
 
@@ -198,7 +202,7 @@ function ComparisonView({
             className="p-3 bg-white text-black rounded-full shadow-xl hover:scale-105 transition-transform"
             title="Download"
           >
-            <Download className="w-5 h-5" />
+            <IconDownload className="w-5 h-5" />
           </button>
         )}
       </div>
@@ -218,6 +222,7 @@ function EditorContent() {
   // Settings
   // Force Skin Editor as default and only model
   const [selectedModel, setSelectedModel] = useState('skin-editor')
+  const [selectedStyle, setSelectedStyle] = useState(STYLES[1]?.id || 'style2') // Default to Skin style
 
   // Dynamic default mode based on model
   const [enhancementMode, setEnhancementMode] = useState<string>('Subtle')
@@ -239,9 +244,6 @@ function EditorContent() {
       setSelectedModel(modelParam)
     }
   }, [searchParams])
-
-  // Get available modes for current model
-  const currentModes = MODES_BY_MODEL[selectedModel] || MODES_BY_MODEL['default'] || []
 
   // Update mode when model changes
   useEffect(() => {
@@ -329,6 +331,7 @@ function EditorContent() {
             prompt: 'Enhance skin details, preserve identity, high quality',
             mode: enhancementMode,
             protections: areaSettings,
+            style: STYLES.find(s => s.id === selectedStyle)?.value,
             ...modelSettings
           }
         })
@@ -376,14 +379,6 @@ function EditorContent() {
     }
   }
 
-  // Convert models to dropdown options
-  const modelOptions: DropdownOption[] = AVAILABLE_MODELS.map(m => ({
-    value: m.id,
-    label: m.name,
-    description: m.description,
-    icon: m.icon
-  }))
-
   if (isLoading || !user) return <ElegantLoading message="Initializing Editor..." />
 
   return (
@@ -405,65 +400,71 @@ function EditorContent() {
         {/* LEFT SIDEBAR - CONTROLS (Scrolls with page) */}
         <div className="flex flex-col border-r border-white/5 bg-[#0c0c0e] z-20 relative min-h-[calc(100vh-6rem)] lg:pb-32">
 
-          {/* 1. INPUT IMAGE SECTION (MOVED TO TOP) */}
-          <div className="p-5 border-b border-white/5">
-            <label className="text-xs font-medium text-white mb-3 block">Input Image</label>
-            <div className="flex gap-3 items-center">
-              <div
-                className="w-32 h-28 rounded-xl bg-black border border-white/10 overflow-hidden relative cursor-pointer group hover:border-[#FFFF00]/50 transition-colors shrink-0"
+          {/* 1. TOP SECTION: INPUT & STYLES (SIDE BY SIDE) */}
+          <div className="grid grid-cols-2 border-b border-white/5">
+            
+            {/* LEFT: INPUT IMAGE */}
+            <div className="p-4 border-r border-white/5 flex flex-col gap-3">
+              <div className="flex justify-between items-center">
+                 <label className="text-xs font-medium text-white">Input</label>
+                 {uploadedImage && (
+                    <button onClick={(e) => { e.stopPropagation(); handleDeleteImage(); }} className="text-gray-500 hover:text-red-400" title="Delete">
+                      <IconTrash className="w-3 h-3" />
+                    </button>
+                 )}
+              </div>
+              
+              <div 
+                className="w-full aspect-square rounded-xl bg-black border border-white/10 overflow-hidden relative cursor-pointer group hover:border-[#FFFF00]/50 transition-colors"
                 onClick={() => fileInputRef.current?.click()}
               >
                 {uploadedImage ? (
                   <>
                     <img src={uploadedImage} className="w-full h-full object-cover" alt="Input" />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                      <Upload className="w-5 h-5 text-white" />
+                      <IconUpload className="w-5 h-5 text-white" />
                     </div>
                   </>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full gap-1">
-                    <Upload className="w-5 h-5 text-gray-500" />
+                    <IconUpload className="w-5 h-5 text-gray-500" />
                     <span className="text-[9px] text-gray-600 font-medium">Upload</span>
                   </div>
                 )}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white/90 truncate mb-1">
-                  {uploadedImage ? `${imageMetadata.width}×${imageMetadata.height}` : 'No image selected'}
+              
+              <div className="text-center">
+                <p className="text-[10px] text-gray-500 truncate">
+                  {uploadedImage ? `${imageMetadata.width}×${imageMetadata.height}` : 'Select Image'}
                 </p>
-                {uploadedImage ? (
-                  <p className="text-xs text-gray-500 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3 h-3 text-green-500" />
-                    Ready
-                  </p>
-                ) : (
-                  <p className="text-xs text-gray-500">Click to upload</p>
-                )}
               </div>
-              {uploadedImage && (
-                <div className="flex gap-1">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-                    className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
-                    title="Replace image"
-                  >
-                    <Upload className="w-4 h-4 text-gray-400" />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDeleteImage(); }}
-                    className="p-2 rounded-lg bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-500/30 transition-colors"
-                    title="Delete image"
-                  >
-                    <X className="w-4 h-4 text-gray-400 hover:text-red-400" />
-                  </button>
-                </div>
-              )}
             </div>
-          </div>
 
-          {/* 2. MODEL & MODE */}
-          <div className="p-5 border-b border-white/5 space-y-4">
-             {/* Styles Section Removed */}
+            {/* RIGHT: STYLES */}
+            <div className="p-4 flex flex-col gap-3">
+              <label className="text-xs font-medium text-white">Style</label>
+              <div className="grid grid-cols-1 gap-2 overflow-y-auto max-h-[160px] pr-1">
+                {STYLES.map(style => (
+                  <button
+                    key={style.id}
+                    onClick={() => setSelectedStyle(style.id)}
+                    className={cn(
+                      "flex items-center gap-2 p-2 rounded-lg border transition-all text-[10px] font-medium text-left",
+                      selectedStyle === style.id
+                        ? "bg-white/10 border-yellow-400/50 text-white"
+                        : "bg-white/5 border-white/5 text-gray-400 hover:text-white hover:bg-white/10"
+                    )}
+                  >
+                    <div className={cn(
+                        "w-1.5 h-1.5 rounded-full shrink-0",
+                        selectedStyle === style.id ? "bg-yellow-400" : "bg-gray-600"
+                    )} />
+                    <span className="truncate">{style.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
           </div>
 
           {/* 3. SETTINGS SCROLL AREA */}
@@ -471,10 +472,23 @@ function EditorContent() {
 
             {/* GROUP 1: Primary Controls */}
             <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-5">
-              <h3 className="text-xs font-medium text-white mb-4 flex items-center gap-2">
-                <Settings className="w-3 h-3 text-gray-400" />
-                Primary Settings
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xs font-medium text-white flex items-center gap-2">
+                  <IconSettings className="w-3 h-3 text-gray-400" />
+                  Primary Settings
+                </h3>
+                <button
+                  onClick={() => {
+                    if (selectedModel === 'skin-editor' && enhancementMode in SKIN_EDITOR_DEFAULTS) {
+                      const defaults = SKIN_EDITOR_DEFAULTS[enhancementMode as keyof typeof SKIN_EDITOR_DEFAULTS]
+                      setModelSettings(prev => ({ ...prev, ...defaults }))
+                    }
+                  }}
+                  className="text-[10px] text-gray-500 hover:text-white transition-colors uppercase tracking-wider font-medium"
+                >
+                  Reset
+                </button>
+              </div>
 
               {/* Render Model specific controls */}
               {Object.entries(MODEL_CONTROLS[selectedModel as keyof typeof MODEL_CONTROLS] || {}).map(([key, config]) => {
@@ -515,13 +529,12 @@ function EditorContent() {
               })}
             </div>
 
-            {/* GROUP 2: Area Protection (2 Column Layout) */}
             {/* GROUP 2: Area Protection (3 Sections: Face, Eyes, Other) */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-medium text-white flex items-center gap-2">
-                  <Shield className="w-3 h-3 text-gray-400" />
-                  Area Preservation
+                  <IconShield className="w-3 h-3 text-gray-400" />
+                  Area Protection
                 </h3>
                 <button
                   onClick={() => setAreaSettings(DEFAULT_AREA_PROTECTION)}
@@ -534,7 +547,7 @@ function EditorContent() {
               <div className="grid grid-cols-2 gap-4">
                 {/* Face Column */}
                 <div className="space-y-2">
-                  <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider pl-1 flex items-center gap-1"><User className="w-3 h-3" /> Face</p>
+                  <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider pl-1 flex items-center gap-1"><IconUser className="w-3 h-3" /> Face</p>
                   <div className="space-y-1">
                     {Object.entries(areaSettings.face).map(([key, val]) => (
                       <div key={key} className="flex items-center justify-between p-1.5 rounded bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group">
@@ -551,7 +564,7 @@ function EditorContent() {
 
                 {/* Eyes Column */}
                 <div className="space-y-2">
-                  <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider pl-1 flex items-center gap-1"><Eye className="w-3 h-3" /> Eyes</p>
+                  <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider pl-1 flex items-center gap-1"><IconEye className="w-3 h-3" /> Eyes</p>
                   <div className="space-y-1">
                     {Object.entries(areaSettings.eyes).map(([key, val]) => (
                       <div key={key} className="flex items-center justify-between p-1.5 rounded bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group">
@@ -569,7 +582,7 @@ function EditorContent() {
 
               {/* Other Section */}
               <div className="space-y-2 pt-2 border-t border-white/5">
-                <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider pl-1 flex items-center gap-1"><Settings className="w-3 h-3" /> Other</p>
+                <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider pl-1 flex items-center gap-1"><IconSettings className="w-3 h-3" /> Other</p>
                 <div className="grid grid-cols-3 gap-2">
                   {Object.entries(areaSettings.other).map(([key, val]) => (
                     <div key={key} className="flex flex-col items-center justify-center p-2 rounded bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group gap-1">
@@ -607,12 +620,12 @@ function EditorContent() {
               >
                 {isEnhancing ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <IconLoader2 className="w-5 h-5 animate-spin" />
                     <span>Processing {progress}%</span>
                   </>
                 ) : (
                   <>
-                    <Wand2 className="w-5 h-5 fill-black" />
+                    <IconWand className="w-5 h-5 fill-black" />
                     <span>Enhance Image</span>
                   </>
                 )}
@@ -630,7 +643,7 @@ function EditorContent() {
                 className="text-center cursor-pointer p-12 rounded-2xl border-2 border-dashed border-white/10 hover:border-white/20 hover:bg-white/5 transition-all"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <ImageIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                <IconPhoto className="w-16 h-16 text-gray-600 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-300">No Image Selected</h3>
                 <p className="text-sm text-gray-500 mt-2">Upload an image to start editing</p>
               </div>
