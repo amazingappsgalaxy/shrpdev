@@ -411,7 +411,7 @@ function EditorContent() {
       <div className="flex-1 pt-24 w-full grid grid-cols-1 lg:grid-cols-[420px_1fr] items-start">
 
         {/* LEFT SIDEBAR - CONTROLS (Scrolls with page) */}
-        <div className="flex flex-col border-r border-white/5 bg-[#0c0c0e] z-20 relative min-h-[calc(100vh-6rem)] lg:pb-32">
+        <div className="flex flex-col border-r border-white/5 bg-[#0c0c0e] z-20 relative min-h-[calc(100vh-6rem)] lg:pb-32 order-2 lg:order-1">
 
           {/* 1. TOP SECTION: INPUT & STYLES (SIDE BY SIDE) */}
           <div className="grid grid-cols-[35%_65%] border-b border-white/5">
@@ -420,7 +420,7 @@ function EditorContent() {
             <div className="p-4 flex flex-col gap-3 h-full">
               <div className="flex justify-between items-center px-1">
                  <div className="flex items-center gap-2">
-                   <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Input Image</span>
+                   <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Input Image</span>
                  </div>
                  {uploadedImage && (
                     <button onClick={(e) => { e.stopPropagation(); handleDeleteImage(); }} className="text-gray-500 hover:text-red-400 transition-colors" title="Delete">
@@ -452,8 +452,8 @@ function EditorContent() {
             {/* RIGHT: STYLES */}
             <div className="p-4 flex flex-col gap-3 h-full">
               <div className="flex items-center px-1">
-                 <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Skin Style</span>
-              </div>
+                <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Skin Style</span>
+             </div>
               <div className="grid grid-cols-2 gap-2 flex-1">
                 {STYLES.map(style => (
                   <button
@@ -504,7 +504,7 @@ function EditorContent() {
                 </div>
 
                 {/* Cupertino Segmented Control for 4K/8K - ALWAYS VISIBLE */}
-                <div className={cn("p-2 bg-black/20 transition-opacity duration-200", !modelSettings['vr_upscale'] && "opacity-50 pointer-events-none")}>
+                <div className={cn("p-2 bg-black/20 transition-opacity duration-200", !modelSettings['vr_upscale'] && "pointer-events-none")}>
                   <div className="flex bg-black/40 p-1 rounded-lg border border-white/5">
                     {(['4k', '8k'] as const).map((res) => (
                       <button
@@ -547,8 +547,8 @@ function EditorContent() {
                   return (
                     <div key={key} className="space-y-3 group p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all">
                       <div className="flex justify-between items-center px-1">
-                        <span className="text-xs font-medium text-white transition-colors">{conf.label}</span>
-                        <span className="font-mono text-[10px] text-white/70 bg-white/5 px-1.5 py-0.5 rounded">{Number(currentValue).toFixed(conf.step && conf.step < 1 ? 2 : 0)}</span>
+                        <span className="text-xs font-semibold text-white transition-colors">{conf.label}</span>
+                        <span className="font-mono text-[12px] text-white/70 bg-white/5 px-1.5 py-0.5 rounded">{Number(currentValue).toFixed(conf.step && conf.step < 1 ? 2 : 0)}</span>
                       </div>
                       <MechanicalSlider
                         value={[Number(currentValue)]}
@@ -661,8 +661,8 @@ function EditorContent() {
         </div>
 
         {/* RIGHT MAIN CANVAS */}
-        <div className="relative flex flex-col p-4 lg:sticky lg:top-24 lg:h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar">
-          <div className="w-full relative flex items-center justify-center bg-[#050505] custom-checkerboard rounded-2xl border border-white/5 overflow-hidden min-h-[400px] flex-shrink-0">
+        <div className="relative flex flex-col p-4 lg:sticky lg:top-24 lg:h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar order-1 lg:order-2">
+          <div className="w-full relative flex items-center justify-center bg-[#050505] custom-checkerboard rounded-2xl border border-white/5 overflow-hidden h-[400px] lg:flex-1 lg:min-h-[400px] flex-shrink-0">
             {!uploadedImage ? (
               <div
                 className="text-center cursor-pointer p-12 rounded-2xl border-2 border-dashed border-white/10 hover:border-white/20 hover:bg-white/5 transition-all"
@@ -702,9 +702,9 @@ function EditorContent() {
                      key={idx}
                      onClick={() => setSelectedOutputIndex(idx)}
                      className={cn(
-                       "px-4 py-1.5 text-[10px] font-bold rounded-md transition-all uppercase tracking-wide min-w-[80px]",
+                       "px-4 py-1.5 text-[11px] font-bold rounded-md transition-all uppercase tracking-wide min-w-[80px]",
                        selectedOutputIndex === idx
-                         ? "bg-white text-black shadow-sm"
+                         ? "bg-[#FFFF00] text-black shadow-md scale-[1.02]"
                          : "text-gray-500 hover:text-gray-300"
                      )}
                    >
@@ -729,8 +729,8 @@ function EditorContent() {
           {/* MODES SECTION - Right Side Below Output */}
           <div className="mt-4 px-4 pb-8 w-full space-y-4">
             <div>
-              <h3 className="text-xs font-bold text-gray-400 mb-3 flex items-center gap-2 uppercase tracking-wider">
-                Select Mode
+              <h3 className="text-xs font-black text-gray-500 mb-3 flex items-center gap-2 tracking-wider">
+                Dermatology Control
               </h3>
               <div className="flex items-start gap-2">
                 <div className="grid grid-cols-4 gap-2 flex-1">
@@ -757,13 +757,13 @@ function EditorContent() {
                           alt=""
                           className={cn(
                             "absolute inset-0 w-full h-full object-cover transition-opacity duration-500",
-                            enhancementMode === mode.id ? "opacity-30" : "opacity-10 group-hover:opacity-20"
+                            enhancementMode === mode.id ? "opacity-50" : "opacity-40 group-hover:opacity-50"
                           )}
                         />
                       )}
 
                       <span className={cn(
-                        "relative z-10 text-[10px] font-medium uppercase tracking-wider transition-colors truncate px-1",
+                        "relative z-10 text-[12px] font-black uppercase tracking-wider transition-colors truncate px-1",
                         enhancementMode === mode.id ? "text-[#FFFF00]" : "text-gray-400 group-hover:text-gray-200"
                       )}>
                         {mode.label}
@@ -783,7 +783,7 @@ function EditorContent() {
                   title="Custom Mode"
                 >
                   <IconAdjustmentsHorizontal className="w-6 h-6" />
-                  <span className="text-[10px] font-medium uppercase tracking-wider">Custom</span>
+                  <span className="text-[12px] font-black uppercase tracking-wider">Custom</span>
                 </button>
               </div>
             </div>
@@ -791,17 +791,14 @@ function EditorContent() {
             {/* Custom Prompt Input - Only visible when Custom mode is selected */}
             {enhancementMode === 'Custom' && (
               <div className="space-y-2">
-                <label className="text-xs font-medium text-white/70 px-1">Custom Prompt</label>
+                <label className="text-xs font-medium text-white/70 px-1">Describe your custom skin dermatology</label>
                 <div className="relative">
                   <textarea
                     value={customPrompt}
                     onChange={(e) => setCustomPrompt(e.target.value)}
                     placeholder="Enter additional prompt details..."
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-lg p-3 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-yellow-400/50 focus:bg-white/[0.05] min-h-[80px] resize-none"
+                    className="w-full bg-white/[0.03] rounded-lg p-3 text-xs text-white placeholder:text-white/20 focus:outline-none focus:bg-white/[0.05] min-h-[80px] resize-none"
                   />
-                  <div className="absolute bottom-2 right-2 text-[9px] text-white/30">
-                    Will be appended to base prompt
-                  </div>
                 </div>
               </div>
             )}

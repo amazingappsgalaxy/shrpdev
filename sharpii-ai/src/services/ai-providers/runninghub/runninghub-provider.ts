@@ -311,7 +311,7 @@ export class RunningHubProvider extends BaseAIProvider {
       {
         nodeId: '97', // Input Image
         fieldName: 'image',
-        fieldValue: request.imageUrl // Will be processed in createTask but we need to pass it
+        fieldValue: request.imageUrl.trim() // Ensure no spaces
       },
       {
         nodeId: '140', // Prompt
@@ -321,12 +321,12 @@ export class RunningHubProvider extends BaseAIProvider {
       {
         nodeId: '90', // Denoise
         fieldName: 'denoise',
-        fieldValue: String(finalSettings.denoise)
+        fieldValue: Number(finalSettings.denoise).toFixed(2) // Ensure proper number format
       },
       {
         nodeId: '167', // Max Shift
         fieldName: 'max_shift',
-        fieldValue: String(finalSettings.maxshift)
+        fieldValue: Number(finalSettings.maxshift).toFixed(2)
       },
       {
         nodeId: '85', // Megapixels
@@ -384,44 +384,32 @@ export class RunningHubProvider extends BaseAIProvider {
       }
     })
 
-    // Seed VR Upscaler Toggle (Node 172)
-    const isSmartUpscale = settings.smartUpscale || false
-    nodeInfoList.push({
-        nodeId: '172',
-        fieldName: 'enable',
-        fieldValue: String(isSmartUpscale)
-    })
+    // Smart Upscale Logic
+    // We adjust the megapixels based on the resolution setting if Smart Upscale is enabled.
+    const isSmartUpscale = settings.smartUpscale || false;
+    let targetMegapixels = finalSettings.megapixels;
 
     if (isSmartUpscale) {
-        const resolution = settings.upscaleResolution || '4k'
-        const is8k = resolution === '8k'
-        
-        // Node 213: Scale By
-        nodeInfoList.push({
-            nodeId: '213',
-            fieldName: 'scale_by',
-            fieldValue: String(is8k ? 4 : 2)
-        })
-        
-        // Node 214: Width & Height
-        const size = is8k ? 8192 : 4096
-        nodeInfoList.push({
-            nodeId: '214',
-            fieldName: 'width',
-            fieldValue: String(size)
-        })
-        nodeInfoList.push({
-            nodeId: '214',
-            fieldName: 'height',
-            fieldValue: String(size)
-        })
+        const resolution = settings.upscaleResolution || '4k';
+        if (resolution === '8k') {
+            targetMegapixels = 16; // High detail for 8K setting
+        } else {
+            targetMegapixels = 8; // Approx 4K resolution
+        }
     }
 
     // Create task
     const taskResponse = await this.createTask(request.imageUrl, {
       ...settings,
       workflowId: '2021189307448434690', // Skin Editor Workflow ID
-      nodeInfoListOverride: nodeInfoList
+      nodeInfoListOverride: [
+          ...nodeInfoList.filter(n => n.nodeId !== '85'), // Remove default megapixels mapping if we are overriding it
+          {
+            nodeId: '85', // Megapixels
+            fieldName: 'megapixels',
+            fieldValue: String(targetMegapixels)
+          }
+      ]
     } as any)
 
     if (!taskResponse.success) {
@@ -429,9 +417,9 @@ export class RunningHubProvider extends BaseAIProvider {
     }
 
     // Define expected output nodes based on mode
-    // #174(1st output) and #136(2nd output) if smartUpscale is true
-    // #136 if smartUpscale is false
-    const expectedNodeIds = isSmartUpscale ? ['174', '136'] : ['136']
+    // Using Node 136 (SaveImage) as the primary output.
+    // If Smart Upscale is enabled and nodes are restored, add 174.
+    const expectedNodeIds = ['136']; 
 
     const result = await this.pollTaskCompletion(taskResponse.taskId!, expectedNodeIds)
 
@@ -477,7 +465,7 @@ export class RunningHubProvider extends BaseAIProvider {
     error?: string
   }> {
     try {
-      let processedImageUrl = imageUrl
+      let processedImageUrl = imageUrl.trim()
 
       // Check if imageUrl is a base64 data URL and convert it
       if (imageUrl.startsWith('data:')) {

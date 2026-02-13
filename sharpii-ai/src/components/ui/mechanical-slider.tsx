@@ -99,7 +99,7 @@ const MechanicalSlider = React.forwardRef<
     <div className={cn("w-full space-y-1.5", className)}>
       <div className="flex items-center gap-4">
         {leftLabel && (
-          <span className="text-[10px] uppercase font-bold text-gray-500 select-none w-12 text-right shrink-0">
+          <span className="text-[10px] font-bold text-gray-500 select-none w-12 text-right shrink-0">
             {leftLabel}
           </span>
         )}
@@ -174,7 +174,7 @@ const MechanicalSlider = React.forwardRef<
         </SliderPrimitive.Root>
 
         {rightLabel && (
-          <span className="text-[10px] uppercase font-bold text-gray-500 select-none w-12 text-left shrink-0">
+          <span className="text-[10px] font-bold text-gray-500 select-none w-12 text-left shrink-0">
             {rightLabel}
           </span>
         )}
