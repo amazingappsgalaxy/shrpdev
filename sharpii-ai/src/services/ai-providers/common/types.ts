@@ -33,6 +33,7 @@ export interface EnhancementRequest {
 export interface EnhancementResponse {
   success: boolean
   enhancedUrl?: string | string[]
+  outputs?: { type: 'image' | 'video'; url: string }[]
   error?: string
   message?: string
   metadata?: {

@@ -12,6 +12,37 @@ import { ModelPricingEngine } from '@/lib/model-pricing-config';
 import { CreditManager } from '@/lib/credits';
 import { v4 as uuidv4 } from 'uuid';
 
+type EnhancementOutputItem = { type: 'image' | 'video'; url: string }
+
+const normalizeOutputs = (value: unknown): EnhancementOutputItem[] => {
+  const isVideo = (url: string) => /\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(url)
+  const asItem = (url: string): EnhancementOutputItem => ({
+    type: isVideo(url) ? 'video' : 'image',
+    url
+  })
+
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        if (typeof item === 'string') return asItem(item)
+        if (item && typeof item === 'object') {
+          const url = (item as { url?: string }).url
+          const type = (item as { type?: 'image' | 'video' }).type
+          if (url && type) return { url, type }
+          if (url) return asItem(url)
+        }
+        return null
+      })
+      .filter((item): item is EnhancementOutputItem => !!item)
+  }
+
+  if (typeof value === 'string') {
+    return [asItem(value)]
+  }
+
+  return []
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log('🚀 API: Enhancement request received')
@@ -634,6 +665,9 @@ export async function POST(request: NextRequest) {
       jobId: result.metadata?.jobId,
       taskId
     })
+
+    const normalizedOutputs = normalizeOutputs(result.outputs ?? result.enhancedUrl)
+    result.outputs = normalizedOutputs
 
     // Add taskId to response metadata
     if (result.metadata) {

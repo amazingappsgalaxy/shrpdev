@@ -25,6 +25,7 @@ type RunningHubSettings = Omit<Partial<EnhancementSettings>, 'scheduler'> & {
   smartUpscaleWorkflowId?: string
   smartUpscaleWorkflowId4k?: string
   smartUpscaleWorkflowId8k?: string
+  nodeInfoListOverride?: NodeInfoOverride[]
   protections?: {
     face?: {
       skin: boolean
@@ -47,6 +48,19 @@ type RunningHubSettings = Omit<Partial<EnhancementSettings>, 'scheduler'> & {
       neck: boolean
     }
   }
+}
+
+type NodeInfoOverride = {
+  nodeId: string
+  fieldName: string
+  fieldValue: string
+}
+
+const mergeNodeInfoList = (base: NodeInfoOverride[], overrides: NodeInfoOverride[]): NodeInfoOverride[] => {
+  if (!overrides.length) return base
+  const overrideKeys = new Set(overrides.map(item => `${item.nodeId}:${item.fieldName}`))
+  const filteredBase = base.filter(item => !overrideKeys.has(`${item.nodeId}:${item.fieldName}`))
+  return [...filteredBase, ...overrides]
 }
 
 
@@ -131,7 +145,7 @@ export class RunningHubProvider extends BaseAIProvider {
           },
           denoise: {
             type: 'number',
-            default: 0.35,
+            default: 0.20,
             min: 0.01,
             max: 1.0,
             step: 0.01,
@@ -285,6 +299,46 @@ export class RunningHubProvider extends BaseAIProvider {
   ): Promise<EnhancementResponse> {
     const settings = request.settings as RunningHubSettings
     const { SKIN_EDITOR_MODES } = await import('../../../models/skin-editor/config')
+    const seedVrNode229Settings: NodeInfoOverride[] = [
+      { nodeId: '229', fieldName: 'Enable SeedVR2 (Down)Load DiT Model', fieldValue: 'true' },
+      { nodeId: '229', fieldName: 'Enable SeedVR2 Video Upscaler (v2.5.15)', fieldValue: 'true' },
+      { nodeId: '229', fieldName: 'Enable RunningHub Deepcleaner', fieldValue: 'true' },
+      { nodeId: '229', fieldName: 'Enable SeedVR2 (Down)Load VAE Model', fieldValue: 'true' },
+      { nodeId: '229', fieldName: 'Enable Clean VRAM Used', fieldValue: 'true' },
+      { nodeId: '229', fieldName: 'Enable 🔧 Image Contrast Adaptive Sharpening', fieldValue: 'true' },
+      { nodeId: '229', fieldName: 'Enable Output Resolution (4k/8k)', fieldValue: 'true' },
+      { nodeId: '229', fieldName: 'Enable TTP_Tile_image_size', fieldValue: 'true' },
+      { nodeId: '229', fieldName: 'Enable TTP_Image_Tile_Batch', fieldValue: 'true' },
+      { nodeId: '229', fieldName: 'Enable Upscale Image By', fieldValue: 'true' },
+      { nodeId: '229', fieldName: 'Enable 🔧 Image Resize', fieldValue: 'true' },
+      { nodeId: '229', fieldName: 'Enable TTP_Image_Assy', fieldValue: 'true' },
+      { nodeId: '229', fieldName: 'Enable set', fieldValue: 'true' },
+      { nodeId: '229', fieldName: 'Enable 🔧 Get Image Size', fieldValue: 'true' },
+      { nodeId: '229', fieldName: 'Enable Image Comparer (rgthree)', fieldValue: 'true' },
+      { nodeId: '229', fieldName: 'Enable Number to Float', fieldValue: 'true' },
+      { nodeId: '229', fieldName: 'Enable Save Image', fieldValue: 'true' },
+      { nodeId: '229', fieldName: 'bypass_node_0', fieldValue: JSON.stringify(['206', 0]) },
+      { nodeId: '229', fieldName: 'bypass_node_1', fieldValue: JSON.stringify(['224', 0]) },
+      { nodeId: '229', fieldName: 'bypass_node_2', fieldValue: JSON.stringify(['217', 0]) },
+      { nodeId: '229', fieldName: 'bypass_node_3', fieldValue: JSON.stringify(['204', 0]) },
+      { nodeId: '229', fieldName: 'bypass_node_4', fieldValue: JSON.stringify(['207', 0]) },
+      { nodeId: '229', fieldName: 'bypass_node_5', fieldValue: JSON.stringify(['203', 0]) },
+      { nodeId: '229', fieldName: 'bypass_node_6', fieldValue: JSON.stringify(['208', 0]) },
+      { nodeId: '229', fieldName: 'bypass_node_7', fieldValue: JSON.stringify(['213', 0]) },
+      { nodeId: '229', fieldName: 'bypass_node_8', fieldValue: JSON.stringify(['211', 0]) },
+      { nodeId: '229', fieldName: 'bypass_node_9', fieldValue: JSON.stringify(['205', 0]) },
+      { nodeId: '229', fieldName: 'bypass_node_10', fieldValue: JSON.stringify(['197', 0]) },
+      { nodeId: '229', fieldName: 'bypass_node_11', fieldValue: JSON.stringify(['198', 0]) },
+      { nodeId: '229', fieldName: 'bypass_node_12', fieldValue: JSON.stringify(['199', 0]) },
+      { nodeId: '229', fieldName: 'bypass_node_13', fieldValue: JSON.stringify(['200', 0]) },
+      { nodeId: '229', fieldName: 'bypass_node_14', fieldValue: JSON.stringify(['201', 0]) },
+      { nodeId: '229', fieldName: 'bypass_node_15', fieldValue: JSON.stringify(['202', 0]) },
+      { nodeId: '229', fieldName: 'bypass_node_16', fieldValue: JSON.stringify(['212', 0]) },
+      { nodeId: '229', fieldName: 'bypass_node_17', fieldValue: JSON.stringify(['214', 0]) },
+      { nodeId: '229', fieldName: 'bypass_node_18', fieldValue: JSON.stringify(['210', 0]) },
+      { nodeId: '229', fieldName: 'bypass_node_19', fieldValue: JSON.stringify(['215', 0]) },
+      { nodeId: '229', fieldName: 'bypass_node_20', fieldValue: JSON.stringify(['209', 0]) }
+    ]
 
     // Apply mode defaults if not overridden
     const mode = (settings.mode as keyof typeof SKIN_EDITOR_MODES) || 'Subtle'
@@ -355,8 +409,9 @@ export class RunningHubProvider extends BaseAIProvider {
     // Protection Mapping (FaceParsingResultsParser Node 138)
     // Default protections if not provided
     const p = settings.protections || {
-      face: { skin: true, nose: true, mouth: true, upperLip: true, lowerLip: true },
-      eyes: { eyeGeneral: true, rightEye: true, leftEye: true, rightBrow: true, leftBrow: true }
+      face: { skin: false, nose: false, mouth: false, upperLip: false, lowerLip: false },
+      eyes: { eyeGeneral: false, rightEye: false, leftEye: false, rightBrow: false, leftBrow: false },
+      other: { hair: false, cloth: false, background: false, neck: false }
     };
 
     const protectionFields = [
@@ -393,6 +448,7 @@ export class RunningHubProvider extends BaseAIProvider {
     const canUseSmartUpscale = isSmartUpscale
 
     if (canUseSmartUpscale) {
+      nodeInfoList.push(...seedVrNode229Settings)
 
       if (resolution === '4k') {
         nodeInfoList.push({
@@ -429,12 +485,17 @@ export class RunningHubProvider extends BaseAIProvider {
       }
     }
 
+    const extraNodeInfoList = Array.isArray(settings.nodeInfoListOverride)
+      ? settings.nodeInfoListOverride
+      : []
+    const finalNodeInfoList = mergeNodeInfoList(nodeInfoList, extraNodeInfoList)
+
     // Create task
     const taskResponse = await this.createTask(request.imageUrl, {
       ...settings,
       workflowId: baseWorkflowId,
       nodeInfoListOverride: [
-          ...nodeInfoList
+          ...finalNodeInfoList
       ]
     } as any)
 
@@ -487,6 +548,55 @@ export class RunningHubProvider extends BaseAIProvider {
     try {
       let processedImageUrl = imageUrl.trim()
 
+      const uploadToRunningHub = async (buffer: Buffer, mimeType: string, extension: string) => {
+        const formData = new FormData()
+        const blob = new Blob([new Uint8Array(buffer)], { type: mimeType })
+        const fileName = `upload-${Date.now()}.${extension}`
+
+        formData.append('file', blob, fileName)
+        formData.append('apikey', this.apiKey)
+        formData.append('apiKey', this.apiKey)
+
+        const uploadUrl = `${this.baseUrl}/task/openapi/upload`
+
+        const response = await fetch(uploadUrl, {
+          method: 'POST',
+          body: formData
+        })
+
+        if (!response.ok) {
+          throw new Error(`Upload failed with status ${response.status}`)
+        }
+
+        const data = await response.json() as any
+
+        if (data.code !== 0 || !data.data || (!data.data.url && !data.data.fileName)) {
+          console.error('RunningHub: Upload response error:', data)
+          throw new Error(data.msg || 'Failed to upload image to RunningHub')
+        }
+
+        return data.data.fileName || data.data.url
+      }
+
+      const fetchWithRetry = async (url: string, attempts: number) => {
+        let lastError: unknown
+        for (let i = 0; i < attempts; i += 1) {
+          try {
+            const response = await fetch(url)
+            if (response.ok) {
+              return response
+            }
+            lastError = new Error(`Image download failed with status ${response.status}`)
+          } catch (error) {
+            lastError = error
+          }
+          if (i < attempts - 1) {
+            await new Promise((resolve) => setTimeout(resolve, 750 * (i + 1)))
+          }
+        }
+        throw lastError
+      }
+
       // Check if imageUrl is a base64 data URL and convert it
       if (imageUrl.startsWith('data:')) {
         console.log('RunningHub: Converting base64 image to public URL...')
@@ -510,42 +620,41 @@ export class RunningHubProvider extends BaseAIProvider {
           // Convert base64 to Buffer (Node.js compatible)
           const buffer = Buffer.from(base64Data, 'base64')
 
-          // Upload directly to RunningHub
           console.log('RunningHub: Uploading directly to RunningHub...')
-          
-          const formData = new FormData()
-          const blob = new Blob([buffer], { type: mimeType })
-          const fileName = `upload-${Date.now()}.${extension}`
-          
-          formData.append('file', blob, fileName)
-          formData.append('apikey', this.apiKey)
-          formData.append('apiKey', this.apiKey)
-          
-          const uploadUrl = `${this.baseUrl}/task/openapi/upload`
-          
-          const response = await fetch(uploadUrl, {
-            method: 'POST',
-            body: formData
-          })
-          
-          if (!response.ok) {
-            throw new Error(`Upload failed with status ${response.status}`)
-          }
-          
-          const data = await response.json() as any
-          
-          if (data.code !== 0 || !data.data || (!data.data.url && !data.data.fileName)) {
-            console.error('RunningHub: Upload response error:', data)
-            throw new Error(data.msg || 'Failed to upload image to RunningHub')
-          }
-          
-          processedImageUrl = data.data.fileName || data.data.url
+
+          processedImageUrl = await uploadToRunningHub(buffer, mimeType, extension)
           console.log('RunningHub: Successfully converted base64 to key/URL:', processedImageUrl)
         } catch (uploadError) {
           console.error('RunningHub: Failed to convert base64 image:', uploadError)
           return {
             success: false,
             error: 'Failed to process base64 image: ' + (uploadError instanceof Error ? uploadError.message : String(uploadError))
+          }
+        }
+      } else if (/^https?:\/\//i.test(imageUrl)) {
+        console.log('RunningHub: Downloading remote image for upload...')
+
+        try {
+          const response = await fetchWithRetry(imageUrl, 3)
+          if (!response.ok) {
+            throw new Error(`Image download failed with status ${response.status}`)
+          }
+
+          const arrayBuffer = await response.arrayBuffer()
+          const buffer = Buffer.from(arrayBuffer)
+          const headerType = response.headers.get('content-type') || 'image/jpeg'
+          const urlBase = imageUrl.split('?')[0] || ''
+          const urlExtension = urlBase.includes('.') ? (urlBase.split('.').pop() || '') : ''
+          const headerExtension = headerType.split('/')[1]
+          const extension = headerExtension || urlExtension || 'jpg'
+
+          processedImageUrl = await uploadToRunningHub(buffer, headerType, extension)
+          console.log('RunningHub: Uploaded remote image to key/URL:', processedImageUrl)
+        } catch (downloadError) {
+          console.error('RunningHub: Failed to download/upload remote image:', downloadError)
+          return {
+            success: false,
+            error: 'Failed to process remote image: ' + (downloadError instanceof Error ? downloadError.message : String(downloadError))
           }
         }
       } else {
@@ -806,8 +915,7 @@ export class RunningHubProvider extends BaseAIProvider {
 
           if (status === 'SUCCESS') {
             console.log('✅ RunningHub: Task completed successfully, waiting before fetching outputs...')
-            // Wait longer for outputs to be fully processed
-            await new Promise(resolve => setTimeout(resolve, 5000))
+            await new Promise(resolve => setTimeout(resolve, 1000))
 
             console.log('🔍 RunningHub: Now fetching outputs...')
 
@@ -847,8 +955,8 @@ export class RunningHubProvider extends BaseAIProvider {
 
               outputAttempts++
               if (outputAttempts < maxOutputAttempts) {
-                console.log(`⏳ RunningHub: No outputs yet, waiting ${3000 * outputAttempts}ms before retry...`)
-                await new Promise(resolve => setTimeout(resolve, 3000 * outputAttempts))
+                console.log(`⏳ RunningHub: No outputs yet, waiting ${1000 * outputAttempts}ms before retry...`)
+                await new Promise(resolve => setTimeout(resolve, 1000 * outputAttempts))
               }
             }
 
@@ -876,13 +984,19 @@ export class RunningHubProvider extends BaseAIProvider {
                       }
                   }
                   
-                  // If we found any matching outputs
-                  if (sortedOutputs.length > 0) {
-                      console.log(`✅ RunningHub: Found ${sortedOutputs.length} expected outputs based on requested node IDs`)
+                  const additionalOutputs = outputData.data
+                    .map((o) => o.fileUrl)
+                    .filter((url): url is string => !!url)
+                    .filter((url) => !sortedOutputs.includes(url))
+
+                  const combinedOutputs = [...sortedOutputs, ...additionalOutputs]
+                  
+                  if (combinedOutputs.length > 0) {
+                      console.log(`✅ RunningHub: Found ${combinedOutputs.length} outputs with expected priority ordering`)
                       return {
                           success: true,
-                          outputUrl: sortedOutputs[0], // Primary output
-                          outputUrls: sortedOutputs,   // All outputs
+                          outputUrl: combinedOutputs[0],
+                          outputUrls: combinedOutputs,
                           processingTime: Date.now() - startTime
                       }
                   } else {

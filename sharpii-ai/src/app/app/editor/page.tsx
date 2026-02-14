@@ -59,16 +59,16 @@ const DEFAULT_AREA_PROTECTION: AreaProtectionSettings = {
   face: {
     skin: false,
     mouth: false,
-    lowerLip: true,
-    upperLip: true,
+    lowerLip: false,
+    upperLip: false,
     nose: false
   },
   eyes: {
     eyeGeneral: false,
-    rightEye: true,
+    rightEye: false,
     leftBrow: false,
     rightBrow: false,
-    leftEye: true
+    leftEye: false
   },
   other: {
     hair: false,
@@ -95,7 +95,7 @@ const MODEL_CONTROLS = {
   'skin-editor': {
     maxshift: { type: 'number', default: 1, min: 0.8, max: 1.2, step: 0.1, label: 'Detail Level', leftLabel: 'Low', rightLabel: 'High' },
     megapixels: { type: 'number', default: 4, min: 2, max: 10, step: 1, label: 'Skin Texture Size', leftLabel: 'Low', rightLabel: 'High' },
-    denoise: { type: 'number', default: 0.35, min: 0.1, max: 0.38, step: 0.01, label: 'Transformation Strength', leftLabel: 'Subtle', rightLabel: 'Strong' }
+    denoise: { type: 'number', default: 0.20, min: 0.1, max: 0.38, step: 0.01, label: 'Transformation Strength', leftLabel: 'Subtle', rightLabel: 'Strong' }
   }
 }
 
@@ -211,18 +211,54 @@ function ComparisonView({
   )
 }
 
+const DEMO_INPUT_URL = 'https://i.postimg.cc/vTtwPDVt/90s-Futuristic-Portrait-3.png'
+const DEMO_OUTPUT_URL = 'https://i.postimg.cc/NjJBqyPS/Comfy-UI-00022-psmsy-1770811094.png'
+
 function EditorContent() {
   const { user, isLoading } = useAuth()
   const searchParams = useSearchParams()
 
+  type EnhancedOutput = { type: 'image' | 'video'; url: string }
+  const normalizeOutputs = (value: unknown): EnhancedOutput[] => {
+    const isVideo = (url: string) => /\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(url)
+    const asItem = (url: string): EnhancedOutput => ({
+      type: isVideo(url) ? 'video' : 'image',
+      url
+    })
+
+    if (Array.isArray(value)) {
+      return value
+        .map((item) => {
+          if (typeof item === 'string') return asItem(item)
+          if (item && typeof item === 'object') {
+            const url = (item as { url?: string }).url
+            const type = (item as { type?: 'image' | 'video' }).type
+            if (url && type) return { url, type }
+            if (url) return asItem(url)
+          }
+          return null
+        })
+        .filter((item): item is EnhancedOutput => !!item)
+    }
+
+    if (typeof value === 'string') {
+      return [asItem(value)]
+    }
+
+    return []
+  }
+
   // State: Defaulting to USER PROVIDED DEMO IMAGES
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null)
+  const [uploadedImage, setUploadedImage] = useState<string | null>(DEMO_INPUT_URL)
   const [remoteImageUrl, setRemoteImageUrl] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
-  const [enhancedImages, setEnhancedImages] = useState<string[]>([])
+  const [enhancedOutputs, setEnhancedOutputs] = useState<EnhancedOutput[]>([
+    { type: 'image', url: DEMO_OUTPUT_URL }
+  ])
   const [selectedOutputIndex, setSelectedOutputIndex] = useState(0)
   // Backward compatibility accessor
-  const enhancedImage = enhancedImages[selectedOutputIndex] || null
+  const selectedOutput = enhancedOutputs[selectedOutputIndex] || null
+  const enhancedImage = selectedOutput?.type === 'image' ? selectedOutput.url : null
   
   const [imageMetadata, setImageMetadata] = useState({ width: 1024, height: 1024 })
 
@@ -268,12 +304,15 @@ function EditorContent() {
   useEffect(() => {
     if (selectedModel === 'skin-editor' && enhancementMode in SKIN_EDITOR_DEFAULTS) {
       const defaults = SKIN_EDITOR_DEFAULTS[enhancementMode as keyof typeof SKIN_EDITOR_DEFAULTS]
-      setModelSettings(prev => ({ ...prev, ...defaults }))
+      setModelSettings(defaults)
     }
   }, [enhancementMode, selectedModel])
 
   // Setup default settings when model changes
   useEffect(() => {
+    if (selectedModel === 'skin-editor') {
+      return
+    }
     const defaults: Record<string, any> = {}
     const controls = MODEL_CONTROLS[selectedModel as keyof typeof MODEL_CONTROLS] || {}
     Object.entries(controls).forEach(([k, v]) => {
@@ -309,7 +348,7 @@ function EditorContent() {
       img.onload = () => {
         setImageMetadata({ width: img.width, height: img.height })
         setUploadedImage(e.target?.result as string)
-        setEnhancedImages([]) // Reset result
+        setEnhancedOutputs([])
         setSelectedOutputIndex(0)
       }
       img.src = e.target?.result as string
@@ -318,8 +357,8 @@ function EditorContent() {
   }
 
   const handleDeleteImage = () => {
-    setUploadedImage(null)
-    setEnhancedImages([])
+    setUploadedImage(DEMO_INPUT_URL)
+    setEnhancedOutputs([{ type: 'image', url: DEMO_OUTPUT_URL }])
     setSelectedOutputIndex(0)
     setImageMetadata({ width: 1024, height: 1024 })
   }
@@ -330,6 +369,8 @@ function EditorContent() {
     setProgress(0)
 
     try {
+      const shouldSmartUpscale = !!modelSettings['vr_upscale']
+
       const response = await fetch('/api/enhance-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -342,7 +383,7 @@ function EditorContent() {
             customPrompt: enhancementMode === 'Custom' ? customPrompt : undefined,
             protections: areaSettings,
             style: STYLES.find(s => s.id === selectedStyle)?.value,
-            smartUpscale: modelSettings['vr_upscale'],
+            smartUpscale: shouldSmartUpscale,
             upscaleResolution,
             ...modelSettings
           }
@@ -354,10 +395,9 @@ function EditorContent() {
       }
 
       const data = await response.json()
-      if (data.success && data.enhancedUrl) {
-        // Handle single string or array of strings
-        const images = Array.isArray(data.enhancedUrl) ? data.enhancedUrl : [data.enhancedUrl]
-        setEnhancedImages(images)
+      if (data.success && (data.outputs || data.enhancedUrl)) {
+        const outputs = normalizeOutputs(data.outputs ?? data.enhancedUrl)
+        setEnhancedOutputs(outputs)
         setSelectedOutputIndex(0)
       } else {
         console.error('Enhancement failed:', data.error)
@@ -372,14 +412,14 @@ function EditorContent() {
   }
 
   const handleDownload = async () => {
-    if (!enhancedImage) return
+    if (!selectedOutput) return
     try {
-      const response = await fetch(enhancedImage)
+      const response = await fetch(selectedOutput.url)
       const blob = await response.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `enhanced-${Date.now()}.png`
+      a.download = `enhanced-${Date.now()}.${selectedOutput.type === 'video' ? 'mp4' : 'png'}`
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
@@ -388,8 +428,8 @@ function EditorContent() {
       console.error('Download failed:', error)
       // Fallback for same-origin or simple cases
       const a = document.createElement('a')
-      a.href = enhancedImage
-      a.download = `enhanced-${Date.now()}.png`
+      a.href = selectedOutput.url
+      a.download = `enhanced-${Date.now()}.${selectedOutput.type === 'video' ? 'mp4' : 'png'}`
       a.click()
     }
   }
@@ -675,13 +715,23 @@ function EditorContent() {
                 <p className="text-sm text-gray-500 mt-2">Upload an image to start editing</p>
               </div>
             ) : (
-              enhancedImage ? (
-                <ComparisonView
-                  original={uploadedImage}
-                  enhanced={enhancedImage}
-                  onDownload={handleDownload}
-                  onExpand={() => setIsExpandViewOpen(true)}
-                />
+              selectedOutput ? (
+                selectedOutput.type === 'image' ? (
+                  <ComparisonView
+                    original={uploadedImage}
+                    enhanced={selectedOutput.url}
+                    onDownload={handleDownload}
+                    onExpand={() => setIsExpandViewOpen(true)}
+                  />
+                ) : (
+                  <div className="relative w-full h-full flex items-center justify-center bg-black/40">
+                    <video
+                      src={selectedOutput.url}
+                      controls
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                )
               ) : (
                 <div className="relative w-full h-full">
                   <img src={uploadedImage} className="w-full h-full object-contain opacity-50 blur-sm" alt="Preview" />
@@ -695,25 +745,28 @@ function EditorContent() {
             )}
           </div>
 
-          {/* Multiple Output Selection - Only if more than 1 image */}
-          {enhancedImages.length > 1 && (
-            <div className="mt-4 flex justify-center animate-in fade-in slide-in-from-bottom-2 duration-300">
-               <div className="flex bg-black/40 p-1 rounded-lg border border-white/5">
-                 {enhancedImages.map((_, idx) => (
-                   <button
-                     key={idx}
-                     onClick={() => setSelectedOutputIndex(idx)}
-                     className={cn(
-                       "px-4 py-1.5 text-[11px] font-bold rounded-md transition-all uppercase tracking-wide min-w-[80px]",
-                       selectedOutputIndex === idx
-                         ? "bg-[#FFFF00] text-black shadow-md scale-[1.02]"
-                         : "text-gray-500 hover:text-gray-300"
-                     )}
-                   >
-                     Result {idx + 1}
-                   </button>
-                 ))}
-               </div>
+          {enhancedOutputs.length > 1 && (
+            <div className="absolute right-3 inset-y-0 z-20 flex flex-col justify-center gap-2">
+              {enhancedOutputs.map((output, idx) => (
+                <button
+                  key={`${output.url}-${idx}`}
+                  onClick={() => setSelectedOutputIndex(idx)}
+                  className={cn(
+                    "w-12 h-12 rounded-md border transition-all overflow-hidden bg-black/50",
+                    selectedOutputIndex === idx
+                      ? "border-white/70 shadow-[0_0_12px_rgba(255,255,255,0.15)]"
+                      : "border-white/10 hover:border-white/30"
+                  )}
+                >
+                  {output.type === 'image' ? (
+                    <img src={output.url} alt={`Output ${idx + 1}`} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-[9px] font-semibold text-white/80 uppercase tracking-wider">
+                      Video {idx + 1}
+                    </div>
+                  )}
+                </button>
+              ))}
             </div>
           )}
 
@@ -809,17 +862,15 @@ function EditorContent() {
       </div>
 
       {/* Expand View Modal */}
-      {
-        enhancedImage && uploadedImage && (
-          <ExpandViewModal
-            isOpen={isExpandViewOpen}
-            onClose={() => setIsExpandViewOpen(false)}
-            originalImage={uploadedImage}
-            enhancedImage={enhancedImage}
-            onDownload={handleDownload}
-          />
-        )
-      }
+      {enhancedImage && uploadedImage && (
+        <ExpandViewModal
+          isOpen={isExpandViewOpen}
+          onClose={() => setIsExpandViewOpen(false)}
+          originalImage={uploadedImage}
+          enhancedImage={enhancedImage}
+          onDownload={handleDownload}
+        />
+      )}
     </div >
   )
 }
