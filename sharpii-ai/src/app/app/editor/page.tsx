@@ -357,6 +357,9 @@ function EditorContent() {
   }
 
   const handleDeleteImage = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
     setUploadedImage(DEMO_INPUT_URL)
     setEnhancedOutputs([{ type: 'image', url: DEMO_OUTPUT_URL }])
     setSelectedOutputIndex(0)
