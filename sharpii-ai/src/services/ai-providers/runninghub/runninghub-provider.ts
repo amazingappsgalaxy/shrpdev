@@ -21,6 +21,10 @@ type RunningHubSettings = Omit<Partial<EnhancementSettings>, 'scheduler'> & {
   customPrompt?: string
   smartUpscale?: boolean
   upscaleResolution?: '4k' | '8k'
+  workflowId?: string
+  smartUpscaleWorkflowId?: string
+  smartUpscaleWorkflowId4k?: string
+  smartUpscaleWorkflowId8k?: string
   protections?: {
     face?: {
       skin: boolean
@@ -44,7 +48,6 @@ type RunningHubSettings = Omit<Partial<EnhancementSettings>, 'scheduler'> & {
     }
   }
 }
-
 
 
 interface RunningHubOutputItem {
@@ -384,31 +387,54 @@ export class RunningHubProvider extends BaseAIProvider {
       }
     })
 
-    // Smart Upscale Logic
-    // We adjust the megapixels based on the resolution setting if Smart Upscale is enabled.
-    const isSmartUpscale = settings.smartUpscale || false;
-    let targetMegapixels = finalSettings.megapixels;
+    const isSmartUpscale = settings.smartUpscale || false
+    const resolution = settings.upscaleResolution || '4k'
+    const baseWorkflowId = settings.workflowId || process.env.RUNNINGHUB_SKIN_EDITOR_WORKFLOW_ID || '2021189307448434690'
+    const canUseSmartUpscale = isSmartUpscale
 
-    if (isSmartUpscale) {
-        const resolution = settings.upscaleResolution || '4k';
-        if (resolution === '8k') {
-            targetMegapixels = 16; // High detail for 8K setting
-        } else {
-            targetMegapixels = 8; // Approx 4K resolution
-        }
+    if (canUseSmartUpscale) {
+
+      if (resolution === '4k') {
+        nodeInfoList.push({
+          nodeId: '213',
+          fieldName: 'scale_by',
+          fieldValue: '2.000000000000'
+        })
+        nodeInfoList.push({
+          nodeId: '214',
+          fieldName: 'width',
+          fieldValue: '4096'
+        })
+        nodeInfoList.push({
+          nodeId: '214',
+          fieldName: 'height',
+          fieldValue: '4096'
+        })
+      } else {
+        nodeInfoList.push({
+          nodeId: '213',
+          fieldName: 'scale_by',
+          fieldValue: '4.000000000000'
+        })
+        nodeInfoList.push({
+          nodeId: '214',
+          fieldName: 'width',
+          fieldValue: '8192'
+        })
+        nodeInfoList.push({
+          nodeId: '214',
+          fieldName: 'height',
+          fieldValue: '8192'
+        })
+      }
     }
 
     // Create task
     const taskResponse = await this.createTask(request.imageUrl, {
       ...settings,
-      workflowId: '2021189307448434690', // Skin Editor Workflow ID
+      workflowId: baseWorkflowId,
       nodeInfoListOverride: [
-          ...nodeInfoList.filter(n => n.nodeId !== '85'), // Remove default megapixels mapping if we are overriding it
-          {
-            nodeId: '85', // Megapixels
-            fieldName: 'megapixels',
-            fieldValue: String(targetMegapixels)
-          }
+          ...nodeInfoList
       ]
     } as any)
 
@@ -416,10 +442,8 @@ export class RunningHubProvider extends BaseAIProvider {
       return this.createErrorResponse(taskResponse.error || 'Failed to create Skin Editor task')
     }
 
-    // Define expected output nodes based on mode
-    // Using Node 136 (SaveImage) as the primary output.
-    // If Smart Upscale is enabled and nodes are restored, add 174.
-    const expectedNodeIds = ['136']; 
+    const expectedNodeIds: string[] =
+      canUseSmartUpscale ? ['215', '136'] : ['136']
 
     const result = await this.pollTaskCompletion(taskResponse.taskId!, expectedNodeIds)
 
@@ -431,11 +455,7 @@ export class RunningHubProvider extends BaseAIProvider {
     let finalOutput: string | string[] | undefined = result.outputUrl
     
     if (result.outputUrls && result.outputUrls.length > 0) {
-        if (isSmartUpscale) {
-             finalOutput = result.outputUrls
-        } else {
-             finalOutput = result.outputUrls[0]
-        }
+        finalOutput = result.outputUrls;
     }
 
     return {
@@ -490,54 +510,37 @@ export class RunningHubProvider extends BaseAIProvider {
           // Convert base64 to Buffer (Node.js compatible)
           const buffer = Buffer.from(base64Data, 'base64')
 
-          // Create a server-side compatible file object
-          const fileName = `enhancement-input.${extension}`
-          const key = `uploads/${Date.now()}-${fileName}`
-
-          console.log('RunningHub: Importing Tebi client...')
-          // Upload directly using tebiClient (bypassing File requirement)
-          const { default: tebiClient, tebiUtils } = await import('../../../lib/tebi')
+          // Upload directly to RunningHub
+          console.log('RunningHub: Uploading directly to RunningHub...')
           
-          if (!tebiClient) {
-             console.error('RunningHub: Tebi client import failed (default is undefined)')
-             throw new Error('Tebi client import failed')
+          const formData = new FormData()
+          const blob = new Blob([buffer], { type: mimeType })
+          const fileName = `upload-${Date.now()}.${extension}`
+          
+          formData.append('file', blob, fileName)
+          formData.append('apikey', this.apiKey)
+          formData.append('apiKey', this.apiKey)
+          
+          const uploadUrl = `${this.baseUrl}/task/openapi/upload`
+          
+          const response = await fetch(uploadUrl, {
+            method: 'POST',
+            body: formData
+          })
+          
+          if (!response.ok) {
+            throw new Error(`Upload failed with status ${response.status}`)
           }
-
-          const bucketName = process.env.NEXT_PUBLIC_TEBI_BUCKET_NAME || 'sharpii-ai'
-          const uploadParams = {
-            Bucket: bucketName,
-            Key: key,
-            Body: buffer,
-            ContentType: mimeType,
-            Metadata: {
-              originalName: fileName,
-              uploadedAt: new Date().toISOString(),
-              category: 'uploads'
-            }
+          
+          const data = await response.json() as any
+          
+          if (data.code !== 0 || !data.data || (!data.data.url && !data.data.fileName)) {
+            console.error('RunningHub: Upload response error:', data)
+            throw new Error(data.msg || 'Failed to upload image to RunningHub')
           }
-
-          console.log(`RunningHub: Uploading to Tebi bucket ${bucketName} key ${key}...`)
-          await tebiClient.putObject(uploadParams).promise()
-          console.log('RunningHub: Upload completed')
-
-          // Generate the public URL
-          const uploadResult = {
-            key,
-            url: tebiUtils.getFileUrl(key),
-            size: buffer.length
-          }
-
-          console.log('RunningHub: Generated URL:', uploadResult.url)
-
-          if (!uploadResult.url) {
-            return {
-              success: false,
-              error: 'Failed to upload image to storage service'
-            }
-          }
-
-          processedImageUrl = uploadResult.url
-          console.log('RunningHub: Successfully converted base64 to URL:', processedImageUrl)
+          
+          processedImageUrl = data.data.fileName || data.data.url
+          console.log('RunningHub: Successfully converted base64 to key/URL:', processedImageUrl)
         } catch (uploadError) {
           console.error('RunningHub: Failed to convert base64 image:', uploadError)
           return {

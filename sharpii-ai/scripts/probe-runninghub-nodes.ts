@@ -14,8 +14,8 @@ const NODES_TO_TEST = [
   { id: '166', field: 'lora_name', val: 'skin.safetensors', name: 'Lora Name' },
   
   // Smart Upscale Nodes
-  { id: '172', field: 'enable', val: 'true', name: 'Smart Upscale Toggle (True)' },
-  { id: '172', field: 'enable', val: 'false', name: 'Smart Upscale Toggle (False)' },
+  { id: '219', field: 'enable', val: 'true', name: 'Smart Upscale Toggle (True)' },
+  { id: '219', field: 'enable', val: 'false', name: 'Smart Upscale Toggle (False)' },
   { id: '213', field: 'scale_by', val: '2', name: 'Scale By (2)' },
   { id: '213', field: 'scale_by', val: '4', name: 'Scale By (4)' },
   { id: '214', field: 'width', val: '4096', name: 'Width' },
@@ -38,7 +38,7 @@ const NODES_TO_TEST = [
   { id: '138', field: 'neck', val: 'true', name: 'FaceParsing: Neck' },
   
   // Output Nodes
-  { id: '174', field: 'filename_prefix', val: 'test', name: 'Output 1 (Smart Upscale)' },
+  { id: '215', field: 'filename_prefix', val: 'test', name: 'Output 1 (Smart Upscale)' },
   { id: '136', field: 'filename_prefix', val: 'test', name: 'Output 2 (Normal)' }
 ];
 
@@ -58,7 +58,7 @@ async function probeNode(workflowId: string, node: any) {
       })
     });
 
-    const data = await response.json();
+    const data = await response.json() as any;
     
     // 803: Invalid Node Info (FAIL)
     // 0: Success (PASS)

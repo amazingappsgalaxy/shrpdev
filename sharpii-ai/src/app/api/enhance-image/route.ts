@@ -10,8 +10,6 @@ import { getImageMetadata, calculateCreditsConsumed, getModelDisplayName } from 
 import { PricingEngine } from '@/lib/pricing-engine';
 import { ModelPricingEngine } from '@/lib/model-pricing-config';
 import { CreditManager } from '@/lib/credits';
-import { tebiApi } from '@/lib/api/tebi';
-import { FILE_CATEGORIES } from '@/lib/tebi';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: NextRequest) {
@@ -490,80 +488,23 @@ export async function POST(request: NextRequest) {
       }
 
       // Add enhanced image metadata with validation
-      if (result.success && result.enhancedUrl) {
-        // Upload enhanced image(s) to Tebi.io for permanent storage
-        let tebiUrls: string[] = []
-        const originalUrls = Array.isArray(result.enhancedUrl) ? result.enhancedUrl : [result.enhancedUrl]
-        
-        try {
-          if (originalUrls.length > 0 && originalUrls[0]) {
-             console.log(`📤 API: Uploading ${originalUrls.length} enhanced image(s) to Tebi.io...`, {
-               taskId,
-               firstUrl: originalUrls[0].substring(0, 100) + '...'
-             })
-          }
+    if (result.success && result.enhancedUrl) {
+      // Use the provider's URL directly
+      const tebiUrls: string[] = []
+      const originalUrls = Array.isArray(result.enhancedUrl) ? result.enhancedUrl : [result.enhancedUrl]
+      
+      // Add original URLs to the list
+      tebiUrls.push(...originalUrls)
 
-          for (let i = 0; i < originalUrls.length; i++) {
-              const url = originalUrls[i]
-              if (!url) continue
-
-              // Fetch the enhanced image and convert to file
-              const imageResponse = await fetch(url)
-              if (!imageResponse.ok) {
-                console.warn(`Failed to fetch enhanced image ${i}: ${imageResponse.statusText}`)
-                tebiUrls.push(url) // Fallback to original URL
-                continue
-              }
-
-              const imageBlob = await imageResponse.blob()
-              const fileName = `enhanced-${taskId}-${Date.now()}-${i}.jpg`
-              const imageFile = new File([imageBlob], fileName, { type: 'image/jpeg' })
-
-              // Upload to Tebi.io under 'enhanced' category
-              const tebiUploadResult = await tebiApi.uploadFile(
-                imageFile,
-                FILE_CATEGORIES.ENHANCED,
-                {
-                  taskId,
-                  userId: authenticatedUserId,
-                  originalImageUrl: imageUrl,
-                  enhancementDate: new Date().toISOString(),
-                  modelId,
-                  processingTime: processingTime.toString(),
-                  index: i.toString()
-                }
-              )
-              
-              tebiUrls.push(tebiUploadResult.url)
-              
-              console.log(`✅ API: Enhanced image ${i} uploaded to Tebi.io:`, {
-                taskId,
-                tebiKey: tebiUploadResult.key,
-                tebiUrl: tebiUploadResult.url,
-                fileSize: tebiUploadResult.size
-              })
-          }
-
-        } catch (tebiError) {
-          console.error('❌ API: Failed to upload enhanced image to Tebi.io:', {
+      if (tebiUrls.length > 0 && tebiUrls[0]) {
+          console.log(`✅ API: Using ${tebiUrls.length} enhanced image(s) from provider directly...`, {
             taskId,
-            error: tebiError instanceof Error ? tebiError.message : String(tebiError)
+            firstUrl: tebiUrls[0].substring(0, 100) + '...'
           })
-          // Continue with original URLs if Tebi upload fails completely
-          if (tebiUrls.length === 0) {
-              tebiUrls = originalUrls.filter(u => !!u)
-          }
-        }
-
-        // Update result with permanent URLs
-        if (Array.isArray(result.enhancedUrl)) {
-            result.enhancedUrl = tebiUrls
-        } else {
-            result.enhancedUrl = tebiUrls[0]
-        }
-        
-        // Update database record
-        updateData.enhanced_image_url = tebiUrls[0] // Primary image
+       }
+      
+      // Update database record
+      updateData.enhanced_image_url = tebiUrls[0] // Primary image
 
         if (enhancedMetadata) {
           updateData.output_width = enhancedMetadata.width || 0

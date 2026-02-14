@@ -216,8 +216,10 @@ function EditorContent() {
   const searchParams = useSearchParams()
 
   // State: Defaulting to USER PROVIDED DEMO IMAGES
-  const [uploadedImage, setUploadedImage] = useState<string | null>("https://i.postimg.cc/gJHLjBwj/image.png")
-  const [enhancedImages, setEnhancedImages] = useState<string[]>(["https://i.postimg.cc/85Q350wG/output.png"])
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null)
+  const [remoteImageUrl, setRemoteImageUrl] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [enhancedImages, setEnhancedImages] = useState<string[]>([])
   const [selectedOutputIndex, setSelectedOutputIndex] = useState(0)
   // Backward compatibility accessor
   const enhancedImage = enhancedImages[selectedOutputIndex] || null

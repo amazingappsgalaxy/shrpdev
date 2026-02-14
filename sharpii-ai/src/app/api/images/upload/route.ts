@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { getSession } from '@/lib/auth-simple'
-import { tebiApi } from '@/lib/api/tebi'
-import { FILE_CATEGORIES } from '@/lib/tebi'
 import { uploadImage } from '@/lib/auth-simple'
 
 export async function POST(request: NextRequest) {
@@ -69,10 +67,39 @@ export async function POST(request: NextRequest) {
       // Get image dimensions
       const dimensions = await getImageDimensions(file)
       
-      // Upload to Tebi
-      const uploadResult = await tebiApi.uploadFile(file, FILE_CATEGORIES.UPLOADS)
-      
-      console.log('✅ API: File uploaded to Tebi:', uploadResult.url)
+      // Upload to RunningHub
+      const runningHubApiKey = process.env.RUNNINGHUB_API_KEY;
+      if (!runningHubApiKey) {
+        throw new Error('RUNNINGHUB_API_KEY is not configured');
+      }
+
+      const runningHubFormData = new FormData();
+      runningHubFormData.append('file', file);
+      runningHubFormData.append('apikey', runningHubApiKey);
+      runningHubFormData.append('apiKey', runningHubApiKey);
+
+      const response = await fetch('https://www.runninghub.cn/task/openapi/upload', {
+        method: 'POST',
+        body: runningHubFormData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`RunningHub upload failed: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+       // RunningHub returns { code: 0, msg: 'success', data: { fileName: 'api/...' } }
+       const remoteKey = data.data?.fileName || data.fileName;
+       
+       if (!remoteKey) {
+          throw new Error('RunningHub did not return a file key (fileName)');
+       }
+ 
+       console.log('✅ API: File uploaded to RunningHub:', remoteKey)
+       
+       // For internal use, we might need a URL. But RunningHub only gives a key.
+       // We'll use the key as the URL for now, assuming the consumer knows how to handle it.
+       const uploadResult = { url: remoteKey }
       
       // Save image metadata to database
       const imageData = {

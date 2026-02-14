@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { config } from '../../../../lib/config';
-import { tebiApi } from '@/lib/api/tebi';
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET || 'sharpii_admin_secret_2024';
 const EXPIRATION_DAYS = 45;
@@ -69,23 +68,6 @@ export async function POST(request: NextRequest) {
     for (const task of expiredTasks) {
       try {
         console.log(`🗑️ Processing expired task: ${task.id} (created: ${new Date(task.created_at).toISOString()})`);
-
-        // Delete enhanced image from Tebi.io if it exists
-        if (task.enhanced_image_url && task.enhanced_image_url.includes('tebi.io')) {
-          try {
-            // Extract the file key from the Tebi URL
-            const urlParts = task.enhanced_image_url.split('/');
-            const fileName = urlParts[urlParts.length - 1];
-            const fileKey = `enhanced/${fileName}`;
-            
-            await tebiApi.deleteFile(fileKey);
-            deletedFiles++;
-            console.log(`✅ Deleted Tebi file: ${fileKey}`);
-          } catch (fileError) {
-            console.warn(`⚠️ Failed to delete Tebi file for task ${task.id}:`, fileError);
-            errors.push(`Failed to delete file for task ${task.id}: ${fileError}`);
-          }
-        }
 
         // Delete the task from database
         const { error: deleteError } = await supabase

@@ -53,7 +53,6 @@ export function UnifiedEnhancementSection() {
       stats: "95% detail retention",
       color: "text-accent-neon"
     }
-    // Reduced list for cleaner UI as per user "way too much information" feedback
   ]
 
   const performanceMetrics = [
@@ -188,7 +187,7 @@ export function UnifiedEnhancementSection() {
                 {/* Images */}
                 <div className="absolute inset-0">
                   <Image
-                    src={showAfter ? "https://s3.tebi.io/sharpiiweb/sharpiiweb/home/enhance/enhanceafter.jpeg" : "https://s3.tebi.io/sharpiiweb/sharpiiweb/home/enhance/enhancebefore.jpeg"}
+                    src={showAfter ? "/images/demo/enhanceafter.jpeg" : "/images/demo/enhancebefore.jpeg"}
                     alt="Demo"
                     fill
                     className="object-cover transition-opacity duration-700"
