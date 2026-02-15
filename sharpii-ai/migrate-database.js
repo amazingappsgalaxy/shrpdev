@@ -161,25 +161,25 @@ async function addNewColumns() {
 
 async function createNewTables() {
   const newTables = [
-    // Enhancement tasks table
-    `CREATE TABLE IF NOT EXISTS enhancement_tasks (
+    // History items table
+    `CREATE TABLE IF NOT EXISTS history_items (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
       user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      image_id UUID REFERENCES images(id) ON DELETE CASCADE,
-      status VARCHAR(50) DEFAULT 'pending',
-      provider VARCHAR(50),
-      model_id VARCHAR(100),
-      progress INTEGER DEFAULT 0,
-      result_url TEXT,
-      processing_time_ms INTEGER,
-      credits_consumed INTEGER DEFAULT 0,
-      error_message TEXT,
-      request_data JSONB DEFAULT '{}'::jsonb,
-      response_data JSONB DEFAULT '{}'::jsonb,
+      task_id TEXT NOT NULL UNIQUE,
+      output_urls JSONB NOT NULL,
+      model_name TEXT NOT NULL,
+      page_name TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'processing',
+      generation_time_ms INTEGER,
+      settings JSONB NOT NULL,
       created_at TIMESTAMPTZ DEFAULT NOW(),
-      updated_at TIMESTAMPTZ DEFAULT NOW(),
-      started_at TIMESTAMPTZ,
-      completed_at TIMESTAMPTZ
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS history_details (
+      history_id UUID PRIMARY KEY REFERENCES history_items(id) ON DELETE CASCADE,
+      settings_full JSONB,
+      metadata JSONB
     )`,
 
     // API usage tracking table

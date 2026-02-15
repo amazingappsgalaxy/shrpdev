@@ -79,7 +79,7 @@ async function setupDatabase() {
     // Test database connection and tables
     console.log('🔍 Testing database tables...')
 
-    const tables = ['users', 'sessions', 'enhancement_tasks', 'images', 'projects', 'credits']
+    const tables = ['users', 'sessions', 'history_items', 'history_details', 'images', 'projects', 'credits']
     const tableResults = {}
 
     for (const table of tables) {

@@ -7,8 +7,6 @@ import { useAuth } from '@/lib/auth-client-simple'
 import { UnifiedCreditsService } from '@/lib/unified-credits'
 import {
   Coins,
-  TrendingUp,
-  TrendingDown,
   RefreshCw,
   Plus,
   Minus
@@ -45,67 +43,40 @@ export default function MinimalUsageSection({ className }: MinimalUsageSectionPr
       const balance = await UnifiedCreditsService.getUserCredits(user.id)
       setCurrentBalance(balance.remaining)
 
-      // Get tasks to build transaction history
-      const tasksResponse = await fetch('/api/tasks/list?limit=50')
-      if (tasksResponse.ok) {
-        const tasksData = await tasksResponse.json()
-        const tasks = tasksData.tasks || []
+      // Get credit transactions
+      const creditHistory = await UnifiedCreditsService.getCreditHistory(user.id, 50)
 
-        // Get credit transactions
-        const creditHistory = await UnifiedCreditsService.getCreditHistory(user.id, 50)
+      const allTransactions: Transaction[] = creditHistory.map(credit => ({
+        id: credit.id,
+        type: credit.type,
+        amount: credit.amount,
+        description: credit.description || credit.reason,
+        timestamp: credit.createdAt,
+        balanceAfter: 0
+      }))
 
-        // Combine tasks and credit transactions into one timeline
-        const allTransactions: Transaction[] = []
+      // Sort by timestamp (most recent first)
+      allTransactions.sort((a, b) => b.timestamp - a.timestamp)
 
-        // Add credit additions from credit history
-        creditHistory.forEach(credit => {
-          if (credit.type === 'credit') {
-            allTransactions.push({
-              id: credit.id,
-              type: 'credit',
-              amount: credit.amount,
-              description: credit.description,
-              timestamp: credit.createdAt,
-              balanceAfter: 0 // Will calculate running balance later
-            })
-          }
-        })
+      // Calculate running balance (working backwards from current balance)
+      let runningBalance = balance.remaining
+      for (let i = 0; i < allTransactions.length; i++) {
+        const transaction = allTransactions[i]
+        if (!transaction) continue
 
-        // Add task debits
-        tasks.forEach((task: any) => {
-          if (task.creditsConsumed && task.creditsConsumed > 0) {
-            allTransactions.push({
-              id: task.id,
-              type: 'debit',
-              amount: task.creditsConsumed,
-              description: `${task.modelName || 'Image Enhancement'} - ${task.status}`,
-              timestamp: new Date(task.createdAt).getTime(),
-              balanceAfter: 0 // Will calculate running balance later
-            })
-          }
-        })
+        transaction.balanceAfter = runningBalance
 
-        // Sort by timestamp (most recent first)
-        allTransactions.sort((a, b) => b.timestamp - a.timestamp)
-
-        // Calculate running balance (working backwards from current balance)
-        let runningBalance = balance.remaining
-        for (let i = 0; i < allTransactions.length; i++) {
-          const transaction = allTransactions[i]
-          transaction.balanceAfter = runningBalance
-
-          // Adjust balance for the next (older) transaction
-          if (transaction.type === 'credit') {
-            runningBalance -= transaction.amount // Remove the credit we just processed
-          } else {
-            runningBalance += transaction.amount // Add back the debit we just processed
-          }
+        // Adjust balance for the next (older) transaction
+        if (transaction.type === 'credit') {
+          runningBalance -= transaction.amount // Remove the credit we just processed
+        } else {
+          runningBalance += transaction.amount // Add back the debit we just processed
         }
-
-        setTransactions(allTransactions.slice(0, 20)) // Show last 20 transactions
       }
+
+      setTransactions(allTransactions.slice(0, 10))
     } catch (error) {
-      console.error('Error loading usage data:', error)
+      console.error('Failed to load credits:', error)
     } finally {
       setIsLoading(false)
       setIsRefreshing(false)

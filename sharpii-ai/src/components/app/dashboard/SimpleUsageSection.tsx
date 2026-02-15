@@ -32,7 +32,9 @@ const safeFormatDistance = (date: Date | number) => {
     // Cache with size limit to prevent memory issues
     if (dateFormatCache.size > 100) {
       const firstKey = dateFormatCache.keys().next().value
-      dateFormatCache.delete(firstKey)
+      if (firstKey !== undefined) {
+        dateFormatCache.delete(firstKey)
+      }
     }
     dateFormatCache.set(timestamp, formatted)
 
@@ -77,73 +79,30 @@ export default function SimpleUsageSection({ className }: SimpleUsageSectionProp
       const balance = await UnifiedCreditsService.getUserCredits(user.id)
       setCreditBalance(balance)
 
-      // Get tasks to build transaction history with reduced limit for faster loading
-      const tasksResponse = await fetch('/api/tasks/list?limit=20') // Reduced from 50
-      if (tasksResponse.ok) {
-        const tasksData = await tasksResponse.json()
-        const tasks = tasksData.tasks || []
+      // Get credit transactions with reduced limit
+      const creditHistory = await UnifiedCreditsService.getCreditHistory(user.id, 20)
 
-        // Get credit transactions with reduced limit
-        const creditHistory = await UnifiedCreditsService.getCreditHistory(user.id, 20) // Reduced from 50
+      // Combine credit transactions into one timeline
+      const allTransactions: Transaction[] = []
 
-        // Combine tasks and credit transactions into one timeline
-        const allTransactions: Transaction[] = []
-
-        // Add credit additions from credit history
-        creditHistory.forEach(credit => {
-          if (credit.type === 'credit') {
-            allTransactions.push({
-              id: credit.id,
-              type: 'credit',
-              amount: credit.amount,
-              description: credit.description,
-              timestamp: credit.createdAt,
-              balanceAfter: 0
-            })
-          }
+      // Add credit transactions
+      creditHistory.forEach(credit => {
+        allTransactions.push({
+          id: credit.id,
+          type: credit.type,
+          amount: credit.amount,
+          description: credit.description || credit.reason,
+          timestamp: credit.createdAt,
+          balanceAfter: 0 // We don't track running balance in this view
         })
+      })
 
-        // Real credit transactions are already included from creditHistory above
-        // No mock data needed for production
+      // Sort by timestamp descending
+      allTransactions.sort((a, b) => b.timestamp - a.timestamp)
+      
+      setAllTransactions(allTransactions)
+      setTransactions(allTransactions.slice(0, DEFAULT_TRANSACTION_LIMIT))
 
-        // Add task debits
-        tasks.forEach((task: any) => {
-          if (task.creditsConsumed && task.creditsConsumed > 0) {
-            allTransactions.push({
-              id: task.id,
-              type: 'debit',
-              amount: task.creditsConsumed,
-              description: `${task.modelName || 'Image Enhancement'}`,
-              timestamp: new Date(task.createdAt).getTime(),
-              balanceAfter: 0
-            })
-          }
-        })
-
-        // Sort by timestamp (most recent first)
-        allTransactions.sort((a, b) => b.timestamp - a.timestamp)
-
-        // Calculate running balance for limited transactions
-        let runningBalance = balance.remaining
-        const maxTransactions = Math.min(allTransactions.length, 30) // Reduced processing
-
-        for (let i = 0; i < maxTransactions; i++) {
-          const transaction = allTransactions[i]
-          if (!transaction) break
-
-          transaction.balanceAfter = Math.max(0, runningBalance)
-
-          // Adjust balance for the next (older) transaction
-          if (transaction.type === 'credit') {
-            runningBalance -= transaction.amount
-          } else {
-            runningBalance += transaction.amount
-          }
-        }
-
-        setAllTransactions(allTransactions)
-        setTransactions(allTransactions.slice(0, DEFAULT_TRANSACTION_LIMIT)) // Show 6 transactions initially
-      }
     } catch (error) {
       console.error('Error loading usage data:', error)
     } finally {

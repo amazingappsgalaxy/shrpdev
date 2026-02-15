@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     // Fetch user statistics
     const { data: totalUsersData, error: usersError } = await supabaseAdmin
       .from('users')
-      .select('id, created_at, last_login_at')
+      .select('id, email, created_at, last_login_at')
       .order('created_at', { ascending: false });
 
     if (usersError) throw usersError;
@@ -31,8 +31,8 @@ export async function GET(request: NextRequest) {
 
     // Fetch task statistics
     const { data: tasksData, error: tasksError } = await supabaseAdmin
-      .from('enhancement_tasks')
-      .select('id, status, created_at, completed_at, credits_consumed')
+      .from('history_items')
+      .select('id, status, created_at, generation_time_ms')
       .order('created_at', { ascending: false });
 
     if (tasksError) throw tasksError;
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     // Calculate task processing rate (tasks per minute in last hour)
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
     const recentTasks = tasksData?.filter(task => {
-      return task.completed_at && new Date(task.completed_at) >= oneHourAgo;
+      return task.status === 'completed' && new Date(task.created_at) >= oneHourAgo;
     }) || [];
     const taskProcessingRate = Math.round(recentTasks.length / 60);
 

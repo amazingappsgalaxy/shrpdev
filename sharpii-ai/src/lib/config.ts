@@ -1,4 +1,37 @@
 // Application configuration
+if (typeof window === 'undefined' && !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  try {
+    // Attempt to load .env.local manually if key is missing (e.g. monorepo context)
+    // Use dynamic require to avoid bundling issues
+    const fs = require('fs');
+    const path = require('path');
+    const dotenv = require('dotenv');
+    
+    const possiblePaths = [
+      path.resolve(process.cwd(), '.env.local'),
+      path.resolve(process.cwd(), '..', '.env.local'),
+      path.resolve(process.cwd(), 'sharpii-ai', '.env.local')
+    ];
+    
+    for (const envPath of possiblePaths) {
+      if (fs.existsSync(envPath)) {
+        console.log(`[config] Manually loading env from ${envPath}`);
+        const envConfig = dotenv.parse(fs.readFileSync(envPath));
+        // Only set if not already set
+        for (const k in envConfig) {
+          if (!process.env[k]) {
+            process.env[k] = envConfig[k];
+          }
+        }
+        // Break after finding one valid file
+        if (process.env.SUPABASE_SERVICE_ROLE_KEY) break;
+      }
+    }
+  } catch (e) {
+    // Ignore errors in browser or if modules missing
+  }
+}
+
 export const config = {
 
   // App Configuration
@@ -33,10 +66,10 @@ export const config = {
   
   // Database Configuration
   database: {
-    url: process.env.DATABASE_URL || 'your-database-url-here',
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co',
-    supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key',
-    supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY || 'your-service-key',
+    url: process.env.DATABASE_URL || '',
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+    supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   },
   
   // AI Services Configuration

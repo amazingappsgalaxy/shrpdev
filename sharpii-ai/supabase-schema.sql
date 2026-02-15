@@ -157,41 +157,26 @@ CREATE TABLE IF NOT EXISTS payments (
     metadata JSONB -- JSON metadata from Dodo
 );
 
--- Enhancement Tasks table (main table for image processing)
-CREATE TABLE IF NOT EXISTS enhancement_tasks (
+-- History items (lightweight records for output history)
+CREATE TABLE IF NOT EXISTS history_items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    image_id VARCHAR(255) NOT NULL,
-    original_image_url TEXT NOT NULL,
-    enhanced_image_url TEXT,
-    status VARCHAR(50) DEFAULT 'pending', -- 'pending', 'processing', 'completed', 'failed'
-    progress INTEGER DEFAULT 0, -- 0-100
-    prompt TEXT,
-    settings JSONB, -- JSON string of enhancement settings
-    model_id VARCHAR(255) NOT NULL,
-    model_name VARCHAR(255), -- Human-readable model name
-    provider VARCHAR(100) NOT NULL, -- 'replicate', 'openai', etc.
-    job_id VARCHAR(255), -- External job ID from provider
-    prediction_id VARCHAR(255), -- Replicate prediction ID
-    error_message TEXT,
-    processing_time INTEGER, -- in milliseconds
-    estimated_time INTEGER, -- estimated processing time
-    credits_consumed INTEGER, -- Credits used for this task
-    task_tags JSONB, -- JSON array of task tags
-    original_width INTEGER,
-    original_height INTEGER,
-    original_file_size BIGINT, -- in bytes
-    original_file_format VARCHAR(20), -- e.g., 'jpeg', 'png', 'webp'
-    output_width INTEGER,
-    output_height INTEGER,
-    output_file_size BIGINT, -- in bytes
-    output_file_format VARCHAR(20), -- e.g., 'jpeg', 'png', 'webp'
-    started_at TIMESTAMPTZ,
-    completed_at TIMESTAMPTZ,
+    task_id TEXT NOT NULL UNIQUE,
+    output_urls JSONB NOT NULL,
+    model_name TEXT NOT NULL,
+    page_name TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'processing',
+    generation_time_ms INTEGER,
+    settings JSONB NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    failed_at TIMESTAMPTZ,
-    metadata JSONB -- Additional metadata as JSON
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- History details (optional modal-only data)
+CREATE TABLE IF NOT EXISTS history_details (
+    history_id UUID PRIMARY KEY REFERENCES history_items(id) ON DELETE CASCADE,
+    settings_full JSONB,
+    metadata JSONB
 );
 
 -- Credit Purchases table
@@ -230,12 +215,9 @@ CREATE INDEX IF NOT EXISTS idx_credits_user_id ON credits(user_id);
 CREATE INDEX IF NOT EXISTS idx_credits_expires_at ON credits(expires_at);
 CREATE INDEX IF NOT EXISTS idx_credit_transactions_user_id ON credit_transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_payments_user_id ON payments(user_id);
-CREATE INDEX IF NOT EXISTS idx_enhancement_tasks_user_id ON enhancement_tasks(user_id);
-CREATE INDEX IF NOT EXISTS idx_enhancement_tasks_status ON enhancement_tasks(status);
-CREATE INDEX IF NOT EXISTS idx_enhancement_tasks_created_at ON enhancement_tasks(created_at);
-CREATE INDEX IF NOT EXISTS idx_enhancement_tasks_started_at ON enhancement_tasks(started_at);
-CREATE INDEX IF NOT EXISTS idx_enhancement_tasks_completed_at ON enhancement_tasks(completed_at);
-CREATE INDEX IF NOT EXISTS idx_enhancement_tasks_failed_at ON enhancement_tasks(failed_at);
+CREATE INDEX IF NOT EXISTS idx_history_items_user_created_at ON history_items(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_history_items_user_status ON history_items(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_history_details_history_id ON history_details(history_id);
 CREATE INDEX IF NOT EXISTS idx_credit_purchases_user_id ON credit_purchases(user_id);
 CREATE INDEX IF NOT EXISTS idx_credit_purchases_status ON credit_purchases(status);
 
@@ -254,7 +236,7 @@ CREATE TRIGGER update_images_updated_at BEFORE UPDATE ON images FOR EACH ROW EXE
 CREATE TRIGGER update_projects_updated_at BEFORE UPDATE ON projects FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_subscriptions_updated_at BEFORE UPDATE ON subscriptions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_enhancement_tasks_updated_at BEFORE UPDATE ON enhancement_tasks FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_history_items_updated_at BEFORE UPDATE ON history_items FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_credit_purchases_updated_at BEFORE UPDATE ON credit_purchases FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Enable Row Level Security (RLS)
@@ -268,7 +250,8 @@ ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE credits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE credit_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE enhancement_tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE history_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE history_details ENABLE ROW LEVEL SECURITY;
 ALTER TABLE credit_purchases ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
@@ -314,10 +297,22 @@ CREATE POLICY "Users can view own payments" ON payments FOR SELECT USING (auth.u
 CREATE POLICY "Users can insert own payments" ON payments FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update own payments" ON payments FOR UPDATE USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can view own enhancement tasks" ON enhancement_tasks FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert own enhancement tasks" ON enhancement_tasks FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update own enhancement tasks" ON enhancement_tasks FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete own enhancement tasks" ON enhancement_tasks FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "Users can view own history items" ON history_items FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own history items" ON history_items FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own history items" ON history_items FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own history items" ON history_items FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "Users can view own history details" ON history_details FOR SELECT USING (
+  auth.uid() = (SELECT user_id FROM history_items WHERE id = history_id)
+);
+CREATE POLICY "Users can insert own history details" ON history_details FOR INSERT WITH CHECK (
+  auth.uid() = (SELECT user_id FROM history_items WHERE id = history_id)
+);
+CREATE POLICY "Users can update own history details" ON history_details FOR UPDATE USING (
+  auth.uid() = (SELECT user_id FROM history_items WHERE id = history_id)
+);
+CREATE POLICY "Users can delete own history details" ON history_details FOR DELETE USING (
+  auth.uid() = (SELECT user_id FROM history_items WHERE id = history_id)
+);
 
 CREATE POLICY "Users can view own credit purchases" ON credit_purchases FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert own credit purchases" ON credit_purchases FOR INSERT WITH CHECK (auth.uid() = user_id);

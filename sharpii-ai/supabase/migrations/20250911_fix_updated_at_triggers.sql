@@ -44,8 +44,8 @@ DROP TRIGGER IF EXISTS update_payments_updated_at ON payments;
 CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_snake();
 
-DROP TRIGGER IF EXISTS update_enhancement_tasks_updated_at ON enhancement_tasks;
-CREATE TRIGGER update_enhancement_tasks_updated_at BEFORE UPDATE ON enhancement_tasks
+DROP TRIGGER IF EXISTS update_history_items_updated_at ON history_items;
+CREATE TRIGGER update_history_items_updated_at BEFORE UPDATE ON history_items
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_snake();
 
 DROP TRIGGER IF EXISTS update_credit_purchases_updated_at ON credit_purchases;

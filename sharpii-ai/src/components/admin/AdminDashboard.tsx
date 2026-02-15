@@ -10,17 +10,12 @@ import ModelPricingManager from './ModelPricingManager'
 import { UserManagementPanel } from './UserManagementPanel'
 import { SalesAnalytics } from './SalesAnalytics'
 import { SystemSettings } from './SystemSettings'
-import { TaskMonitoring } from './TaskMonitoring'
 import { AdminActivityLog } from './AdminActivityLog'
 import { adminApi, isAdminAuthenticated } from '@/lib/admin-client'
 import {
-  Settings,
   Users,
-  DollarSign,
   BarChart3,
   Shield,
-  Activity,
-  Database,
   AlertCircle,
   CheckCircle,
   TrendingUp,
@@ -211,13 +206,12 @@ export function AdminDashboard() {
 
         {/* Main Admin Panel */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-8 bg-gray-900/50">
+        <TabsList className="grid w-full grid-cols-7 bg-gray-900/50">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="pricing">Pricing</TabsTrigger>
             <TabsTrigger value="model-pricing">Model Pricing</TabsTrigger>
             <TabsTrigger value="sales">Sales</TabsTrigger>
-            <TabsTrigger value="tasks">Tasks</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
           </TabsList>
@@ -295,10 +289,6 @@ export function AdminDashboard() {
 
           <TabsContent value="sales" className="mt-6">
             <SalesAnalytics />
-          </TabsContent>
-
-          <TabsContent value="tasks" className="mt-6">
-            <TaskMonitoring />
           </TabsContent>
 
           <TabsContent value="settings" className="mt-6">

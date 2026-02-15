@@ -277,16 +277,16 @@ export async function getSystemStats() {
 
     // Get task counts
     const { count: totalTasks } = await supabaseAdmin
-      .from('enhancement_tasks')
+      .from('history_items')
       .select('*', { count: 'exact', head: true })
 
     const { count: completedTasks } = await supabaseAdmin
-      .from('enhancement_tasks')
+      .from('history_items')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'completed')
 
     const { count: processingTasks } = await supabaseAdmin
-      .from('enhancement_tasks')
+      .from('history_items')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'processing')
 

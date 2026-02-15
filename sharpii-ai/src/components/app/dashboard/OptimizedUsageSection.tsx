@@ -64,14 +64,8 @@ export default function OptimizedUsageSection({ className }: OptimizedUsageSecti
     try {
       setIsLoading(true)
 
-      // Load tasks, credit balance, and credit history independently to avoid cascade failures
-      let tasksResponse, creditsResponse, historyResponse
-
-      try {
-        tasksResponse = await fetch('/api/tasks/list?limit=50')
-      } catch (error) {
-        console.error('Failed to fetch tasks:', error)
-      }
+      // Load credit balance and history
+      let creditsResponse, historyResponse
 
       try {
         creditsResponse = await fetch('/api/credits/balance', {
@@ -93,24 +87,22 @@ export default function OptimizedUsageSection({ className }: OptimizedUsageSecti
 
       let recentTransactions: Transaction[] = []
 
-      // Process tasks data
-      if (tasksResponse && tasksResponse.ok) {
-        const tasksData = await tasksResponse.json()
-        const tasks = tasksData.tasks || []
-
-        // Convert tasks to transaction format for display
-        recentTransactions = tasks
-          .filter((task: any) => task.creditsConsumed && task.creditsConsumed > 0)
-          .map((task: any) => ({
-            id: task.id,
-            type: 'debit' as const,
-            amount: task.creditsConsumed,
-            description: `${task.modelName || 'Image Enhancement'}`,
-            timestamp: new Date(task.createdAt).getTime(),
-            balanceAfter: 0 // We don't calculate running balance for performance
-          }))
-          .sort((a: Transaction, b: Transaction) => b.timestamp - a.timestamp)
+      // Process history data
+      if (historyResponse && historyResponse.ok) {
+        const historyData = await historyResponse.json()
+        const history = historyData.history || []
+        
+        recentTransactions = history.map((item: any) => ({
+          id: item.id,
+          type: item.type,
+          amount: item.amount,
+          description: item.description || item.reason,
+          timestamp: new Date(item.created_at).getTime(),
+          balanceAfter: item.balance_after || 0
+        }))
       }
+
+
 
       // Process credits data
       if (creditsResponse && creditsResponse.ok) {

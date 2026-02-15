@@ -1,10 +1,11 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { config } from './config'
 
 const isBrowser = typeof window !== 'undefined'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseUrl = config.database.supabaseUrl
+const supabaseAnonKey = config.database.supabaseAnonKey
+const supabaseServiceKey = config.database.supabaseServiceKey
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
 
@@ -138,113 +139,73 @@ export interface Database {
         }
         Relationships: []
       }
-      enhancement_tasks: {
+      history_items: {
         Row: {
           id: string
           user_id: string
-          image_id: string
-          original_image_url: string
-          enhanced_image_url: string | null
+          task_id: string
+          output_urls: Json
+          model_name: string
+          page_name: string
           status: string
-          progress: number
-          prompt: string | null
-          settings: Json | null
-          model_id: string
-          model_name: string | null
-          provider: string
-          job_id: string | null
-          prediction_id: string | null
-          error_message: string | null
-          processing_time: number | null
-          estimated_time: number | null
-          credits_consumed: number | null
-          task_tags: string | null
-          original_width: number | null
-          original_height: number | null
-          original_file_size: number | null
-          original_file_format: string | null
-          output_width: number | null
-          output_height: number | null
-          output_file_size: number | null
-          output_file_format: string | null
-          started_at: string | null
-          completed_at: string | null
+          generation_time_ms: number | null
+          settings: Json
           created_at: string
           updated_at: string
-          failed_at: string | null
-          metadata: Json | null
         }
         Insert: {
           id?: string
           user_id: string
-          image_id: string
-          original_image_url: string
-          enhanced_image_url?: string | null
+          task_id: string
+          output_urls: Json
+          model_name: string
+          page_name: string
           status?: string
-          progress?: number
-          prompt?: string | null
-          settings?: Json | null
-          model_id: string
-          model_name?: string | null
-          provider: string
-          job_id?: string | null
-          prediction_id?: string | null
-          error_message?: string | null
-          processing_time?: number | null
-          estimated_time?: number | null
-          credits_consumed?: number | null
-          task_tags?: string | null
-          original_width?: number | null
-          original_height?: number | null
-          original_file_size?: number | null
-          original_file_format?: string | null
-          output_width?: number | null
-          output_height?: number | null
-          output_file_size?: number | null
-          output_file_format?: string | null
-          started_at?: string | null
-          completed_at?: string | null
+          generation_time_ms?: number | null
+          settings: Json
           created_at?: string
           updated_at?: string
-          failed_at?: string | null
-          metadata?: Json | null
         }
         Update: {
           id?: string
           user_id?: string
-          image_id?: string
-          original_image_url?: string
-          enhanced_image_url?: string | null
+          task_id?: string
+          output_urls?: Json
+          model_name?: string
+          page_name?: string
           status?: string
-          progress?: number
-          prompt?: string | null
-          settings?: Json | null
-          model_id?: string
-          model_name?: string | null
-          provider?: string
-          job_id?: string | null
-          prediction_id?: string | null
-          error_message?: string | null
-          processing_time?: number | null
-          estimated_time?: number | null
-          credits_consumed?: number | null
-          task_tags?: string | null
-          original_width?: number | null
-          original_height?: number | null
-          original_file_size?: number | null
-          original_file_format?: string | null
-          output_width?: number | null
-          output_height?: number | null
-          output_file_size?: number | null
-          output_file_format?: string | null
-          started_at?: string | null
-          completed_at?: string | null
+          generation_time_ms?: number | null
+          settings?: Json
           created_at?: string
           updated_at?: string
-          failed_at?: string | null
-          metadata?: Json | null
         }
         Relationships: []
+      }
+      history_details: {
+        Row: {
+          history_id: string
+          settings_full: Json | null
+          metadata: Json | null
+        }
+        Insert: {
+          history_id: string
+          settings_full?: Json | null
+          metadata?: Json | null
+        }
+        Update: {
+          history_id?: string
+          settings_full?: Json | null
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "history_details_history_id_fkey"
+            columns: ["history_id"]
+            isOneToOne: true
+            referencedRelation: "history_items"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       images: {
         Row: {
@@ -498,7 +459,8 @@ export type Updates<T extends keyof Database['public']['Tables']> = Database['pu
 
 export type User = Tables<'users'>
 export type Session = Tables<'sessions'>
-export type EnhancementTask = Tables<'enhancement_tasks'>
+export type HistoryItem = Tables<'history_items'>
+export type HistoryDetail = Tables<'history_details'>
 export type Image = Tables<'images'>
 export type Project = Tables<'projects'>
 export type Credit = Tables<'credits'>
