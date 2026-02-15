@@ -430,7 +430,7 @@ function EditorContent() {
          })
       }, 500)
       
-      const shouldSmartUpscale = !!modelSettings['vr_upscale']
+      const shouldSmartUpscale = !!modelSettings['smartUpscale']
 
       const response = await fetch('/api/enhance-image', {
         method: 'POST',
@@ -669,19 +669,19 @@ function EditorContent() {
                         <span className="text-xs font-bold text-white">Smart Upscale</span>
                     </div>
                     <Switch
-                      checked={!!modelSettings['vr_upscale']}
-                      onCheckedChange={(c) => setModelSettings(prev => ({ ...prev, 'vr_upscale': c }))}
+                      checked={!!modelSettings['smartUpscale']}
+                      onCheckedChange={(c) => setModelSettings(prev => ({ ...prev, smartUpscale: c }))}
                       className="scale-90 data-[state=checked]:bg-[#FFFF00]"
                     />
                 </div>
 
                 {/* Cupertino Segmented Control for 4K/8K - ALWAYS VISIBLE */}
-                <div className={cn("p-2 bg-black/20 transition-opacity duration-200", !modelSettings['vr_upscale'] && "pointer-events-none")}>
+                <div className={cn("p-2 bg-black/20 transition-opacity duration-200", !modelSettings['smartUpscale'] && "pointer-events-none")}>
                   <div className="flex bg-black/40 p-1 rounded-lg border border-white/5">
                     {(['4k', '8k'] as const).map((res) => (
                       <button
                         key={res}
-                        disabled={!modelSettings['vr_upscale']}
+                        disabled={!modelSettings['smartUpscale']}
                         onClick={() => setUpscaleResolution(res)}
                         className={cn(
                           "flex-1 py-2 text-[11px] font-black rounded-md transition-all uppercase tracking-wider",

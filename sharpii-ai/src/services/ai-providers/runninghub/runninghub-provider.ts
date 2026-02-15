@@ -1,6 +1,4 @@
 import { BaseAIProvider } from '../common/base-provider'
-import fs from 'fs'
-import path from 'path'
 import {
   EnhancementRequest,
   EnhancementResponse,
@@ -302,109 +300,7 @@ export class RunningHubProvider extends BaseAIProvider {
   ): Promise<EnhancementResponse> {
     const settings = request.settings as RunningHubSettings
     const { SKIN_EDITOR_MODES } = await import('../../../models/skin-editor/config')
-    // Load workflow JSON if we need to modify complex node structures (like Node 229)
-    let workflowJson: any = undefined
-    try {
-      // Resolve path relative to this file
-      const workflowPath = path.join(process.cwd(), 'src/models/skin-editor/workflow.json')
-      if (fs.existsSync(workflowPath)) {
-         workflowJson = JSON.parse(fs.readFileSync(workflowPath, 'utf-8'))
-         console.log('✅ RunningHub: Loaded workflow.json for manual modification')
-      } else {
-         console.warn(`⚠️ RunningHub: workflow.json not found at ${workflowPath}`)
-      }
-    } catch (e) {
-      console.warn('⚠️ RunningHub: Could not load workflow.json', e)
-    }
-
-    const seedVrNode229Settings: NodeInfoOverride[] = []
-    
-    const enableFields = [
-      'Enable SeedVR2 (Down)Load DiT Model',
-      'Enable SeedVR2 Video Upscaler (v2.5.15)',
-      'Enable RunningHub Deepcleaner',
-      'Enable SeedVR2 (Down)Load VAE Model',
-      'Enable Clean VRAM Used',
-      'Enable 🔧 Image Contrast Adaptive Sharpening',
-      'Enable Output Resolution (4k/8k)',
-      'Enable TTP_Tile_image_size',
-      'Enable TTP_Image_Tile_Batch',
-      'Enable Upscale Image By',
-      'Enable 🔧 Image Resize',
-      'Enable TTP_Image_Assy',
-      'Enable set',
-      'Enable 🔧 Get Image Size',
-      'Enable Image Comparer (rgthree)',
-      'Enable Number to Float',
-      'Enable Save Image'
-    ]
-
-    const bypassMappings: Record<number, string> = {
-      0: '206', 1: '224', 2: '217', 3: '204', 4: '207',
-      5: '203', 6: '208', 7: '213', 8: '211', 9: '205',
-      10: '197', 11: '198', 12: '199', 13: '200', 14: '201',
-      15: '202', 16: '212', 17: '214', 18: '210', 19: '215',
-      20: '209'
-    }
-
-    // Logic for Node 229 configuration
-    const isSmartUpscaleDisabled = settings.smartUpscale === false
-    let useModifiedWorkflow = false
-
-    if (isSmartUpscaleDisabled && workflowJson) {
-         console.log('RunningHub: Smart Upscale DISABLED - Modifying workflowJson directly')
-         useModifiedWorkflow = true
-         
-         // 1. Remove Node 215 (Save Image Upscaled)
-         if (workflowJson['215']) {
-             delete workflowJson['215']
-             console.log('RunningHub: Deleted Node 215')
-         }
-         
-         // 2. Configure Node 229
-         const node229 = workflowJson['229']
-         if (node229 && node229.inputs) {
-             // Remove connection to 215 (bypass_node_19)
-             if (node229.inputs['bypass_node_19']) {
-                 delete node229.inputs['bypass_node_19']
-             }
-             
-             // Set Enable fields to false
-             enableFields.forEach(field => {
-                 node229.inputs[field] = false
-             })
-             
-             // Ensure bypass nodes are set correctly in the workflow JSON
-             // This ensures bypass_node_20 and others are present as arrays [nodeId, 0]
-             Object.entries(bypassMappings).forEach(([idx, targetNodeId]) => {
-                 const key = `bypass_node_${idx}`
-                 if (targetNodeId === '215') return; // Skip the one we deleted
-                 
-                 node229.inputs[key] = [targetNodeId, 0]
-             })
-             console.log('RunningHub: Configured Node 229 inputs in workflowJson')
-         }
-         
-         (settings as any).workflowJson = workflowJson
-    } else {
-        // Smart Upscale ENABLED or workflowJson missing
-        // Populate seedVrNode229Settings for use in nodeInfoList
-        enableFields.forEach(fieldName => {
-             seedVrNode229Settings.push({
-                 nodeId: '229',
-                 fieldName,
-                 fieldValue: true
-             })
-         })
-         
-         Object.entries(bypassMappings).forEach(([idx, targetNodeId]) => {
-            seedVrNode229Settings.push({
-                nodeId: '229',
-                fieldName: `bypass_node_${idx}`,
-                fieldValue: JSON.stringify([targetNodeId, 0])
-            })
-         })
-    }
+    const isSmartUpscale = settings.smartUpscale === true
 
      // Apply mode defaults if not overridden
     const mode = (settings.mode as keyof typeof SKIN_EDITOR_MODES) || 'Subtle'
@@ -508,16 +404,18 @@ export class RunningHubProvider extends BaseAIProvider {
       }
     })
 
-    const isSmartUpscale = settings.smartUpscale || false
     const resolution = settings.upscaleResolution || '4k'
-    const baseWorkflowId = settings.workflowId || process.env.RUNNINGHUB_SKIN_EDITOR_WORKFLOW_ID || '2021189307448434690'
+    const smartUpscaleWorkflowId = settings.smartUpscaleWorkflowId
+      || (resolution === '4k' ? settings.smartUpscaleWorkflowId4k : settings.smartUpscaleWorkflowId8k)
+      || process.env.RUNNINGHUB_SKIN_EDITOR_SMART_UPSCALE_WORKFLOW_ID
+      || '2023026925354094594'
+    const standardWorkflowId = settings.workflowId
+      || process.env.RUNNINGHUB_SKIN_EDITOR_WORKFLOW_ID
+      || '2023005806844710914'
+    const baseWorkflowId = isSmartUpscale ? smartUpscaleWorkflowId : standardWorkflowId
     const canUseSmartUpscale = isSmartUpscale
 
     if (canUseSmartUpscale) {
-      // When enabled, we want the nodes to be ACTIVE.
-      // We send the mappings AND set Enable to true (which is the default in seedVrNode229Settings).
-      nodeInfoList.push(...seedVrNode229Settings)
-
       if (resolution === '4k') {
         nodeInfoList.push({
           nodeId: '213',
@@ -551,17 +449,6 @@ export class RunningHubProvider extends BaseAIProvider {
           fieldValue: '8192'
         })
       }
-    } else {
-      // Explicitly disable SeedVR2 settings when smart upscale is disabled
-      // We set the "Enable" fields to false (boolean) to trigger the bypass.
-      // We do NOT send bypass_node_X overrides as they are static in the workflow.
-      const disabledSettings = seedVrNode229Settings.map(item => {
-        if (item.fieldName.startsWith('Enable ')) {
-              return { ...item, fieldValue: false }
-            }
-        return item
-      })
-      nodeInfoList.push(...disabledSettings)
     }
 
     const extraNodeInfoList = Array.isArray(settings.nodeInfoListOverride)
@@ -615,7 +502,7 @@ export class RunningHubProvider extends BaseAIProvider {
         timestamp: Date.now(),
         details: {
           taskId: taskResponse.taskId,
-          workflowId: '2021189307448434690'
+          workflowId: baseWorkflowId
         }
       }
     }

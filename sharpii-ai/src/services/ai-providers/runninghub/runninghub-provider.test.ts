@@ -99,26 +99,10 @@ describe('RunningHubProvider', () => {
     const body = JSON.parse(createCall[1].body);
     const nodeInfoList = body.nodeInfoList;
 
-    // Check for node 229
     const node229 = nodeInfoList.filter((n: any) => n.nodeId === '229');
-    expect(node229.length).toBeGreaterThan(0);
+    expect(node229.length).toBe(0);
 
-    // Critical fields that must be disabled
-    const criticalFields = [
-      'Enable SeedVR2 Video Upscaler (v2.5.15)',
-      'Enable Output Resolution (4k/8k)',
-      'Enable SeedVR2 (Down)Load DiT Model'
-    ];
-
-    for (const field of criticalFields) {
-      const setting = node229.find((n: any) => n.fieldName === field);
-      expect(setting).toBeDefined();
-      expect(setting.fieldValue).toBe('true');
-    }
-
-    // Verify that bypass_node settings ARE present (to skip the upscaler)
-    const bypassFields = node229.filter((n: any) => n.fieldName.startsWith('bypass_node_'));
-    expect(bypassFields.length).toBeGreaterThan(0);
+    expect(body.workflowId).toBe('2023005806844710914');
   });
 
   it('should enable Smart Upscale nodes when smartUpscale is true', async () => {
@@ -200,26 +184,15 @@ describe('RunningHubProvider', () => {
     const body = JSON.parse(createCall[1].body);
     const nodeInfoList = body.nodeInfoList;
     
-    // Check for node 229
-    const node229 = nodeInfoList.filter((n: any) => n.nodeId === '229');
-    
-    // When enabled, these fields should be 'true' or just present (the default in the provider seems to be 'true' if we push from seedVrNode229Settings)
-    // Let's check if they are 'true'
-    const criticalFields = [
-        'Enable SeedVR2 Video Upscaler (v2.5.15)',
-        'Enable Output Resolution (4k/8k)',
-        'Enable SeedVR2 (Down)Load DiT Model'
-      ];
-  
-      for (const field of criticalFields) {
-        const setting = node229.find((n: any) => n.fieldName === field);
-        expect(setting).toBeDefined();
-        expect(setting.fieldValue).toBe('true');
-      }
+    expect(body.workflowId).toBe('2023026925354094594');
 
-    // Verify that bypass_node settings are NOT present (we want upscaler to run)
-    const bypassFields = node229.filter((n: any) => n.fieldName.startsWith('bypass_node_'));
-    expect(bypassFields.length).toBe(0);
+    const scaleBy = nodeInfoList.find((n: any) => n.nodeId === '213' && n.fieldName === 'scale_by');
+    const width = nodeInfoList.find((n: any) => n.nodeId === '214' && n.fieldName === 'width');
+    const height = nodeInfoList.find((n: any) => n.nodeId === '214' && n.fieldName === 'height');
+
+    expect(scaleBy?.fieldValue).toBe('2.000000000000');
+    expect(width?.fieldValue).toBe('4096');
+    expect(height?.fieldValue).toBe('4096');
   });
 
   it('should retry when task status is initially FAILED', async () => {

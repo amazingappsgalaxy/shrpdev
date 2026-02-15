@@ -354,7 +354,7 @@ export default function ModelPricingManager({ onConfigUpdate }: ModelPricingMana
                     .map((increment) => (
                     <div key={increment.settingKey} className="space-y-1">
                       <Label className="text-xs font-medium">{increment.settingName}</Label>
-                      {increment.settingKey.includes('enable') || typeof increment.defaultValue === 'boolean' ? (
+                      {increment.settingKey.includes('enable') || increment.settingKey === 'smartUpscale' || typeof increment.defaultValue === 'boolean' ? (
                         <div className="flex items-center space-x-2">
                           <Switch
                             checked={Boolean(previewSettings[increment.settingKey])}

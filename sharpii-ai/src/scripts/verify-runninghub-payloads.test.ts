@@ -121,36 +121,21 @@ describe('RunningHub Payload Verification', () => {
     const payloadJson = parts[1].trim()
     const payload = JSON.parse(payloadJson)
 
-    // Verify Node 229 settings
     const node229Settings = payload.nodeInfoList.filter((n: any) => n.nodeId === '229')
     console.log('Node 229 Settings count:', node229Settings.length)
-    
-    const enableFields = node229Settings.filter((n: any) => n.fieldName.startsWith('Enable '))
-    console.log('Enable fields count:', enableFields.length)
-    
-    if (enableFields.length !== 17) {
-      console.error('Expected 17 Enable fields, found:', enableFields.length)
-      console.error('Found fields:', enableFields.map((f: any) => f.fieldName))
-      throw new Error(`Expected 17 Enable fields for Node 229, found ${enableFields.length}`)
+
+    if (node229Settings.length !== 0) {
+      throw new Error('Node 229 settings should not be present when Smart Upscale is disabled')
     }
 
-    const allFalse = enableFields.every((n: any) => n.fieldValue === 'false')
-    if (!allFalse) {
-      const nonFalse = enableFields.filter((n: any) => n.fieldValue !== 'false')
-      console.error('Some Enable fields are not "false":', nonFalse)
-      throw new Error('All Enable fields should be "false"')
+    if (payload.workflowId !== '2023005806844710914') {
+      throw new Error(`Unexpected workflowId: ${payload.workflowId}`)
     }
-    
-    console.log('✅ All Node 229 Enable fields are correctly set to "false"')
 
-      // Write full payload to file for user inspection
       const logContent = `
 TEST EXECUTION TIMESTAMP: ${new Date().toISOString()}
 
 SCENARIO: Smart Upscale Disabled
-
-PAYLOAD NODE 229 SETTINGS:
-${JSON.stringify(node229Settings, null, 2)}
 
 FULL PAYLOAD:
 ${JSON.stringify(payload, null, 2)}

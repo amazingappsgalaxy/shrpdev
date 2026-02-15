@@ -152,17 +152,17 @@ export const MODEL_PRICING_CONFIGS: Record<string, ModelPricingConfiguration> = 
         description: 'Higher detail levels require more processing power'
       },
       {
-        settingKey: 'vr_upscale',
-        settingName: 'VR Upscale',
+        settingKey: 'smartUpscale',
+        settingName: 'Smart Upscale',
         incrementType: 'conditional',
         defaultIncrement: 0,
         enabled: true,
         defaultValue: 0,
         conditions: [
-          { when: (val: boolean) => val === true, increment: 20, description: '+20% for VR Upscale' },
+          { when: (val: boolean) => val === true, increment: 20, description: '+20% for Smart Upscale' },
           { when: (val: boolean) => val === false, increment: 0, description: 'Standard Upscale' }
         ],
-        description: 'VR Upscale provides better quality but costs more'
+        description: 'Smart Upscale provides better quality but costs more'
       }
     ],
     lastUpdated: Date.now()

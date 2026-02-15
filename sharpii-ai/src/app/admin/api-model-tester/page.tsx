@@ -20,27 +20,17 @@ export default function ApiModelTester() {
 
   const handleLoadExample = () => {
     const example = {
-      "workflowId": "2021189307448434690",
+      "workflowId": "2023005806844710914",
       "nodeInfoList": [
         {
           "nodeId": "97",
           "fieldName": "image",
-          "fieldValue": "https://i.postimg.cc/2yhK39Yf/33de69f6-cc72-4b13-9430-4be047113364-(1)-(1).jpg"
+          "fieldValue": "https://i.postimg.cc/jjm6CGTD/8d4b95bc-73c3-46d5-a89c-77c61e3b8d6f.png"
         },
         {
           "nodeId": "140",
           "fieldName": "text",
           "fieldValue": "high quality, detailed, enhanced"
-        },
-        {
-          "nodeId": "229",
-          "fieldName": "Enable SeedVR2 (Down)Load DiT Model",
-          "fieldValue": false
-        },
-        {
-           "nodeId": "229",
-           "fieldName": "bypass_node_20",
-           "fieldValue": "[\"209\", 0]"
         }
       ]
     };
