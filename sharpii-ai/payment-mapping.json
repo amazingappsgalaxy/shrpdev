@@ -1,0 +1,33 @@
+{
+  "mappings": {
+    "sub_0NYZmjt2ZJwZIunRe6SzX": {
+      "userId": "70288de8-b892-4403-ab4a-0a8ab5517474",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "rishaby304@gmail.com",
+      "userName": "rish",
+      "paymentId": "pay_0NYZmjsy4asyVqah76ZoP",
+      "timestamp": 1771190444352
+    },
+    "pay_0NYZmjsy4asyVqah76ZoP": {
+      "userId": "70288de8-b892-4403-ab4a-0a8ab5517474",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "rishaby304@gmail.com",
+      "userName": "rish",
+      "paymentId": "pay_0NYZmjsy4asyVqah76ZoP",
+      "timestamp": 1771190444352
+    }
+  },
+  "pending": {
+    "70288de8-b892-4403-ab4a-0a8ab5517474:creator:monthly": {
+      "userId": "70288de8-b892-4403-ab4a-0a8ab5517474",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "rishaby304@gmail.com",
+      "userName": "rish",
+      "timestamp": 1771190444352
+    }
+  },
+  "updated": 1771190444352
+}

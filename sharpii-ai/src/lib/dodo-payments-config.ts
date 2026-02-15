@@ -1,8 +1,8 @@
 // Dodo Payments configuration
 export const DODO_PAYMENTS_CONFIG = {
-  apiKey: process.env.DODO_PAYMENTS_API_KEY || 'h7fAmBPeVOCi-MP-.RUhHJsGX1nL5mglvJbIhCjwe6ZpxVxkTaGY09cNX1PXyRGfA',
+  apiKey: process.env.DODO_PAYMENTS_API_KEY || '',
   environment: process.env.NODE_ENV === 'production' ? 'live_mode' : 'test_mode',
-  webhookSecret: process.env.DODO_WEBHOOK_SECRET || '',
+  webhookSecret: process.env.DODO_WEBHOOK_SECRET || process.env.DODO_PAYMENTS_WEBHOOK_SECRET || '',
   // Use NEXT_PUBLIC_APP_URL for client-visible base URL; fall back to localhost:3002
   returnUrl: process.env.DODO_PAYMENTS_RETURN_URL || `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002'}/app/dashboard?payment=success`,
   cancelUrl: process.env.DODO_PAYMENTS_CANCEL_URL || `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002'}/?payment=cancelled#pricing-section`,
@@ -37,14 +37,14 @@ export const PLAN_CONFIG = {
     features: ['1,000 monthly credits', 'Around 135 images can be enhanced', 'HD resolution only (1080p)', 'Basic skin enhancement'],
   },
   creator: {
-    name: 'Creator', 
+    name: 'Creator',
     credits: 5000,
     price: { monthly: 25, yearly: 252 }, // $25/month, $252/year (21*12)
     features: ['5,000 monthly credits', 'Around 370 images can be enhanced', 'Supports up to 2K resolution', 'Advanced skin enhancement'],
   },
   professional: {
     name: 'Professional',
-    credits: 15000, 
+    credits: 15000,
     price: { monthly: 39, yearly: 408 }, // $39/month, $408/year (34*12)
     features: ['15,000 monthly credits', 'Around 615 images can be enhanced', 'Supports up to 4K resolution', 'Photo-real skin restoration'],
   },

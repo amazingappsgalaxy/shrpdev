@@ -6,6 +6,7 @@ import { supabase, supabaseAdmin } from '@/lib/supabase'
 import { dodoClient as dodo } from '@/lib/dodo-client'
 import crypto from 'crypto'
 import { CreditManager } from '@/lib/credits'
+import { PaymentUtils } from '@/lib/payment-utils'
 
 // Add safe admin client fallback for server and edge environments
 const admin = supabaseAdmin ?? supabase
@@ -22,24 +23,49 @@ function detectPlanFromProductId(productId: string): { plan: string; billingPeri
   return null
 }
 
+// Helper for persistent logging
+function logToWebhookFile(message: string, data?: any) {
+  try {
+    const timestamp = new Date().toISOString()
+    const logMessage = `[${timestamp}] ${message} ${data ? JSON.stringify(data) : ''}\n`
+
+    // In Vercel/Edge this might fail, but for local dev (Node) it works
+    // We use a dynamic import or checking for fs to avoid build errors in edge
+    if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const fs = require('fs')
+      const path = require('path')
+      const logFile = process.env.DODO_PAYMENTS_WEBHOOK_LOG_FILE || './webhook-debug.log'
+      fs.appendFileSync(path.resolve(process.cwd(), logFile), logMessage)
+    }
+  } catch (e) {
+    console.error('Failed to write to webhook log file:', e)
+  }
+}
+
 export async function POST(request: NextRequest) {
-  console.log('🔔 Webhook received at:', new Date().toISOString())
-  
+  const timestamp = new Date().toISOString()
+  console.log('🔔 Webhook received at:', timestamp)
+  logToWebhookFile('🔔 Webhook received at ' + timestamp)
+
   try {
     const body = await request.text()
     const signature = request.headers.get('dodo-signature')
-    
+
     console.log('📥 Webhook body length:', body.length)
     console.log('🔐 Webhook signature present:', !!signature)
-    console.log('🔐 Webhook signature:', signature)
-    
+
+    logToWebhookFile('📥 Body length:', body.length)
+    logToWebhookFile('🔐 Signature present:', !!signature)
+
     if (!signature) {
       console.error('❌ Missing Dodo signature')
-      console.log('🔍 Full webhook payload for debugging:', body)
-      
+      logToWebhookFile('❌ Missing Dodo signature')
+
       // For debugging - allow webhooks without signature in development
       if (process.env.NODE_ENV === 'development') {
         console.log('🧪 Development mode: Allowing webhook without signature')
+        logToWebhookFile('🧪 Development mode: Allowing webhook without signature')
       } else {
         return NextResponse.json(
           { error: 'Missing signature' },
@@ -47,38 +73,39 @@ export async function POST(request: NextRequest) {
         )
       }
     }
-    
+
     // Verify webhook signature (skip in development if missing)
     if (signature) {
       const isValidSignature = verifyDodoSignature(body, signature)
       if (!isValidSignature) {
         console.error('❌ Invalid Dodo signature')
+        logToWebhookFile('❌ Invalid Dodo signature')
         return NextResponse.json(
           { error: 'Invalid signature' },
           { status: 401 }
         )
       }
       console.log('✅ Webhook signature verified successfully')
+      logToWebhookFile('✅ Webhook signature verified')
     } else {
       console.log('🧪 Skipping signature verification in development mode')
     }
-    
+
     // Parse the webhook payload
     let event
     try {
       event = JSON.parse(body)
       console.log('📋 Parsed webhook event type:', event.type)
-      console.log('📋 Event data preview:', JSON.stringify(event, null, 2).substring(0, 500) + '...')
+      logToWebhookFile('📋 Event type:', event.type)
     } catch (error) {
       console.error('❌ Failed to parse webhook payload:', error)
+      logToWebhookFile('❌ Parse error:', error)
       return NextResponse.json(
         { error: 'Invalid payload' },
         { status: 400 }
       )
     }
-    
-    console.log('Received Dodo webhook event:', event.type)
-    
+
     // Handle different event types
     const eventType = event.type || event.event_type
     let eventData = event.data || event.object || event
@@ -88,76 +115,76 @@ export async function POST(request: NextRequest) {
       eventData = event.data
     }
 
-    console.log('📝 Event type:', eventType)
-    console.log('📝 Full event structure:', JSON.stringify(event, null, 2))
-    console.log('📝 Event data keys:', Object.keys(eventData))
-    
+    logToWebhookFile('📝 Processing event:', eventType)
+
     switch (eventType) {
       case 'payment.succeeded':
       case 'payment.completed':
         console.log('💰 Processing direct payment success')
         await handleDirectPaymentSuccess(eventData)
         break
-        
+
       case 'payment.failed':
         console.log('❌ Processing payment failure')
         await handleDirectPaymentFailure(eventData)
         break
-      
+
       // Dodo subscription events
       case 'subscription.active':
         console.log('✅ Processing subscription activation')
         await handleSubscriptionActive(eventData)
         break
-        
+
       case 'subscription.renewed':
         console.log('🔄 Processing subscription renewal')
         await handleSubscriptionRenewed(eventData)
         break
-        
+
       case 'subscription.failed':
         console.log('💥 Processing subscription failure')
         await handleSubscriptionFailed(eventData)
         break
-        
+
       case 'subscription.on_hold':
         console.log('⏸️ Processing subscription on hold')
         await handleSubscriptionOnHold(eventData)
         break
-        
+
       case 'checkout.session.completed':
         await handleCheckoutCompleted(event.data?.object || event.data || event)
         break
-        
+
       case 'invoice.payment_succeeded':
         await handlePaymentSucceeded(event.data?.object || event.data || event)
         break
-        
+
       case 'invoice.payment_failed':
         await handlePaymentFailed(event.data?.object || event.data || event)
         break
-        
+
       case 'customer.subscription.created':
         await handleSubscriptionCreated(event.data?.object || event.data || event)
         break
-        
+
       case 'customer.subscription.updated':
         await handleSubscriptionUpdated(event.data?.object || event.data || event)
         break
-        
+
       case 'customer.subscription.deleted':
         await handleSubscriptionDeleted(event.data?.object || event.data || event)
         break
-        
+
       default:
         console.log(`🤷 Unhandled event type: ${event.type}`)
-        console.log('📋 Full event data for investigation:', JSON.stringify(event, null, 2))
+        logToWebhookFile(`🤷 Unhandled event type: ${event.type}`)
     }
-    
+
+    logToWebhookFile('✅ Webhook processed successfully')
     return NextResponse.json({ received: true })
-    
+
   } catch (error) {
     console.error('Webhook processing error:', error)
+    logToWebhookFile('❌ Webhook processing error:', error)
     return NextResponse.json(
       { error: 'Webhook processing failed' },
       { status: 500 }
@@ -192,27 +219,16 @@ async function handleDirectPaymentSuccess(payment: any) {
       for (const planOption of planOptions) {
         for (const billingOption of billingOptions) {
           try {
-            const mappingResponse = await fetch('http://localhost:3003/api/payments/user-mapping', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'findByPlan',
-                plan: planOption,
-                billingPeriod: billingOption
-              })
-            })
+            const correlation = PaymentUtils.findRecentCheckout(planOption, billingOption)
 
-            if (mappingResponse.ok) {
-              const mappingData = await mappingResponse.json()
-              if (mappingData.success && mappingData.mapping && mappingData.correlationScore > bestScore) {
-                bestScore = mappingData.correlationScore
-                bestMatch = {
-                  userId: mappingData.mapping.userId,
-                  plan: planOption,
-                  billingPeriod: billingOption,
-                  userEmail: mappingData.mapping.userEmail,
-                  score: mappingData.correlationScore
-                }
+            if (correlation && correlation.correlationScore > bestScore) {
+              bestScore = correlation.correlationScore
+              bestMatch = {
+                userId: correlation.mapping.userId,
+                plan: planOption,
+                billingPeriod: billingOption,
+                userEmail: correlation.mapping.userEmail,
+                score: correlation.correlationScore
               }
             }
           } catch (correlationError) {
@@ -235,21 +251,18 @@ async function handleDirectPaymentSuccess(payment: any) {
       }
     }
 
-    // If metadata is empty, try to lookup from user mapping API using subscription_id first, then payment_id
+    // If metadata is empty, try to lookup from PaymentUtils using subscription_id first, then payment_id
     if (!userId && payment.subscription_id) {
       console.log('🔍 Looking up user mapping for subscription:', payment.subscription_id)
 
       try {
-        const mappingResponse = await fetch(`http://localhost:3003/api/payments/user-mapping?subscriptionId=${payment.subscription_id}`)
+        const mapping = PaymentUtils.getMapping(payment.subscription_id)
 
-        if (mappingResponse.ok) {
-          const mappingData = await mappingResponse.json()
-          if (mappingData.success && mappingData.mapping) {
-            userId = mappingData.mapping.userId
-            plan = mappingData.mapping.plan
-            billingPeriod = mappingData.mapping.billingPeriod
-            console.log('✅ Found user mapping via subscription ID - userId:', userId, 'plan:', plan, 'billing:', billingPeriod)
-          }
+        if (mapping) {
+          userId = mapping.userId
+          plan = mapping.plan
+          billingPeriod = mapping.billingPeriod
+          console.log('✅ Found user mapping via subscription ID - userId:', userId, 'plan:', plan, 'billing:', billingPeriod)
         } else {
           console.log('⚠️ No user mapping found for subscription:', payment.subscription_id)
         }
@@ -263,16 +276,13 @@ async function handleDirectPaymentSuccess(payment: any) {
       console.log('🔍 Looking up user mapping for payment:', payment.payment_id)
 
       try {
-        const mappingResponse = await fetch(`http://localhost:3003/api/payments/user-mapping?paymentId=${payment.payment_id}`)
+        const mapping = PaymentUtils.getMapping(payment.payment_id)
 
-        if (mappingResponse.ok) {
-          const mappingData = await mappingResponse.json()
-          if (mappingData.success && mappingData.mapping) {
-            userId = mappingData.mapping.userId
-            plan = mappingData.mapping.plan
-            billingPeriod = mappingData.mapping.billingPeriod
-            console.log('✅ Found user mapping via payment ID - userId:', userId, 'plan:', plan, 'billing:', billingPeriod)
-          }
+        if (mapping) {
+          userId = mapping.userId
+          plan = mapping.plan
+          billingPeriod = mapping.billingPeriod
+          console.log('✅ Found user mapping via payment ID - userId:', userId, 'plan:', plan, 'billing:', billingPeriod)
         } else {
           console.log('⚠️ No user mapping found for payment:', payment.payment_id)
         }
@@ -286,22 +296,11 @@ async function handleDirectPaymentSuccess(payment: any) {
       console.log('🔍 Looking up via time-based correlation for plan:', plan, billingPeriod)
 
       try {
-        const mappingResponse = await fetch('http://localhost:3003/api/payments/user-mapping', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'findByPlan',
-            plan,
-            billingPeriod
-          })
-        })
+        const correlation = PaymentUtils.findRecentCheckout(plan, billingPeriod)
 
-        if (mappingResponse.ok) {
-          const mappingData = await mappingResponse.json()
-          if (mappingData.success && mappingData.mapping) {
-            userId = mappingData.mapping.userId
-            console.log(`✅ Found user via time correlation (score: ${mappingData.correlationScore}) - userId: ${userId}`)
-          }
+        if (correlation) {
+          userId = correlation.mapping.userId
+          console.log(`✅ Found user via time correlation (score: ${correlation.correlationScore}) - userId: ${userId}`)
         }
       } catch (correlationError) {
         console.error('❌ Time-based correlation error:', correlationError)
@@ -338,34 +337,34 @@ async function handleDirectPaymentSuccess(payment: any) {
       console.error('❌ Could not determine userId for payment:', payment.payment_id || payment.id)
       return
     }
-    
+
     // Handle credit purchases
     if (type === 'credit_purchase') {
       return await handleCreditPurchaseSuccess(payment)
     }
-    
+
     // Handle subscription payments
     if (!plan) {
       console.error('❌ Missing required metadata in payment:', payment.metadata)
       return
     }
-    
+
     // Find pending payment in our database
     const { data: existingPayments, error: queryError } = await supabase
       .from('payments')
       .select('*')
       .eq('dodoPaymentId', payment.payment_id || payment.id)
       .eq('status', 'pending')
-    
+
     if (queryError) {
       console.error('Database query error:', queryError)
       return
     }
-    
+
     const existingPayment = existingPayments?.[0]
     if (existingPayment) {
       console.log('📝 Found existing payment record, updating status')
-      
+
       // Update payment status
       const { error: updateError } = await supabase
         .from('payments')
@@ -376,13 +375,13 @@ async function handleDirectPaymentSuccess(payment: any) {
           metadata: JSON.stringify(payment)
         })
         .eq('id', existingPayment.id)
-      
+
       if (updateError) {
         console.error('Payment update error:', updateError)
       }
     } else {
       console.log('📝 Creating new payment record')
-      
+
       // Create new payment record
       const { error: insertError } = await (supabase as any)
         .from('payments')
@@ -401,12 +400,12 @@ async function handleDirectPaymentSuccess(payment: any) {
           updatedAt: new Date().toISOString(),
           metadata: JSON.stringify(payment)
         })
-      
+
       if (insertError) {
         console.error('Payment insert error:', insertError)
       }
     }
-    
+
     // Check if credits have already been allocated for this payment to prevent duplicates
     if (payment.subscription_id) {
       try {
@@ -460,7 +459,7 @@ async function handleDirectPaymentSuccess(payment: any) {
       console.error('❌ Failed to grant credits:', creditError)
       console.error('Credit error details:', JSON.stringify(creditError, null, 2))
     }
-    
+
   } catch (error) {
     console.error('❌ Error handling direct payment success:', error)
   }
@@ -470,14 +469,14 @@ async function handleDirectPaymentSuccess(payment: any) {
 async function handleDirectPaymentFailure(payment: any) {
   try {
     console.log('💥 Processing direct payment failure:', payment.payment_id || payment.id)
-    
+
     const { userId, plan, billingPeriod } = payment.metadata || {}
-    
+
     if (!userId) {
       console.error('❌ Missing userId in failed payment metadata')
       return
     }
-    
+
     // Update or create failed payment record
     const { error: insertError } = await supabase
       .from('payments')
@@ -496,13 +495,13 @@ async function handleDirectPaymentFailure(payment: any) {
         updatedAt: new Date().toISOString(),
         metadata: JSON.stringify(payment)
       })
-    
+
     if (insertError) {
       console.error('Failed payment insert error:', insertError)
     }
-    
+
     console.log(`💀 Recorded failed payment for user ${userId}`)
-    
+
   } catch (error) {
     console.error('❌ Error handling direct payment failure:', error)
   }
@@ -512,14 +511,14 @@ async function handleDirectPaymentFailure(payment: any) {
 async function handleCheckoutCompleted(session: any) {
   try {
     console.log('Processing checkout completion:', session.id)
-    
+
     const { userId, plan, billingPeriod, credits } = session.metadata
-    
+
     if (!userId || !plan || !billingPeriod) {
       console.error('Missing required metadata in checkout session')
       return
     }
-    
+
     // Find the pending subscription
     const { data: subscriptions, error: queryError } = await supabase
       .from('subscriptions')
@@ -527,18 +526,18 @@ async function handleCheckoutCompleted(session: any) {
       .eq('userId', userId)
       .eq('dodoSubscriptionId', session.id)
       .eq('status', 'pending')
-    
+
     if (queryError) {
       console.error('Subscription query error:', queryError)
       return
     }
-    
+
     const subscription = subscriptions?.[0]
     if (!subscription) {
       console.error('No pending subscription found for session:', session.id)
       return
     }
-    
+
     // Update subscription status
     const { error: updateError } = await supabase
       .from('subscriptions')
@@ -548,11 +547,11 @@ async function handleCheckoutCompleted(session: any) {
         updatedAt: new Date().toISOString()
       })
       .eq('id', subscription.id)
-    
+
     if (updateError) {
       console.error('Subscription update error:', updateError)
     }
-    
+
     // Create payment record
     const { error: paymentError } = await supabase
       .from('payments')
@@ -573,20 +572,20 @@ async function handleCheckoutCompleted(session: any) {
         updatedAt: new Date().toISOString(),
         metadata: JSON.stringify(session)
       })
-    
+
     if (paymentError) {
       console.error('Payment insert error:', paymentError)
     }
-    
+
     // Grant credits to user
     await CreditManager.grantMonthlyCredits({
       userId,
       plan,
       subscriptionId: subscription.id
     })
-    
+
     console.log(`Successfully processed checkout for user ${userId}, plan ${plan}`)
-    
+
   } catch (error) {
     console.error('Error handling checkout completion:', error)
   }
@@ -596,34 +595,34 @@ async function handleCheckoutCompleted(session: any) {
 async function handlePaymentSucceeded(invoice: any) {
   try {
     console.log('Processing payment success:', invoice.id)
-    
+
     const subscriptionId = invoice.subscription
     if (!subscriptionId) {
       console.error('No subscription ID in invoice')
       return
     }
-    
+
     // Find the subscription
     const { data: subscriptions, error: queryError } = await supabase
       .from('subscriptions')
       .select('*')
       .eq('dodoSubscriptionId', subscriptionId)
-    
+
     if (queryError) {
       console.error('Subscription query error:', queryError)
       return
     }
-    
+
     const subscription = subscriptions?.[0]
     if (!subscription) {
       console.error('No subscription found for ID:', subscriptionId)
       return
     }
-    
+
     // Before granting new credits, deduct any remaining credits from previous month
     const userCredits = await CreditManager.getActiveCredits(subscription.userId)
     const remainingCredits = userCredits.reduce((sum: number, c: { amount: number }) => sum + c.amount, 0)
-    
+
     if (remainingCredits > 0) {
       console.log(`Deducting ${remainingCredits} remaining credits before new allocation`)
       await CreditManager.deductCredits({
@@ -633,13 +632,13 @@ async function handlePaymentSucceeded(invoice: any) {
         description: `Monthly renewal: Deducting ${remainingCredits} remaining credits from previous month`
       })
     }
-    
+
     // Create payment record
     const now = new Date()
-    const nextBillingDate = subscription.billingPeriod === 'yearly' 
+    const nextBillingDate = subscription.billingPeriod === 'yearly'
       ? new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString()
       : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
-    
+
     const { data: paymentData, error: paymentError } = await supabase
       .from('payments')
       .insert({
@@ -664,11 +663,11 @@ async function handlePaymentSucceeded(invoice: any) {
         })
       })
       .select()
-    
+
     if (paymentError) {
       console.error('Payment insert error:', paymentError)
     }
-    
+
     // Update subscription next billing date
     const { error: subscriptionError } = await supabase
       .from('subscriptions')
@@ -677,18 +676,18 @@ async function handlePaymentSucceeded(invoice: any) {
         updatedAt: now.toISOString()
       })
       .eq('id', subscription.id)
-    
+
     if (subscriptionError) {
       console.error('Subscription update error:', subscriptionError)
     }
-    
+
     // Grant monthly credits for recurring payment
     const creditResult = await CreditManager.grantMonthlyCredits({
       userId: subscription.userId,
       plan: subscription.plan,
       subscriptionId: subscription.id
     })
-    
+
     // Update payment record with credits granted
     if (paymentData?.[0]?.id) {
       const { error: updateError } = await supabase
@@ -697,14 +696,14 @@ async function handlePaymentSucceeded(invoice: any) {
           creditsGranted: creditResult.newBalance
         })
         .eq('id', paymentData[0].id)
-      
+
       if (updateError) {
         console.error('Payment update error:', updateError)
       }
     }
-    
+
     console.log(`Successfully processed recurring payment for user ${subscription.userId}, granted ${creditResult.newBalance} credits`)
-    
+
   } catch (error) {
     console.error('Error handling payment success:', error)
   }
@@ -714,30 +713,30 @@ async function handlePaymentSucceeded(invoice: any) {
 async function handlePaymentFailed(invoice: any) {
   try {
     console.log('Processing payment failure:', invoice.id)
-    
+
     const subscriptionId = invoice.subscription
     if (!subscriptionId) {
       console.error('No subscription ID in invoice')
       return
     }
-    
+
     // Find the subscription
     const { data: subscriptions, error: queryError } = await supabase
       .from('subscriptions')
       .select('*')
       .eq('dodoSubscriptionId', subscriptionId)
-    
+
     if (queryError) {
       console.error('Subscription query error:', queryError)
       return
     }
-    
+
     const subscription = subscriptions?.[0]
     if (!subscription) {
       console.error('No subscription found for ID:', subscriptionId)
       return
     }
-    
+
     // Create failed payment record
     const { error: paymentError } = await supabase
       .from('payments')
@@ -758,13 +757,13 @@ async function handlePaymentFailed(invoice: any) {
         updatedAt: new Date().toISOString(),
         metadata: JSON.stringify(invoice)
       })
-    
+
     if (paymentError) {
       console.error('Payment insert error:', paymentError)
     }
-    
+
     console.log(`Recorded failed payment for user ${subscription.userId}`)
-    
+
   } catch (error) {
     console.error('Error handling payment failure:', error)
   }
@@ -774,18 +773,18 @@ async function handlePaymentFailed(invoice: any) {
 async function handleSubscriptionCreated(subscription: any) {
   try {
     console.log('Processing subscription creation:', subscription.id)
-    
+
     // Find existing subscription record
     const { data: subscriptions, error: queryError } = await supabase
       .from('subscriptions')
       .select('*')
       .eq('dodoSubscriptionId', subscription.id)
-    
+
     if (queryError) {
       console.error('Subscription query error:', queryError)
       return
     }
-    
+
     const existingSubscription = subscriptions?.[0]
     if (existingSubscription) {
       // Update with actual subscription ID
@@ -797,12 +796,12 @@ async function handleSubscriptionCreated(subscription: any) {
           updatedAt: new Date().toISOString()
         })
         .eq('id', existingSubscription.id)
-      
+
       if (updateError) {
         console.error('Subscription update error:', updateError)
       }
     }
-    
+
   } catch (error) {
     console.error('Error handling subscription creation:', error)
   }
@@ -812,22 +811,22 @@ async function handleSubscriptionCreated(subscription: any) {
 async function handleSubscriptionUpdated(subscription: any) {
   try {
     console.log('Processing subscription update:', subscription.id)
-    
+
     // Find subscription record
     const { data: subscriptions, error: queryError } = await supabase
       .from('subscriptions')
       .select('*')
       .eq('dodoSubscriptionId', subscription.id)
-    
+
     if (queryError) {
       console.error('Subscription query error:', queryError)
       return
     }
-    
+
     const existingSubscription = subscriptions?.[0]
     if (existingSubscription) {
       let status = 'active'
-      
+
       // Map Dodo subscription status to our status
       switch (subscription.status) {
         case 'active':
@@ -844,7 +843,7 @@ async function handleSubscriptionUpdated(subscription: any) {
         default:
           status = subscription.status
       }
-      
+
       const { error: updateError } = await supabase
         .from('subscriptions')
         .update({
@@ -852,12 +851,12 @@ async function handleSubscriptionUpdated(subscription: any) {
           updatedAt: new Date().toISOString()
         })
         .eq('id', existingSubscription.id)
-      
+
       if (updateError) {
         console.error('Subscription update error:', updateError)
       }
     }
-    
+
   } catch (error) {
     console.error('Error handling subscription update:', error)
   }
@@ -867,18 +866,18 @@ async function handleSubscriptionUpdated(subscription: any) {
 async function handleSubscriptionDeleted(subscription: any) {
   try {
     console.log('Processing subscription deletion:', subscription.id)
-    
+
     // Find subscription record
     const { data: subscriptions, error: queryError } = await supabase
       .from('subscriptions')
       .select('*')
       .eq('dodoSubscriptionId', subscription.id)
-    
+
     if (queryError) {
       console.error('Subscription query error:', queryError)
       return
     }
-    
+
     const existingSubscription = subscriptions?.[0]
     if (existingSubscription) {
       const { error: updateError } = await supabase
@@ -888,12 +887,12 @@ async function handleSubscriptionDeleted(subscription: any) {
           updatedAt: new Date().toISOString()
         })
         .eq('id', existingSubscription.id)
-      
+
       if (updateError) {
         console.error('Subscription update error:', updateError)
       }
     }
-    
+
   } catch (error) {
     console.error('Error handling subscription deletion:', error)
   }
@@ -902,67 +901,67 @@ async function handleSubscriptionDeleted(subscription: any) {
 // Verify Dodo webhook signature
 function verifyDodoSignature(payload: string, signature: string): boolean {
   try {
-    const webhookSecret = process.env.DODO_WEBHOOK_SECRET
+    const webhookSecret = DODO_PAYMENTS_CONFIG.webhookSecret
     if (!webhookSecret) {
       console.error('❌ DODO_WEBHOOK_SECRET not configured')
       return false
     }
-    
+
     // For test signatures, allow them to pass
     if (signature === 'test-signature') {
       console.log('🧪 Test signature detected, allowing for testing')
       return true
     }
-    
+
     // In development mode, be more lenient with signatures
     if (process.env.NODE_ENV === 'development' && !signature) {
       console.log('🧪 Development mode: Allowing webhook without signature')
       return true
     }
-    
+
     console.log('🔍 Full webhook secret:', webhookSecret)
     console.log('🔍 Full received signature:', signature)
-    
+
     // Extract the actual signature from the header
     // Dodo signature format is typically: "whsec_<signature>" or "sha256=<signature>"
     let actualSignature = signature
     let secretToUse = webhookSecret
-    
+
     if (signature.startsWith('whsec_')) {
       actualSignature = signature.substring(6) // Remove 'whsec_' prefix
     } else if (signature.startsWith('sha256=')) {
       actualSignature = signature.substring(7) // Remove 'sha256=' prefix
     }
-    
+
     // If the webhook secret starts with whsec_, remove it for HMAC computation
     if (secretToUse.startsWith('whsec_')) {
       secretToUse = secretToUse.substring(6)
     }
-    
+
     console.log('🔍 Processing signature:', actualSignature.substring(0, 10) + '...')
     console.log('🔍 Using secret:', secretToUse.substring(0, 10) + '...')
-    
+
     // Create HMAC using the webhook secret
     const hmac = crypto.createHmac('sha256', secretToUse)
     hmac.update(payload, 'utf8')
     const computedSignature = hmac.digest('hex')
-    
+
     console.log('🔍 Computed signature:', computedSignature.substring(0, 10) + '...')
     console.log('🔍 Received signature:', actualSignature.substring(0, 10) + '...')
-    
+
     // Try different comparison methods
     const directMatch = computedSignature === actualSignature
-    const bufferMatch = actualSignature.length === computedSignature.length && 
+    const bufferMatch = actualSignature.length === computedSignature.length &&
       crypto.timingSafeEqual(
         Buffer.from(computedSignature, 'hex'),
         Buffer.from(actualSignature, 'hex')
       )
-    
+
     console.log('🔍 Direct match:', directMatch)
     console.log('🔍 Buffer match:', bufferMatch)
-    
+
     return directMatch || bufferMatch
-    
+
   } catch (error) {
     console.error('❌ Error verifying signature:', error)
     console.error('❌ Error details:', JSON.stringify(error, null, 2))
@@ -974,18 +973,18 @@ function verifyDodoSignature(payload: string, signature: string): boolean {
 async function updateUserProfileFromPayment(userId: string, paymentData: any) {
   try {
     console.log('📝 Updating user profile from payment data for user:', userId)
-    
+
     const userUpdates: any = {}
-    
+
     // Extract user information from payment data
     if (paymentData.customer_email) {
       userUpdates.email = paymentData.customer_email
     }
-    
+
     if (paymentData.customer_name) {
       userUpdates.name = paymentData.customer_name
     }
-    
+
     if (paymentData.billing_address) {
       userUpdates.billingAddress = {
         street: paymentData.billing_address.line1,
@@ -995,7 +994,7 @@ async function updateUserProfileFromPayment(userId: string, paymentData: any) {
         country: paymentData.billing_address.country
       }
     }
-    
+
     if (paymentData.phone) {
       userUpdates.phone = paymentData.phone
     }
@@ -1011,12 +1010,12 @@ async function updateUserProfileFromPayment(userId: string, paymentData: any) {
     // Only update if there are changes
     if (Object.keys(userUpdates).length > 0) {
       userUpdates.updatedAt = new Date().toISOString()
-      
+
       const { error: updateError } = await supabase
         .from('users')
         .update(userUpdates)
         .eq('id', userId)
-      
+
       if (updateError) {
         console.error('❌ User profile update error:', updateError)
       } else {
@@ -1025,7 +1024,7 @@ async function updateUserProfileFromPayment(userId: string, paymentData: any) {
     } else {
       console.log('🔄 No user profile updates needed from payment data')
     }
-    
+
   } catch (error) {
     console.error('❌ Error updating user profile from payment:', error)
   }
@@ -1057,27 +1056,16 @@ async function handleSubscriptionActive(subscription: any) {
       for (const planOption of planOptions) {
         for (const billingOption of billingOptions) {
           try {
-            const mappingResponse = await fetch('http://localhost:3003/api/payments/user-mapping', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'findByPlan',
-                plan: planOption,
-                billingPeriod: billingOption
-              })
-            })
+            const correlation = PaymentUtils.findRecentCheckout(planOption, billingOption)
 
-            if (mappingResponse.ok) {
-              const mappingData = await mappingResponse.json()
-              if (mappingData.success && mappingData.mapping && mappingData.correlationScore > bestScore) {
-                bestScore = mappingData.correlationScore
-                bestMatch = {
-                  userId: mappingData.mapping.userId,
-                  plan: planOption,
-                  billingPeriod: billingOption,
-                  userEmail: mappingData.mapping.userEmail,
-                  score: mappingData.correlationScore
-                }
+            if (correlation && correlation.correlationScore > bestScore) {
+              bestScore = correlation.correlationScore
+              bestMatch = {
+                userId: correlation.mapping.userId,
+                plan: planOption,
+                billingPeriod: billingOption,
+                userEmail: correlation.mapping.userEmail,
+                score: correlation.correlationScore
               }
             }
           } catch (correlationError) {
@@ -1114,16 +1102,13 @@ async function handleSubscriptionActive(subscription: any) {
       console.log('🔍 Looking up user mapping for subscription:', subscription.subscription_id)
 
       try {
-        const mappingResponse = await fetch(`http://localhost:3003/api/payments/user-mapping?subscriptionId=${subscription.subscription_id}`)
+        const mapping = PaymentUtils.getMapping(subscription.subscription_id)
 
-        if (mappingResponse.ok) {
-          const mappingData = await mappingResponse.json()
-          if (mappingData.success && mappingData.mapping) {
-            userId = mappingData.mapping.userId
-            plan = mappingData.mapping.plan
-            billingPeriod = mappingData.mapping.billingPeriod
-            console.log('✅ Found user mapping - userId:', userId, 'plan:', plan, 'billing:', billingPeriod)
-          }
+        if (mapping) {
+          userId = mapping.userId
+          plan = mapping.plan
+          billingPeriod = mapping.billingPeriod
+          console.log('✅ Found user mapping - userId:', userId, 'plan:', plan, 'billing:', billingPeriod)
         }
       } catch (mappingError) {
         console.error('❌ User mapping lookup error:', mappingError)
@@ -1429,32 +1414,32 @@ async function handleSubscriptionOnHold(subscription: any) {
 async function handleCreditPurchaseSuccess(payment: any) {
   try {
     console.log('💰 Processing credit purchase success:', payment.payment_id || payment.id)
-    
+
     const { userId, credits, packageType, customAmount, description } = payment.metadata || {}
-    
+
     if (!userId || !credits) {
       console.error('❌ Missing required credit purchase metadata:', payment.metadata)
       return
     }
-    
+
     const creditsToGrant = parseInt(credits)
-    
+
     // Find pending credit purchase in our database
     const { data: creditPurchases, error: queryError } = await (supabase as any)
       .from('credit_purchases')
       .select('*')
       .eq('dodo_payment_id', payment.payment_id || payment.id)
       .eq('status', 'pending')
-    
+
     if (queryError) {
       console.error('Credit purchase query error:', queryError)
       return
     }
-    
+
     const existingPurchase = creditPurchases?.[0]
     if (existingPurchase) {
       console.log('📝 Found existing credit purchase record, updating status')
-      
+
       // Update purchase status
       const { error: updateError } = await (supabase as any)
         .from('credit_purchases')
@@ -1466,13 +1451,13 @@ async function handleCreditPurchaseSuccess(payment: any) {
           metadata: JSON.stringify(payment)
         })
         .eq('id', existingPurchase.id)
-      
+
       if (updateError) {
         console.error('Credit purchase update error:', updateError)
       }
     } else {
       console.log('📝 Creating new credit purchase record')
-      
+
       // Create new purchase record
       const { error: insertError } = await (supabase as any)
         .from('credit_purchases')
@@ -1492,12 +1477,12 @@ async function handleCreditPurchaseSuccess(payment: any) {
           updated_at: new Date().toISOString(),
           metadata: JSON.stringify(payment)
         })
-      
+
       if (insertError) {
         console.error('Credit purchase insert error:', insertError)
       }
     }
-    
+
     // Grant credits to user
     console.log(`💰 Granting ${creditsToGrant} credits for purchase`)
     try {
@@ -1510,13 +1495,13 @@ async function handleCreditPurchaseSuccess(payment: any) {
         transactionId: `purchase-${Date.now()}`,
         expiresAt: null // Credits from purchases don't expire
       })
-      
+
       console.log(`✅ Successfully processed credit purchase and granted ${creditsToGrant} credits to user ${userId} (new balance: ${creditResult.newBalance})`)
-      
+
     } catch (creditError) {
       console.error('❌ Failed to grant purchased credits:', creditError)
     }
-    
+
   } catch (error) {
     console.error('❌ Error handling credit purchase success:', error)
   }

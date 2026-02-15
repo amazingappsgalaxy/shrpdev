@@ -4,13 +4,8 @@ import { DODO_PAYMENTS_CONFIG, DODO_PRODUCT_IDS } from '@/lib/dodo-payments-conf
 import { createClient } from '@supabase/supabase-js'
 import { config } from '@/lib/config'
 import { v4 as uuidv4 } from 'uuid'
-import DodoPayments from 'dodopayments'
+import { dodoClient as dodo } from '@/lib/dodo-client'
 import { getSession as getSimpleSession } from '@/lib/simple-auth'
-
-const dodo = new DodoPayments({
-  bearerToken: DODO_PAYMENTS_CONFIG.apiKey,
-  environment: DODO_PAYMENTS_CONFIG.environment as 'live_mode' | 'test_mode'
-})
 
 // Credit packages configuration
 export const CREDIT_PACKAGES = {
@@ -52,7 +47,7 @@ export type CreditPackageType = keyof typeof CREDIT_PACKAGES
 export async function POST(request: NextRequest) {
   try {
     const { packageType, customAmount } = await request.json()
-    
+
     // Validate input
     if (!packageType && !customAmount) {
       return NextResponse.json(
@@ -60,7 +55,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    
+
     // Get user session using better-auth (primary)
     let session: any = null
     try {
@@ -94,21 +89,21 @@ export async function POST(request: NextRequest) {
         }
       }
     }
-    
+
     if (!userId) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       )
     }
-    
+
     let credits: number
     let amount: number
     let description: string
     let productId: string
-    
+
     console.log('📥 [CREDITS API] Processing request:', { packageType, customAmount })
-    
+
     if (customAmount) {
       // Custom amount (minimum $5, maximum $500)
       if (customAmount < 5 || customAmount > 500) {
@@ -136,7 +131,7 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
-      
+
       credits = packageConfig.credits + ((packageConfig as any).bonus || 0)
       amount = packageConfig.price
       description = packageConfig.description
@@ -156,15 +151,15 @@ export async function POST(request: NextRequest) {
       }
       console.log('📦 [CREDITS API] Package processing:', { packageType, credits, amount, description, productId })
     }
-    
+
     // Create one-time payment using Dodo Payments API
     try {
       console.log('Creating credit purchase for user:', userEmail)
       console.log('Credits:', credits, 'Amount:', amount)
-      
+
       const successUrl = process.env.DODO_PAYMENTS_RETURN_URL || `${process.env.NEXT_PUBLIC_APP_URL}/app/dashboard?payment=success&type=credits`
       const cancelUrl = process.env.DODO_PAYMENTS_CANCEL_URL || `${process.env.NEXT_PUBLIC_APP_URL}/app/dashboard?payment=cancelled`
-      
+
       const paymentData = {
         // Package payment - use product cart; amount is determined by the product in Dodo
         billing: {
@@ -196,17 +191,17 @@ export async function POST(request: NextRequest) {
           cancel_url: cancelUrl
         }
       }
-      
+
       console.log('Creating credit payment with data:', paymentData)
       const payment = await dodo.payments.create(paymentData)
       console.log('Created credit payment:', payment)
-      
+
       // Store pending credit purchase in database
       const purchaseId = uuidv4()
       const now = new Date().toISOString()
-      
+
       const supabase = createClient(config.database.supabaseUrl, config.database.supabaseServiceKey)
-      
+
       const { data, error } = await supabase
         .from('credit_purchases')
         .insert({
@@ -225,7 +220,7 @@ export async function POST(request: NextRequest) {
           created_at: now,
           updated_at: now
         })
-      
+
       if (error) {
         console.error('❌ Error storing credit purchase:', error)
         return NextResponse.json(
@@ -233,7 +228,7 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         )
       }
-      
+
       return NextResponse.json({
         success: true,
         checkoutUrl: payment.payment_link,

@@ -4,14 +4,15 @@ import { DODO_PAYMENTS_CONFIG, DODO_PRODUCT_IDS, type PlanType, type BillingPeri
 import { PRICING_PLANS } from '@/lib/pricing-config'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
 import { dodoClient as dodo } from '@/lib/dodo-client'
+import { PaymentUtils } from '@/lib/payment-utils'
 
 export async function POST(request: NextRequest) {
   console.log('🚀 [CHECKOUT API] Starting payment checkout request')
-  
+
   try {
     const { plan, billingPeriod } = await request.json()
     console.log('📋 [CHECKOUT API] Request data:', { plan, billingPeriod })
-    
+
     // Validate input
     if (!plan || !billingPeriod) {
       return NextResponse.json(
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    
+
     // Validate plan exists in PRICING_PLANS
     const validPlans = ['basic', 'creator', 'professional', 'enterprise']
     if (!validPlans.includes(plan.toLowerCase())) {
@@ -28,25 +29,25 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    
+
     if (!['monthly', 'yearly'].includes(billingPeriod)) {
       return NextResponse.json(
         { error: 'Invalid billing period' },
         { status: 400 }
       )
     }
-    
+
     // Get user session
     const authHeader = request.headers.get('authorization')
     const token = authHeader?.replace('Bearer ', '') || request.cookies.get('session')?.value
-    
+
     if (!token) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       )
     }
-    
+
     const session = await getSession(token)
     if (!session || !session.user) {
       return NextResponse.json(
@@ -54,9 +55,9 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       )
     }
-    
+
     const userId = session.user.id
-    
+
     // Get plan configuration from PRICING_PLANS
     const planConfig = PRICING_PLANS.find(p => p.name.toLowerCase() === plan.toLowerCase())
     if (!planConfig) {
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    
+
     const amount = planConfig.price[billingPeriod as 'monthly' | 'yearly']
     const productId = DODO_PRODUCT_IDS[plan.toLowerCase() as PlanType][billingPeriod as BillingPeriod]
     console.log('DEBUG - Plan:', plan, 'Period:', billingPeriod, 'Amount:', amount, 'Amount in cents:', amount * 100)
@@ -154,32 +155,19 @@ export async function POST(request: NextRequest) {
         ])
       }
 
-      const subscription = await createSubscriptionWithTimeout()
+      const subscription: any = await createSubscriptionWithTimeout()
       console.log('✅ [CHECKOUT API] Created subscription:', subscription)
 
-      // Store user mapping in memory (temporary solution)
+      // Store user mapping in memory (using shared utility)
       try {
-        const localPort = new URL(request.url).port || '3004'
-        const mappingResponse = await fetch(`http://localhost:${localPort}/api/payments/user-mapping`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'store',
-            subscriptionId: subscription.subscription_id,
-            userId: userId,
-            plan: plan,
-            billingPeriod: billingPeriod,
-            userEmail: session.user.email as string,
-            userName: (session.user.name || session.user.email) as string,
-            paymentId: subscription.payment_id
-          })
+        PaymentUtils.storeMapping(subscription.subscription_id, {
+          userId: userId,
+          plan: plan,
+          billingPeriod: billingPeriod,
+          userEmail: session.user.email as string,
+          userName: (session.user.name || session.user.email) as string,
+          paymentId: subscription.payment_id
         })
-
-        if (mappingResponse.ok) {
-          console.log('✅ Stored user mapping for subscription:', subscription.subscription_id)
-        } else {
-          console.error('❌ Failed to store user mapping')
-        }
       } catch (mappingError) {
         console.error('❌ Error storing user mapping:', mappingError)
         // Continue anyway, we have fallback user lookup
@@ -217,11 +205,11 @@ export async function POST(request: NextRequest) {
           billingPeriod
         }
       })
-      
+
     } catch (error: any) {
       console.error('❌ [CHECKOUT API] Error creating subscription:', error)
-      try { console.error('Error details:', JSON.stringify(error, null, 2)) } catch {}
-      
+      try { console.error('Error details:', JSON.stringify(error, null, 2)) } catch { }
+
       if (error?.status === 401) {
         return NextResponse.json(
           {
@@ -262,7 +250,7 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
-    
+
   } catch (error) {
     console.error('Checkout API error:', error)
     return NextResponse.json(
@@ -277,25 +265,25 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const sessionId = searchParams.get('session_id')
-    
+
     if (!sessionId) {
       return NextResponse.json(
         { error: 'Session ID is required' },
         { status: 400 }
       )
     }
-    
+
     // Get user session
     const authHeader = request.headers.get('authorization')
     const token = authHeader?.replace('Bearer ', '') || request.cookies.get('session')?.value
-    
+
     if (!token) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       )
     }
-    
+
     const session = await getSession(token)
     if (!session || !session.user) {
       return NextResponse.json(
@@ -303,7 +291,7 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       )
     }
-    
+
     // Query our database for the checkout session
     try {
       const { data: subscriptions, error } = await supabase
@@ -311,16 +299,16 @@ export async function GET(request: NextRequest) {
         .select('*')
         .eq('dodoSubscriptionId', sessionId)
         .eq('userId', session.user.id)
-      
+
       if (error) {
         console.error('Error querying subscriptions:', error)
         return NextResponse.json({ error: 'Database error' }, { status: 500 })
       }
-      
+
       if (!subscriptions || subscriptions.length === 0) {
         return NextResponse.json({ error: 'Checkout session not found' }, { status: 404 })
       }
-      
+
       const subscription = subscriptions?.[0]
       if (!subscription) {
         return NextResponse.json({ error: 'Checkout session not found' }, { status: 404 })
@@ -332,7 +320,7 @@ export async function GET(request: NextRequest) {
         customerId: subscription.dodoCustomerId,
         subscriptionId: subscription.id
       })
-      
+
     } catch (error) {
       console.error('Error retrieving checkout session:', error)
       return NextResponse.json(
@@ -340,7 +328,7 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       )
     }
-    
+
   } catch (error) {
     console.error('Checkout status API error:', error)
     return NextResponse.json(
