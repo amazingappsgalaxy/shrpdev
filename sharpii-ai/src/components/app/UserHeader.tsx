@@ -1,5 +1,7 @@
 'use client'
 
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+
 import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
@@ -158,7 +160,7 @@ export function UserHeader({ className }: UserHeaderProps) {
 
                         {/* Credits Badge - Minimal (Only Icon + Number) */}
                         <div className="hidden md:flex items-center gap-2 select-none">
-                            <CreditIcon className="w-5 h-5 bg-transparent text-[#FFFF00]" iconClassName="w-4 h-4" />
+                            <CreditIcon className="w-5 h-5 text-[#FFFF00]" iconClassName="w-4 h-4" />
                             <span className="text-sm font-bold text-white numerical-font tabular-nums">
                                 {creditsLoading ? '...' : credits.toLocaleString()}
                             </span>
@@ -173,49 +175,52 @@ export function UserHeader({ className }: UserHeaderProps) {
                             <span>Upgrade</span>
                         </button>
 
-                        <div className="relative" ref={userMenuRef}>
-                            <button
-                                type="button"
-                                onClick={() => setIsUserMenuOpen((prev) => !prev)}
-                                className="flex items-center gap-2 pl-1 pr-1 py-1 rounded-md transition-all duration-200 hover:bg-white/5 outline-none focus:ring-0"
-                            >
+                        <DropdownMenu.Root modal={false}>
+                            <DropdownMenu.Trigger className="flex items-center gap-2 pl-1 pr-1 py-1 rounded-md transition-all duration-200 hover:bg-white/5 outline-none focus:ring-0 data-[state=open]:bg-white/5">
                                 <div className="w-8 h-8 rounded-md bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center border border-white/10 shadow-inner overflow-hidden">
                                     <span className="text-xs font-bold text-white">{username.charAt(0).toUpperCase()}</span>
                                 </div>
-                                <ChevronDown className="w-3.5 h-3.5 text-white/50" />
-                            </button>
+                                <ChevronDown className="w-3.5 h-3.5 text-white/50 transition-transform duration-200 ease-in-out data-[state=open]:rotate-180" />
+                            </DropdownMenu.Trigger>
 
-                            {isUserMenuOpen && (
-                                <div className="absolute right-0 mt-2 min-w-[220px] bg-[#0A0A0B] rounded-lg border border-white/10 shadow-xl p-1.5 z-[10000] animate-in fade-in zoom-in-95 duration-200 slide-in-from-top-2">
+                            <DropdownMenu.Portal>
+                                <DropdownMenu.Content
+                                    className="min-w-[220px] bg-[#0A0A0B] rounded-lg border border-white/10 shadow-xl p-1.5 z-[10000] transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2"
+                                    sideOffset={8}
+                                    align="end"
+                                    side="bottom"
+                                >
                                     <div className="px-2 py-2 mb-1 bg-white/5 rounded-md border border-white/5">
                                         <p className="text-sm font-bold text-white">{username}</p>
                                         <p className="text-xs text-white/50 truncate font-medium mt-0.5">{user?.email}</p>
                                     </div>
 
                                     {userMenuItems.map((item) => (
-                                        <Link
-                                            key={item.href}
-                                            href={item.href}
-                                            onClick={() => setIsUserMenuOpen(false)}
-                                            className="flex items-center gap-2 px-2 py-2 rounded-md text-sm text-white/70 hover:text-white hover:bg-white/10 outline-none cursor-pointer transition-colors"
-                                        >
-                                            <item.icon className="w-4 h-4 opacity-70" />
-                                            {item.name}
-                                        </Link>
+                                        <DropdownMenu.Item key={item.href} asChild>
+                                            <Link
+                                                href={item.href}
+                                                className="flex items-center gap-2 px-2 py-2 rounded-md text-sm text-white/70 hover:text-white hover:bg-white/10 outline-none cursor-pointer transition-colors"
+                                            >
+                                                <item.icon className="w-4 h-4 opacity-70" />
+                                                {item.name}
+                                            </Link>
+                                        </DropdownMenu.Item>
                                     ))}
 
-                                    <div className="h-px bg-white/5 my-1 mx-1" />
+                                    <DropdownMenu.Separator className="h-px bg-white/5 my-1 mx-1" />
 
-                                    <button
-                                        onClick={handleSignOut}
-                                        className="w-full flex items-center gap-2 px-2 py-2 rounded-md text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 outline-none cursor-pointer transition-colors"
-                                    >
-                                        <LogOut className="w-4 h-4 opacity-70" />
-                                        Sign Out
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                                    <DropdownMenu.Item asChild>
+                                        <button
+                                            onClick={handleSignOut}
+                                            className="w-full flex items-center gap-2 px-2 py-2 rounded-md text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 outline-none cursor-pointer transition-colors"
+                                        >
+                                            <LogOut className="w-4 h-4 opacity-70" />
+                                            Sign Out
+                                        </button>
+                                    </DropdownMenu.Item>
+                                </DropdownMenu.Content>
+                            </DropdownMenu.Portal>
+                        </DropdownMenu.Root>
 
 
                         {/* Mobile Menu Toggle */}
@@ -264,7 +269,7 @@ export function UserHeader({ className }: UserHeaderProps) {
                                     <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
                                         <span className="text-white/60 text-sm">Credits</span>
                                         <div className="flex items-center gap-2">
-                                            <CreditIcon className="w-5 h-5 bg-transparent text-[#FFFF00]" iconClassName="w-4 h-4" />
+                                            <CreditIcon className="w-5 h-5 text-[#FFFF00]" iconClassName="w-4 h-4" />
                                             <span className="font-bold text-white">{creditsLoading ? '...' : credits.toLocaleString()}</span>
                                         </div>
                                     </div>

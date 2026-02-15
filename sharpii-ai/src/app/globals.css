@@ -181,10 +181,10 @@
     border: none !important;
   }
 
-  /* Smooth transitions */
-  * {
+  /* Global transition removed to prevent conflicts with Radix/Framer positioning */
+  /* * {
     transition: backdrop-filter 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
-  }
+  } */
 }
 
 /* Premium Component Styles */
@@ -989,6 +989,7 @@ h6 {
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }
