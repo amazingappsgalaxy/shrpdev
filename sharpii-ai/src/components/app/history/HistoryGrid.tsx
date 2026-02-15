@@ -90,10 +90,19 @@ function HistoryCard({ item, onSelect, index }: { item: Item; onSelect: (id: str
                         {new Date(item.createdAt).toLocaleDateString()}
                     </span>
 
-                    {!isFailed && (
+                    {!isFailed && primary && (
                         <button
                             className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform shadow-lg cursor-pointer z-20"
-                            onClick={(e) => { e.stopPropagation(); /* download logic */ }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const link = document.createElement('a');
+                                link.href = primary;
+                                link.download = `sharpii-${item.id}`;
+                                link.target = "_blank";
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                            }}
                         >
                             <Download className="w-4 h-4" />
                         </button>

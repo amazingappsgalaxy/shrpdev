@@ -38,12 +38,14 @@ export default function HistoryPage() {
   const { user, isLoading } = useAuth()
   const [items, setItems] = useState<HistoryListItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [cursor, setCursor] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
   const [selected, setSelected] = useState<HistoryDetail | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
 
   const loadHistory = async (reset = false) => {
+    if (!reset) setLoadingMore(true)
     try {
       const params = new URLSearchParams()
       params.set('limit', '24')
@@ -71,6 +73,7 @@ export default function HistoryPage() {
       toast.error('Connection error while loading history')
     } finally {
       setLoading(false)
+      setLoadingMore(false)
     }
   }
 
@@ -189,9 +192,10 @@ export default function HistoryPage() {
             <div className="flex justify-center pt-8">
               <button
                 onClick={() => loadHistory()}
-                className="px-8 py-3 text-xs font-bold uppercase tracking-widest bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-all cursor-pointer hover:scale-105 active:scale-95"
+                disabled={loadingMore}
+                className="px-8 py-3 text-xs font-bold uppercase tracking-widest bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-all cursor-pointer hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Load More
+                {loadingMore ? "Loading..." : "Load More"}
               </button>
             </div>
           )}

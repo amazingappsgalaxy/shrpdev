@@ -126,6 +126,8 @@ export function HistoryDetailModal({ isOpen, onClose, item }: HistoryDetailModal
                                             autoPlay
                                             loop
                                             className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                                            playsInline
+                                            muted
                                         />
                                     ) : (
                                         <img
@@ -179,7 +181,7 @@ export function HistoryDetailModal({ isOpen, onClose, item }: HistoryDetailModal
                         </div>
 
                         {/* RIGHT: Sidebar Details */}
-                        <div className="w-full lg:w-[320px] border-l border-white/10 bg-[#0c0c0e] flex flex-col h-full overflow-hidden">
+                        <div className="w-full lg:w-[320px] border-t lg:border-t-0 lg:border-l border-white/10 bg-[#0c0c0e] flex flex-col lg:h-full h-1/2 overflow-hidden">
                             <div className="p-6 border-b border-white/5 space-y-4">
                                 <div>
                                     <h2 className="text-xl font-bold bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">{item.modelName || "Enhancement"}</h2>
@@ -191,8 +193,20 @@ export function HistoryDetailModal({ isOpen, onClose, item }: HistoryDetailModal
                                 </div>
 
                                 <div className="flex gap-2 w-full">
-                                    {item.status !== 'failed' && (
-                                        <button className="flex-1 bg-white text-black font-semibold h-10 rounded-md hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 text-sm">
+                                    {item.status !== 'failed' && currentOutput && (
+                                        <button
+                                            onClick={() => {
+                                                if (!currentOutput) return;
+                                                const link = document.createElement('a');
+                                                link.href = currentOutput.url;
+                                                link.download = `sharpii-${item.id}`;
+                                                link.target = "_blank";
+                                                document.body.appendChild(link);
+                                                link.click();
+                                                document.body.removeChild(link);
+                                            }}
+                                            className="flex-1 bg-white text-black font-semibold h-10 rounded-md hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 text-sm"
+                                        >
                                             <Download className="w-4 h-4" /> Download
                                         </button>
                                     )}
