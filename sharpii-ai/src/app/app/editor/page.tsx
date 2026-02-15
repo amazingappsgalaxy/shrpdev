@@ -582,10 +582,10 @@ function EditorContent() {
         <div className="flex flex-col border-r border-white/5 bg-[#0c0c0e] z-20 relative min-h-[calc(100vh-6rem)] lg:pb-32 order-2 lg:order-1">
 
           {/* 1. TOP SECTION: INPUT & STYLES (SIDE BY SIDE) */}
-          <div className="grid grid-cols-[35%_65%] border-b border-white/5">
+          <div className="grid grid-cols-[40%_60%] items-stretch border-b border-white/5">
             
             {/* LEFT: INPUT IMAGE */}
-            <div className="p-4 flex flex-col gap-3 h-full">
+            <div className="p-4 flex flex-col gap-4 h-full">
               <div className="flex justify-between items-center px-1">
                  <div className="flex items-center gap-2">
                    <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Input Image</span>
@@ -626,7 +626,7 @@ function EditorContent() {
             </div>
 
             {/* RIGHT: STYLES */}
-            <div className="p-4 flex flex-col gap-3 h-full">
+            <div className="p-4 flex flex-col gap-4 h-full">
               <div className="flex items-center px-1">
                 <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Skin Style</span>
              </div>
@@ -639,18 +639,18 @@ function EditorContent() {
                       "flex flex-row items-center justify-start px-3 rounded-md border transition-all gap-3 h-full",
                       selectedStyle === style.id
                         ? "bg-[#FFFF00] border-[#FFFF00] text-black shadow-[0_0_20px_rgba(255,255,0,0.3)]"
-                        : "bg-white/5 border-white/5 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/10"
+                        : "bg-white/5 border-white/5 text-white hover:bg-white/10 hover:border-white/10"
                     )}
                   >
                     <style.icon className={cn(
                       "w-5 h-5 flex-shrink-0",
-                      selectedStyle === style.id ? "text-black" : "text-gray-500"
+                      selectedStyle === style.id ? "text-black" : "text-white"
                     )} />
                     <span className="text-xs font-bold">{style.name}</span>
                   </button>
                 ))}
               </div>
-              <p className="text-[10px] text-gray-500 text-center px-2">
+              <p className="text-[10px] text-white text-left px-1">
                 Enhances natural detail for the highest visual fidelity
               </p>
             </div>
@@ -667,7 +667,7 @@ function EditorContent() {
               <div className="rounded-xl bg-white/[0.03] border border-white/5 overflow-hidden">
                 <div className="flex items-center justify-between p-3 border-b border-white/5 bg-white/[0.02]">
                     <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded bg-[#FFFF00]/20 text-[#FFFF00]">
+                        <div className="p-1.5 rounded border border-[#FFFF00]/30 text-[#FFFF00] accent-shimmer">
                             <IconSparkles className="w-4 h-4" />
                         </div>
                         <span className="text-xs font-bold text-white">Smart Upscale</span>
@@ -691,7 +691,7 @@ function EditorContent() {
                           "flex-1 py-2 text-[11px] font-black rounded-md transition-all uppercase tracking-wider",
                           upscaleResolution === res
                             ? "bg-[#FFFF00] text-black shadow-md scale-[1.02]"
-                            : "text-gray-500 hover:text-gray-300"
+                            : "text-white hover:text-white"
                         )}
                       >
                         {res === '4k' ? '4K Crisp' : '8K Ultra'}
@@ -724,7 +724,7 @@ function EditorContent() {
                     <div key={key} className="space-y-3 group p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all">
                       <div className="flex justify-between items-center px-1">
                         <span className="text-xs font-semibold text-white transition-colors">{conf.label}</span>
-                        <span className="font-mono text-[12px] text-white/70 bg-white/5 px-1.5 py-0.5 rounded">{Number(currentValue).toFixed(conf.step && conf.step < 1 ? 2 : 0)}</span>
+                        <span className="font-mono text-[12px] text-white bg-white/5 px-1.5 py-0.5 rounded">{Number(currentValue).toFixed(conf.step && conf.step < 1 ? 2 : 0)}</span>
                       </div>
                       <MechanicalSlider
                         value={[Number(currentValue)]}
@@ -743,19 +743,19 @@ function EditorContent() {
             {/* GROUP 2: Area Protection (3 Sections: Face, Eyes, Other) */}
             <div className="space-y-2 px-1">
               <div className="flex items-center gap-2 pt-2 border-t border-white/5">
-                <IconShield className="w-3.5 h-3.5 text-gray-400" />
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Area Protection</span>
+                <IconShield className="w-3.5 h-3.5 text-gray-500" />
+                <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Area Protection</span>
               </div>
 
               {/* Face Features */}
               <div className="grid grid-cols-2 gap-3">
                 {/* Face Column */}
                 <div className="space-y-2">
-                  <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider pl-1 flex items-center gap-1">Face</p>
+                  <p className="text-[10px] font-bold text-white uppercase tracking-wider pl-1 flex items-center gap-1">Face</p>
                   <div className="space-y-1">
                     {Object.entries(areaSettings.face).map(([key, val]) => (
                       <div key={key} className="flex items-center justify-between p-2 rounded bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group">
-                        <span className="text-[10px] font-medium text-gray-300 capitalize group-hover:text-white transition-colors w-full">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                        <span className="text-[10px] font-medium text-white capitalize transition-colors w-full">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
                         <Switch
                           checked={val}
                           onCheckedChange={(c) => setAreaSettings(prev => ({ ...prev, face: { ...prev.face, [key]: c } }))}
@@ -768,11 +768,11 @@ function EditorContent() {
 
                 {/* Eyes Column */}
                 <div className="space-y-2">
-                  <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider pl-1 flex items-center gap-1">Eyes</p>
+                  <p className="text-[10px] font-bold text-white uppercase tracking-wider pl-1 flex items-center gap-1">Eyes</p>
                   <div className="space-y-1">
                     {Object.entries(areaSettings.eyes).map(([key, val]) => (
                       <div key={key} className="flex items-center justify-between p-2 rounded bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group">
-                        <span className="text-[10px] font-medium text-gray-300 capitalize group-hover:text-white transition-colors w-full">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                        <span className="text-[10px] font-medium text-white capitalize transition-colors w-full">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
                         <Switch
                           checked={val}
                           onCheckedChange={(c) => setAreaSettings(prev => ({ ...prev, eyes: { ...prev.eyes, [key]: c } }))}
@@ -788,7 +788,7 @@ function EditorContent() {
               <div className="grid grid-cols-4 gap-2">
                  {Object.entries(areaSettings.other).map(([key, val]) => (
                     <div key={key} className="flex flex-col items-center justify-center p-2 rounded bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group gap-2">
-                      <span className="text-[9px] font-medium text-gray-300 capitalize group-hover:text-white transition-colors text-center">{key}</span>
+                      <span className="text-[9px] font-medium text-white capitalize transition-colors text-center">{key}</span>
                       <Switch
                         checked={val}
                         onCheckedChange={(c) => setAreaSettings(prev => ({ ...prev, other: { ...prev.other, [key]: c } }))}
@@ -918,7 +918,7 @@ function EditorContent() {
           {/* MODES SECTION - Right Side Below Output */}
           <div className="mt-4 px-4 pb-8 w-full space-y-4">
             <div>
-              <h3 className="text-xs font-black text-gray-500 mb-3 flex items-center gap-2 tracking-wider">
+              <h3 className="text-xs font-black text-gray-500 mb-3 flex items-center gap-2 tracking-wider uppercase">
                 Dermatology Control
               </h3>
               <div className="flex items-start gap-2">
@@ -953,7 +953,7 @@ function EditorContent() {
 
                       <span className={cn(
                         "relative z-10 text-[12px] font-black uppercase tracking-wider transition-colors truncate px-1",
-                        enhancementMode === mode.id ? "text-[#FFFF00]" : "text-gray-400 group-hover:text-gray-200"
+                        enhancementMode === mode.id ? "text-[#FFFF00]" : "text-white"
                       )}>
                         {mode.label}
                       </span>
@@ -967,7 +967,7 @@ function EditorContent() {
                     "w-auto px-4 h-14 rounded-lg flex items-center justify-center transition-all border shrink-0 gap-2",
                     enhancementMode === 'Custom'
                       ? "border-[#FFFF00] text-[#FFFF00] bg-white/5 shadow-[0_0_10px_rgba(255,255,0,0.2)]"
-                      : "border-white/5 text-gray-500 hover:text-white hover:border-white/20 bg-black/40"
+                      : "border-white/5 text-white hover:border-white/20 bg-black/40"
                   )}
                   title="Custom Mode"
                 >

@@ -978,3 +978,18 @@ h6 {
     0 10px 40px hsl(var(--accent-neon) / 0.3);
   transform: translateY(-2px);
 }
+
+.accent-shimmer {
+  background: linear-gradient(120deg, rgba(255, 255, 0, 0.1) 0%, rgba(255, 255, 0, 0.35) 45%, rgba(255, 255, 0, 0.1) 100%);
+  background-size: 200% 100%;
+  animation: accent-shimmer 2.8s linear infinite;
+}
+
+@keyframes accent-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
