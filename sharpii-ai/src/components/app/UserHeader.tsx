@@ -119,8 +119,8 @@ export function UserHeader({ className }: UserHeaderProps) {
 
     return (
         <>
-            <header className={`fixed top-0 left-0 right-0 z-[9999] ${className || ''}`}>
-                <nav className="w-full bg-[#09090b]/90 border-b border-white/5 px-4 h-16 shadow-sm backdrop-blur-xl md:px-6 relative transition-all duration-300 flex items-center justify-between">
+            <header className={`fixed top-0 left-0 right-0 z-[9999] overflow-visible ${className || ''}`}>
+                <nav className="w-full bg-[#09090b]/90 border-b border-white/5 px-4 h-16 shadow-sm backdrop-blur-xl md:px-6 relative transition-all duration-300 flex items-center justify-between overflow-visible z-50">
 
                     {/* 1. Brand Logo */}
                     <div className="flex items-center flex-shrink-0 min-w-[140px]">

@@ -96,8 +96,8 @@ const AVAILABLE_MODELS = [
 // Model-specific control configurations
 const MODEL_CONTROLS = {
   'skin-editor': {
-    maxshift: { type: 'number', default: 1, min: 0.8, max: 1.2, step: 0.1, label: 'Detail Level', leftLabel: 'Low', rightLabel: 'High' },
     megapixels: { type: 'number', default: 4, min: 2, max: 10, step: 1, label: 'Skin Texture Size', leftLabel: 'Dispersed', rightLabel: 'Dense' },
+    maxshift: { type: 'number', default: 1, min: 0.8, max: 1.2, step: 0.1, label: 'Detail Level', leftLabel: 'Low', rightLabel: 'High' },
     denoise: { type: 'number', default: 0.20, min: 0.1, max: 0.38, step: 0.01, label: 'Transformation Strength', leftLabel: 'Subtle', rightLabel: 'Strong' }
   }
 }
@@ -662,10 +662,10 @@ function EditorContent() {
             <div className="space-y-2 px-1">
 
               {/* Smart Upscale Special Setting */}
-              <div className="rounded-xl bg-black/40 border border-white/5 overflow-hidden">
+              <div className="rounded-xl overflow-hidden">
                 <div className="flex items-center justify-between p-3 border-b border-white/5 bg-white/[0.02]">
                   <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded bg-[rgb(164_164_0_/_17%)] text-[#FFFF00]">
+                    <div className="p-1.5 rounded bg-black/20 text-[#FFFF00]">
                       <IconSparkles className="w-4 h-4" />
                     </div>
                     <span className="text-xs font-bold text-white">Smart Upscale</span>
@@ -825,7 +825,7 @@ function EditorContent() {
                 ) : (
                   <>
                     <IconWand className="w-5 h-5 fill-black" />
-                    <span>Enhance Image</span>
+                    <span>Enhance Skin</span>
                   </>
                 )}
               </button>
@@ -875,32 +875,35 @@ function EditorContent() {
                 </div>
               )
             )}
-          </div>
 
-          {enhancedOutputs.length > 1 && (
-            <div className="absolute right-3 inset-y-0 z-20 flex flex-col justify-center gap-2">
-              {enhancedOutputs.map((output, idx) => (
-                <button
-                  key={`${output.url}-${idx}`}
-                  onClick={() => setSelectedOutputIndex(idx)}
-                  className={cn(
-                    "w-12 h-12 rounded-md border transition-all overflow-hidden bg-black/50",
-                    selectedOutputIndex === idx
-                      ? "border-white/70 shadow-[0_0_12px_rgba(255,255,255,0.15)]"
-                      : "border-white/10 hover:border-white/30"
-                  )}
-                >
-                  {output.type === 'image' ? (
-                    <img src={output.url} alt={`Output ${idx + 1}`} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[9px] font-semibold text-white/80 uppercase tracking-wider">
-                      Video {idx + 1}
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
+            {enhancedOutputs.length > 1 && (
+              <div className="absolute right-4 inset-y-0 z-20 flex flex-col justify-center gap-2 pointer-events-none">
+                {enhancedOutputs.map((output, idx) => (
+                  <button
+                    key={`${output.url}-${idx}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedOutputIndex(idx);
+                    }}
+                    className={cn(
+                      "w-16 h-16 rounded-lg border transition-all overflow-hidden bg-black/50 pointer-events-auto",
+                      selectedOutputIndex === idx
+                        ? "border-white/70 shadow-[0_0_12px_rgba(255,255,255,0.15)] scale-105"
+                        : "border-white/10 hover:border-white/30 hover:scale-105"
+                    )}
+                  >
+                    {output.type === 'image' ? (
+                      <img src={output.url} alt={`Output ${idx + 1}`} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[10px] font-semibold text-white/80 uppercase tracking-wider">
+                        Video {idx + 1}
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* STATUS BAR */}
           <div className="mt-4 flex justify-between items-center text-[10px] text-gray-600 font-mono uppercase tracking-wider">
