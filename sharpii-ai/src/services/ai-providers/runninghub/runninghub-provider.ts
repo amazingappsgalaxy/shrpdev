@@ -1,4 +1,6 @@
 import { BaseAIProvider } from '../common/base-provider'
+import fs from 'fs'
+import path from 'path'
 import {
   EnhancementRequest,
   EnhancementResponse,
@@ -22,6 +24,7 @@ type RunningHubSettings = Omit<Partial<EnhancementSettings>, 'scheduler'> & {
   smartUpscale?: boolean
   upscaleResolution?: '4k' | '8k'
   workflowId?: string
+  workflowJson?: Record<string, any>
   smartUpscaleWorkflowId?: string
   smartUpscaleWorkflowId4k?: string
   smartUpscaleWorkflowId8k?: string
@@ -53,7 +56,7 @@ type RunningHubSettings = Omit<Partial<EnhancementSettings>, 'scheduler'> & {
 type NodeInfoOverride = {
   nodeId: string
   fieldName: string
-  fieldValue: string
+  fieldValue: string | boolean | number | (string | number)[]
 }
 
 const mergeNodeInfoList = (base: NodeInfoOverride[], overrides: NodeInfoOverride[]): NodeInfoOverride[] => {
@@ -299,48 +302,111 @@ export class RunningHubProvider extends BaseAIProvider {
   ): Promise<EnhancementResponse> {
     const settings = request.settings as RunningHubSettings
     const { SKIN_EDITOR_MODES } = await import('../../../models/skin-editor/config')
-    const seedVrNode229Settings: NodeInfoOverride[] = [
-      { nodeId: '229', fieldName: 'Enable SeedVR2 (Down)Load DiT Model', fieldValue: 'true' },
-      { nodeId: '229', fieldName: 'Enable SeedVR2 Video Upscaler (v2.5.15)', fieldValue: 'true' },
-      { nodeId: '229', fieldName: 'Enable RunningHub Deepcleaner', fieldValue: 'true' },
-      { nodeId: '229', fieldName: 'Enable SeedVR2 (Down)Load VAE Model', fieldValue: 'true' },
-      { nodeId: '229', fieldName: 'Enable Clean VRAM Used', fieldValue: 'true' },
-      { nodeId: '229', fieldName: 'Enable 🔧 Image Contrast Adaptive Sharpening', fieldValue: 'true' },
-      { nodeId: '229', fieldName: 'Enable Output Resolution (4k/8k)', fieldValue: 'true' },
-      { nodeId: '229', fieldName: 'Enable TTP_Tile_image_size', fieldValue: 'true' },
-      { nodeId: '229', fieldName: 'Enable TTP_Image_Tile_Batch', fieldValue: 'true' },
-      { nodeId: '229', fieldName: 'Enable Upscale Image By', fieldValue: 'true' },
-      { nodeId: '229', fieldName: 'Enable 🔧 Image Resize', fieldValue: 'true' },
-      { nodeId: '229', fieldName: 'Enable TTP_Image_Assy', fieldValue: 'true' },
-      { nodeId: '229', fieldName: 'Enable set', fieldValue: 'true' },
-      { nodeId: '229', fieldName: 'Enable 🔧 Get Image Size', fieldValue: 'true' },
-      { nodeId: '229', fieldName: 'Enable Image Comparer (rgthree)', fieldValue: 'true' },
-      { nodeId: '229', fieldName: 'Enable Number to Float', fieldValue: 'true' },
-      { nodeId: '229', fieldName: 'Enable Save Image', fieldValue: 'true' },
-      { nodeId: '229', fieldName: 'bypass_node_0', fieldValue: JSON.stringify(['206', 0]) },
-      { nodeId: '229', fieldName: 'bypass_node_1', fieldValue: JSON.stringify(['224', 0]) },
-      { nodeId: '229', fieldName: 'bypass_node_2', fieldValue: JSON.stringify(['217', 0]) },
-      { nodeId: '229', fieldName: 'bypass_node_3', fieldValue: JSON.stringify(['204', 0]) },
-      { nodeId: '229', fieldName: 'bypass_node_4', fieldValue: JSON.stringify(['207', 0]) },
-      { nodeId: '229', fieldName: 'bypass_node_5', fieldValue: JSON.stringify(['203', 0]) },
-      { nodeId: '229', fieldName: 'bypass_node_6', fieldValue: JSON.stringify(['208', 0]) },
-      { nodeId: '229', fieldName: 'bypass_node_7', fieldValue: JSON.stringify(['213', 0]) },
-      { nodeId: '229', fieldName: 'bypass_node_8', fieldValue: JSON.stringify(['211', 0]) },
-      { nodeId: '229', fieldName: 'bypass_node_9', fieldValue: JSON.stringify(['205', 0]) },
-      { nodeId: '229', fieldName: 'bypass_node_10', fieldValue: JSON.stringify(['197', 0]) },
-      { nodeId: '229', fieldName: 'bypass_node_11', fieldValue: JSON.stringify(['198', 0]) },
-      { nodeId: '229', fieldName: 'bypass_node_12', fieldValue: JSON.stringify(['199', 0]) },
-      { nodeId: '229', fieldName: 'bypass_node_13', fieldValue: JSON.stringify(['200', 0]) },
-      { nodeId: '229', fieldName: 'bypass_node_14', fieldValue: JSON.stringify(['201', 0]) },
-      { nodeId: '229', fieldName: 'bypass_node_15', fieldValue: JSON.stringify(['202', 0]) },
-      { nodeId: '229', fieldName: 'bypass_node_16', fieldValue: JSON.stringify(['212', 0]) },
-      { nodeId: '229', fieldName: 'bypass_node_17', fieldValue: JSON.stringify(['214', 0]) },
-      { nodeId: '229', fieldName: 'bypass_node_18', fieldValue: JSON.stringify(['210', 0]) },
-      { nodeId: '229', fieldName: 'bypass_node_19', fieldValue: JSON.stringify(['215', 0]) },
-      { nodeId: '229', fieldName: 'bypass_node_20', fieldValue: JSON.stringify(['209', 0]) }
+    // Load workflow JSON if we need to modify complex node structures (like Node 229)
+    let workflowJson: any = undefined
+    try {
+      // Resolve path relative to this file
+      const workflowPath = path.join(process.cwd(), 'src/models/skin-editor/workflow.json')
+      if (fs.existsSync(workflowPath)) {
+         workflowJson = JSON.parse(fs.readFileSync(workflowPath, 'utf-8'))
+         console.log('✅ RunningHub: Loaded workflow.json for manual modification')
+      } else {
+         console.warn(`⚠️ RunningHub: workflow.json not found at ${workflowPath}`)
+      }
+    } catch (e) {
+      console.warn('⚠️ RunningHub: Could not load workflow.json', e)
+    }
+
+    const seedVrNode229Settings: NodeInfoOverride[] = []
+    
+    const enableFields = [
+      'Enable SeedVR2 (Down)Load DiT Model',
+      'Enable SeedVR2 Video Upscaler (v2.5.15)',
+      'Enable RunningHub Deepcleaner',
+      'Enable SeedVR2 (Down)Load VAE Model',
+      'Enable Clean VRAM Used',
+      'Enable 🔧 Image Contrast Adaptive Sharpening',
+      'Enable Output Resolution (4k/8k)',
+      'Enable TTP_Tile_image_size',
+      'Enable TTP_Image_Tile_Batch',
+      'Enable Upscale Image By',
+      'Enable 🔧 Image Resize',
+      'Enable TTP_Image_Assy',
+      'Enable set',
+      'Enable 🔧 Get Image Size',
+      'Enable Image Comparer (rgthree)',
+      'Enable Number to Float',
+      'Enable Save Image'
     ]
 
-    // Apply mode defaults if not overridden
+    const bypassMappings: Record<number, string> = {
+      0: '206', 1: '224', 2: '217', 3: '204', 4: '207',
+      5: '203', 6: '208', 7: '213', 8: '211', 9: '205',
+      10: '197', 11: '198', 12: '199', 13: '200', 14: '201',
+      15: '202', 16: '212', 17: '214', 18: '210', 19: '215',
+      20: '209'
+    }
+
+    // Logic for Node 229 configuration
+    const isSmartUpscaleDisabled = settings.smartUpscale === false
+    let useModifiedWorkflow = false
+
+    if (isSmartUpscaleDisabled && workflowJson) {
+         console.log('RunningHub: Smart Upscale DISABLED - Modifying workflowJson directly')
+         useModifiedWorkflow = true
+         
+         // 1. Remove Node 215 (Save Image Upscaled)
+         if (workflowJson['215']) {
+             delete workflowJson['215']
+             console.log('RunningHub: Deleted Node 215')
+         }
+         
+         // 2. Configure Node 229
+         const node229 = workflowJson['229']
+         if (node229 && node229.inputs) {
+             // Remove connection to 215 (bypass_node_19)
+             if (node229.inputs['bypass_node_19']) {
+                 delete node229.inputs['bypass_node_19']
+             }
+             
+             // Set Enable fields to false
+             enableFields.forEach(field => {
+                 node229.inputs[field] = false
+             })
+             
+             // Ensure bypass nodes are set correctly in the workflow JSON
+             // This ensures bypass_node_20 and others are present as arrays [nodeId, 0]
+             Object.entries(bypassMappings).forEach(([idx, targetNodeId]) => {
+                 const key = `bypass_node_${idx}`
+                 if (targetNodeId === '215') return; // Skip the one we deleted
+                 
+                 node229.inputs[key] = [targetNodeId, 0]
+             })
+             console.log('RunningHub: Configured Node 229 inputs in workflowJson')
+         }
+         
+         (settings as any).workflowJson = workflowJson
+    } else {
+        // Smart Upscale ENABLED or workflowJson missing
+        // Populate seedVrNode229Settings for use in nodeInfoList
+        enableFields.forEach(fieldName => {
+             seedVrNode229Settings.push({
+                 nodeId: '229',
+                 fieldName,
+                 fieldValue: true
+             })
+         })
+         
+         Object.entries(bypassMappings).forEach(([idx, targetNodeId]) => {
+            seedVrNode229Settings.push({
+                nodeId: '229',
+                fieldName: `bypass_node_${idx}`,
+                fieldValue: JSON.stringify([targetNodeId, 0])
+            })
+         })
+    }
+
+     // Apply mode defaults if not overridden
     const mode = (settings.mode as keyof typeof SKIN_EDITOR_MODES) || 'Subtle'
     const modeDefaults = SKIN_EDITOR_MODES[mode]
 
@@ -364,7 +430,7 @@ export class RunningHubProvider extends BaseAIProvider {
     })
 
     // Prepare node overrides for Skin Editor workflow
-    const nodeInfoList = [
+    const nodeInfoList: NodeInfoOverride[] = [
       {
         nodeId: '97', // Input Image
         fieldName: 'image',
@@ -448,6 +514,8 @@ export class RunningHubProvider extends BaseAIProvider {
     const canUseSmartUpscale = isSmartUpscale
 
     if (canUseSmartUpscale) {
+      // When enabled, we want the nodes to be ACTIVE.
+      // We send the mappings AND set Enable to true (which is the default in seedVrNode229Settings).
       nodeInfoList.push(...seedVrNode229Settings)
 
       if (resolution === '4k') {
@@ -483,12 +551,25 @@ export class RunningHubProvider extends BaseAIProvider {
           fieldValue: '8192'
         })
       }
+    } else {
+      // Explicitly disable SeedVR2 settings when smart upscale is disabled
+      // We set the "Enable" fields to false (boolean) to trigger the bypass.
+      // We do NOT send bypass_node_X overrides as they are static in the workflow.
+      const disabledSettings = seedVrNode229Settings.map(item => {
+        if (item.fieldName.startsWith('Enable ')) {
+              return { ...item, fieldValue: false }
+            }
+        return item
+      })
+      nodeInfoList.push(...disabledSettings)
     }
 
     const extraNodeInfoList = Array.isArray(settings.nodeInfoListOverride)
       ? settings.nodeInfoListOverride
       : []
     const finalNodeInfoList = mergeNodeInfoList(nodeInfoList, extraNodeInfoList)
+
+    console.log('🚀 RunningHub: Final Node Overrides:', JSON.stringify(finalNodeInfoList, null, 2))
 
     // Create task
     const taskResponse = await this.createTask(request.imageUrl, {
@@ -769,13 +850,24 @@ export class RunningHubProvider extends BaseAIProvider {
         })
       }
 
-      const requestPayload = {
+      const requestPayload: any = {
         apiKey: this.apiKey,
-        workflowId,
         nodeInfoList: finalNodeInfoList
       }
 
-      console.log(`🔍 RunningHub: Trying workflow ID: ${workflowId}`)
+      if (settings.workflowJson) {
+        // Use provided workflow JSON (passed as 'prompt' parameter for ComfyUI API)
+        // RunningHub might expect 'prompt' as an object, not a string
+        requestPayload.prompt = settings.workflowJson
+        // Some APIs require workflowId even if prompt is provided
+        requestPayload.workflowId = workflowId
+      } else {
+        requestPayload.workflowId = workflowId
+      }
+
+      console.log('🔍 RunningHub: FULL API PAYLOAD:', JSON.stringify(requestPayload, null, 2))
+
+      console.log(`🔍 RunningHub: Using ${settings.workflowJson ? 'Custom Workflow JSON' : 'Workflow ID: ' + workflowId}`)
       console.log('🔍 RunningHub: Node info list length:', finalNodeInfoList.length)
 
       console.log('🔍 RunningHub: API Request Details:', {
@@ -881,7 +973,9 @@ export class RunningHubProvider extends BaseAIProvider {
     const startTime = Date.now()
 
     let consecutiveErrors = 0
-    const maxConsecutiveErrors = 5
+    const maxConsecutiveErrors = 20 // Increased from 5 to 20 to handle transient network issues
+    let recoveryAttemptedCount = 0
+    const maxRecoveryAttempts = 3
 
     while (attempts < maxAttempts) {
       try {
@@ -1110,7 +1204,15 @@ export class RunningHubProvider extends BaseAIProvider {
               }
             }
           } else if (status === 'FAILED') {
-            console.log('❌ RunningHub: Task failed on RunningHub')
+            // Recovery logic for potential false failures
+            if (recoveryAttemptedCount < maxRecoveryAttempts) {
+              recoveryAttemptedCount++
+              const waitTime = 10000 * recoveryAttemptedCount // 10s, 20s, 30s
+              console.log(`⚠️ RunningHub: Task reported as FAILED. Attempt ${recoveryAttemptedCount}/${maxRecoveryAttempts} to double check in case of transient error. Waiting ${waitTime/1000}s...`)
+              await new Promise(resolve => setTimeout(resolve, waitTime))
+              continue
+            }
+            console.log('❌ RunningHub: Task confirmed failed on RunningHub after retries')
             return {
               success: false,
               error: 'Task failed on RunningHub'
@@ -1130,16 +1232,19 @@ export class RunningHubProvider extends BaseAIProvider {
         consecutiveErrors++
         
         if (consecutiveErrors >= maxConsecutiveErrors) {
-          console.error(`❌ RunningHub: Max consecutive errors (${maxConsecutiveErrors}) reached. Aborting.`)
-          return {
+           console.error(`❌ RunningHub: Max consecutive errors (${maxConsecutiveErrors}) reached. Aborting.`)
+           return {
             success: false,
             error: error instanceof Error ? error.message : 'Error polling task status (max retries reached)'
-          }
+           }
         }
         
-        console.log(`⏳ RunningHub: Retrying polling (error ${consecutiveErrors}/${maxConsecutiveErrors})...`)
+        // Exponential backoff for network errors: 5s, 10s, 15s... capped at 30s
+        const backoffTime = Math.min(pollInterval * consecutiveErrors, 30000)
+        console.log(`⏳ RunningHub: Retrying polling (error ${consecutiveErrors}/${maxConsecutiveErrors}) in ${backoffTime/1000}s...`)
+        
         // Wait before retry
-        await new Promise(resolve => setTimeout(resolve, pollInterval))
+        await new Promise(resolve => setTimeout(resolve, backoffTime))
       }
     }
 

@@ -1,0 +1,286 @@
+
+TEST EXECUTION TIMESTAMP: 2026-02-15T11:18:34.185Z
+
+SCENARIO: Smart Upscale Disabled
+
+PAYLOAD NODE 229 SETTINGS:
+[
+  {
+    "nodeId": "229",
+    "fieldName": "Enable SeedVR2 (Down)Load DiT Model",
+    "fieldValue": "false"
+  },
+  {
+    "nodeId": "229",
+    "fieldName": "Enable SeedVR2 Video Upscaler (v2.5.15)",
+    "fieldValue": "false"
+  },
+  {
+    "nodeId": "229",
+    "fieldName": "Enable RunningHub Deepcleaner",
+    "fieldValue": "false"
+  },
+  {
+    "nodeId": "229",
+    "fieldName": "Enable SeedVR2 (Down)Load VAE Model",
+    "fieldValue": "false"
+  },
+  {
+    "nodeId": "229",
+    "fieldName": "Enable Clean VRAM Used",
+    "fieldValue": "false"
+  },
+  {
+    "nodeId": "229",
+    "fieldName": "Enable 🔧 Image Contrast Adaptive Sharpening",
+    "fieldValue": "false"
+  },
+  {
+    "nodeId": "229",
+    "fieldName": "Enable Output Resolution (4k/8k)",
+    "fieldValue": "false"
+  },
+  {
+    "nodeId": "229",
+    "fieldName": "Enable TTP_Tile_image_size",
+    "fieldValue": "false"
+  },
+  {
+    "nodeId": "229",
+    "fieldName": "Enable TTP_Image_Tile_Batch",
+    "fieldValue": "false"
+  },
+  {
+    "nodeId": "229",
+    "fieldName": "Enable Upscale Image By",
+    "fieldValue": "false"
+  },
+  {
+    "nodeId": "229",
+    "fieldName": "Enable 🔧 Image Resize",
+    "fieldValue": "false"
+  },
+  {
+    "nodeId": "229",
+    "fieldName": "Enable TTP_Image_Assy",
+    "fieldValue": "false"
+  },
+  {
+    "nodeId": "229",
+    "fieldName": "Enable set",
+    "fieldValue": "false"
+  },
+  {
+    "nodeId": "229",
+    "fieldName": "Enable 🔧 Get Image Size",
+    "fieldValue": "false"
+  },
+  {
+    "nodeId": "229",
+    "fieldName": "Enable Image Comparer (rgthree)",
+    "fieldValue": "false"
+  },
+  {
+    "nodeId": "229",
+    "fieldName": "Enable Number to Float",
+    "fieldValue": "false"
+  },
+  {
+    "nodeId": "229",
+    "fieldName": "Enable Save Image",
+    "fieldValue": "false"
+  }
+]
+
+FULL PAYLOAD:
+{
+  "apiKey": "test-api-key",
+  "workflowId": "2021189307448434690",
+  "nodeInfoList": [
+    {
+      "nodeId": "97",
+      "fieldName": "image",
+      "fieldValue": "https://test.com/uploaded.jpg"
+    },
+    {
+      "nodeId": "140",
+      "fieldName": "text",
+      "fieldValue": "visible natural pore scars embedded into the skin geometry on face near forehead and cheeks, uneven skin topology, natural scars skin topology, multiple natural scars on face, Ultra-high-definition professional photograph, 8K resolution, crystal-clear sharpness, do not add too many blemishes, apply this texture only for skin, apply this texture only for face and skin and not on hair or dress, skin texture creates subtle micro-shadows and highlights under lighting"
+    },
+    {
+      "nodeId": "90",
+      "fieldName": "denoise",
+      "fieldValue": "0.20"
+    },
+    {
+      "nodeId": "167",
+      "fieldName": "max_shift",
+      "fieldValue": "1.00"
+    },
+    {
+      "nodeId": "85",
+      "fieldName": "megapixels",
+      "fieldValue": "4"
+    },
+    {
+      "nodeId": "88",
+      "fieldName": "guidance",
+      "fieldValue": "80"
+    },
+    {
+      "nodeId": "138",
+      "fieldName": "skin",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "138",
+      "fieldName": "nose",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "138",
+      "fieldName": "mouth",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "138",
+      "fieldName": "u_lip",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "138",
+      "fieldName": "l_lip",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "138",
+      "fieldName": "eye_g",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "138",
+      "fieldName": "r_eye",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "138",
+      "fieldName": "l_eye",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "138",
+      "fieldName": "r_brow",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "138",
+      "fieldName": "l_brow",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "138",
+      "fieldName": "background",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "138",
+      "fieldName": "hair",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "138",
+      "fieldName": "cloth",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "138",
+      "fieldName": "neck",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "229",
+      "fieldName": "Enable SeedVR2 (Down)Load DiT Model",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "229",
+      "fieldName": "Enable SeedVR2 Video Upscaler (v2.5.15)",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "229",
+      "fieldName": "Enable RunningHub Deepcleaner",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "229",
+      "fieldName": "Enable SeedVR2 (Down)Load VAE Model",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "229",
+      "fieldName": "Enable Clean VRAM Used",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "229",
+      "fieldName": "Enable 🔧 Image Contrast Adaptive Sharpening",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "229",
+      "fieldName": "Enable Output Resolution (4k/8k)",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "229",
+      "fieldName": "Enable TTP_Tile_image_size",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "229",
+      "fieldName": "Enable TTP_Image_Tile_Batch",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "229",
+      "fieldName": "Enable Upscale Image By",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "229",
+      "fieldName": "Enable 🔧 Image Resize",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "229",
+      "fieldName": "Enable TTP_Image_Assy",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "229",
+      "fieldName": "Enable set",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "229",
+      "fieldName": "Enable 🔧 Get Image Size",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "229",
+      "fieldName": "Enable Image Comparer (rgthree)",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "229",
+      "fieldName": "Enable Number to Float",
+      "fieldValue": "false"
+    },
+    {
+      "nodeId": "229",
+      "fieldName": "Enable Save Image",
+      "fieldValue": "false"
+    }
+  ]
+}

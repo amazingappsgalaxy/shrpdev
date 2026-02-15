@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -123,6 +124,12 @@ export function AdminDashboard() {
             <p className="text-gray-400">Manage your SharpII AI platform</p>
           </div>
           <div className="flex items-center gap-4">
+            <Button asChild variant="outline" className="text-yellow-400 border-yellow-400/30 hover:bg-yellow-400/10 hover:text-yellow-300">
+              <Link href="/admin/api-model-tester">
+                <BarChart3 className="w-4 h-4 mr-2" />
+                API Tester
+              </Link>
+            </Button>
             <Badge variant="outline" className="text-green-400 border-green-400/30">
               <CheckCircle className="w-3 h-3 mr-1" />
               Admin Access
