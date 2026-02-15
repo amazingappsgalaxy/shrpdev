@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronLeft, ChevronRight, Download, Maximize2, Sparkles } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Download, Maximize2, Sparkles, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Redefine locally for simplicity
@@ -200,6 +200,16 @@ export function HistoryDetailModal({ isOpen, onClose, item }: HistoryDetailModal
                             </div>
 
                             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                                {item.status === 'failed' && (
+                                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                        <h3 className="text-xs font-semibold text-red-400 uppercase tracking-widest mb-1 flex items-center gap-2">
+                                            <AlertCircle className="w-3 h-3" /> Failed
+                                        </h3>
+                                        <p className="text-xs text-red-200/80 leading-relaxed">
+                                            {item.settings?.failure_reason || "Unknown error occurred during processing."}
+                                        </p>
+                                    </div>
+                                )}
                                 {/* Settings Group */}
                                 <div className="space-y-3">
                                     <h3 className="text-xs font-semibold text-white/40 uppercase tracking-widest flex items-center gap-2">

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { HistoryListItem } from "@/app/app/history/page"; // We'll need to export this or redefine
 import { ProcessingGradient } from "./ProcessingGradient";
-import { Download, Play, MoreVertical, Trash2, Maximize2 } from "lucide-react";
+import { Download, Play, MoreVertical, Trash2, Maximize2, AlertCircle } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { motion } from "framer-motion";
 
@@ -41,8 +41,11 @@ function HistoryCard({ item, onSelect, index }: { item: Item; onSelect: (id: str
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3, delay: index * 0.05 }}
-            className="group relative aspect-[4/5] rounded-xl overflow-hidden bg-white/5 transition-all duration-300 cursor-pointer"
-            onClick={() => onSelect(item.id)}
+            className={cn(
+                "group relative aspect-[4/5] rounded-xl overflow-hidden bg-white/[0.03] transition-all duration-300",
+                isProcessing ? "cursor-default" : "cursor-pointer"
+            )}
+            onClick={() => !isProcessing && onSelect(item.id)}
         >
             {/* Background / Image */}
             {isProcessing ? (
@@ -57,8 +60,12 @@ function HistoryCard({ item, onSelect, index }: { item: Item; onSelect: (id: str
 
                 </div>
             ) : (
-                <div className="absolute inset-0 bg-white/5 flex items-center justify-center text-white/20">
-                    {isFailed ? "Failed" : "No Preview"}
+                <div className="absolute inset-0 bg-white/[0.03] flex items-center justify-center text-white/20">
+                    {isFailed ? (
+                        <AlertCircle className="w-8 h-8 text-white/[0.05]" strokeWidth={1.5} />
+                    ) : (
+                        "No Preview"
+                    )}
                 </div>
             )}
 

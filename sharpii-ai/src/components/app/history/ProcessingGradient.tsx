@@ -10,12 +10,12 @@ export const ProcessingGradient = ({ className }: { className?: string }) => {
                 <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] animate-[spin_10s_linear_infinite_reverse] bg-[conic-gradient(from_180deg,transparent_0deg,#d4d4d8_60deg,transparent_120deg)] opacity-40 blur-[50px]" />
             </div>
 
-            {/* Noise Overlay - Stronger */}
+            {/* Noise Overlay - Stronger & Bigger Dots (Lower Frequency) */}
             <div
-                className="absolute inset-0 opacity-[0.25] pointer-events-none mix-blend-overlay"
+                className="absolute inset-0 opacity-[0.4] pointer-events-none mix-blend-overlay"
                 style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-                    backgroundSize: '100px 100px'
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.25' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+                    backgroundSize: '150px 150px' // Increased pattern size too
                 }}
             />
 
