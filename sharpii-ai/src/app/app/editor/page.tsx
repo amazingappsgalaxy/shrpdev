@@ -281,27 +281,26 @@ function EditorContent() {
 
   // UI State
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isEnhancing, setIsEnhancing] = useState(false)
-  const [progress, setProgress] = useState(0)
   const [isExpandViewOpen, setIsExpandViewOpen] = useState(false)
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: 'loading' | 'success' | 'error' }>>([])
   
   // Multi-task tracking
-  const [activeTasks, setActiveTasks] = useState<Map<string, { progress: number; status: 'loading' | 'success' | 'error'; message?: string }>>(new Map())
-
-  // Derived global status for the indicator
-  const globalStatus = React.useMemo(() => {
-    if (activeTasks.size === 0) return 'loading' // Default
-    const tasks = Array.from(activeTasks.values())
-    if (tasks.some(t => t.status === 'loading')) return 'loading'
-    if (tasks.some(t => t.status === 'error')) return 'error'
-    return 'success'
-  }, [activeTasks])
+  type TaskStatus = 'loading' | 'success' | 'error'
+  type TaskEntry = { id: string; progress: number; status: TaskStatus; message?: string; createdAt: number; inputImage: string }
+  const [activeTasks, setActiveTasks] = useState<Map<string, TaskEntry>>(new Map())
+  const [dismissedTaskIds, setDismissedTaskIds] = useState<Set<string>>(new Set())
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null)
   const latestImageRef = useRef(uploadedImage)
   latestImageRef.current = uploadedImage
+  const latestTaskIdRef = useRef<string | null>(null)
+  const taskIntervalsRef = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map())
+
+  const visibleTasks = React.useMemo(() => {
+    const items = Array.from(activeTasks.values()).filter(task => !dismissedTaskIds.has(task.id))
+    return items.sort((a, b) => b.createdAt - a.createdAt)
+  }, [activeTasks, dismissedTaskIds])
 
   // Initialize from URL param
   useEffect(() => {
@@ -393,68 +392,67 @@ function EditorContent() {
   const handleEnhance = async () => {
     if (!uploadedImage) return
     
-    // Initial UI Feedback
     setIsSubmitting(true)
-    const toastId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-    
-    // Add to active tasks
-    const taskId = toastId
+    const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const createdAt = Date.now()
+    const inputImage = uploadedImage
+    latestTaskIdRef.current = taskId
+    setDismissedTaskIds(prev => {
+      const next = new Set(prev)
+      next.delete(taskId)
+      return next
+    })
     setActiveTasks(prev => {
-        const newMap = new Map(prev)
-        newMap.set(taskId, { progress: 0, status: 'loading', message: 'Enhancing...' })
-        return newMap
+      const newMap = new Map(prev)
+      newMap.set(taskId, { id: taskId, progress: 0, status: 'loading', message: 'Enhancing...', createdAt, inputImage })
+      return newMap
     })
 
-    // Auto-dismiss toast
-    setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== toastId))
-    }, 3000)
-
-    // Reset submit button state quickly to allow new tasks
     setTimeout(() => setIsSubmitting(false), 1000)
 
-    // Start background task
     try {
-      setIsEnhancing(true)
-      setProgress(0)
-      
-      // Simulate progress for better UX since we don't have real stream yet
       const progressInterval = setInterval(() => {
-         setActiveTasks(prev => {
-            const task = prev.get(taskId)
-            if (!task || task.status !== 'loading') return prev
-            const newMap = new Map(prev)
-            const newProgress = Math.min((task.progress || 0) + 5, 90)
-            newMap.set(taskId, { ...task, progress: newProgress })
-            return newMap
-         })
+        setActiveTasks(prev => {
+          const task = prev.get(taskId)
+          if (!task || task.status !== 'loading') return prev
+          const newMap = new Map(prev)
+          const newProgress = Math.min((task.progress || 0) + 5, 90)
+          newMap.set(taskId, { ...task, progress: newProgress })
+          return newMap
+        })
       }, 500)
+      taskIntervalsRef.current.set(taskId, progressInterval)
       
       const shouldSmartUpscale = !!modelSettings['smartUpscale']
+      const settingsSnapshot = {
+        prompt: 'Enhance skin details, preserve identity, high quality',
+        mode: enhancementMode,
+        customPrompt: enhancementMode === 'Custom' ? customPrompt : undefined,
+        protections: areaSettings,
+        style: STYLES.find(s => s.id === selectedStyle)?.value,
+        styleName: STYLES.find(s => s.id === selectedStyle)?.name,
+        pageName: 'app/editor',
+        smartUpscale: shouldSmartUpscale,
+        upscaleResolution,
+        ...modelSettings
+      }
 
       const response = await fetch('/api/enhance-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          imageUrl: uploadedImage,
+          imageUrl: inputImage,
           modelId: 'skin-editor',
           userId: user?.id,
-          settings: {
-            prompt: 'Enhance skin details, preserve identity, high quality',
-            mode: enhancementMode,
-            customPrompt: enhancementMode === 'Custom' ? customPrompt : undefined,
-            protections: areaSettings,
-            style: STYLES.find(s => s.id === selectedStyle)?.value,
-            styleName: STYLES.find(s => s.id === selectedStyle)?.name,
-            pageName: 'app/editor',
-            smartUpscale: shouldSmartUpscale,
-            upscaleResolution,
-            ...modelSettings
-          }
+          settings: settingsSnapshot
         })
       })
 
-      clearInterval(progressInterval)
+      const interval = taskIntervalsRef.current.get(taskId)
+      if (interval) {
+        clearInterval(interval)
+        taskIntervalsRef.current.delete(taskId)
+      }
 
       if (!response.ok) {
         throw new Error('Enhancement failed')
@@ -462,35 +460,32 @@ function EditorContent() {
 
       const data = await response.json()
       if (data.success && (data.outputs || data.enhancedUrl)) {
-        // Only update UI if the image hasn't changed (optional check, but good for UX)
-        // For now, we update anyway so they see the result of the last task
         const outputs = normalizeOutputs(data.outputs ?? data.enhancedUrl)
-        setEnhancedOutputs(outputs)
-        setSelectedOutputIndex(0)
+        if (latestTaskIdRef.current === taskId && latestImageRef.current === inputImage) {
+          setEnhancedOutputs(outputs)
+          setSelectedOutputIndex(0)
+        }
         
-        // Success task update
         setActiveTasks(prev => {
-            const newMap = new Map(prev)
-            newMap.set(taskId, { progress: 100, status: 'success', message: 'Done!' })
-            return newMap
+          const newMap = new Map(prev)
+          const task = newMap.get(taskId)
+          if (task) {
+            newMap.set(taskId, { ...task, progress: 100, status: 'success', message: 'Done!' })
+          }
+          return newMap
         })
-        
-        // Success toast
-        const successToastId = `${Date.now()}-success`
-        setToasts(prev => [...prev, { id: successToastId, message: 'Enhancement complete!', type: 'success' }])
-        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== successToastId)), 3000)
-
       } else {
         console.error('Enhancement failed:', data.error)
         
-        // Error task update
         setActiveTasks(prev => {
-            const newMap = new Map(prev)
-            newMap.set(taskId, { progress: 100, status: 'error', message: 'Failed' })
-            return newMap
+          const newMap = new Map(prev)
+          const task = newMap.get(taskId)
+          if (task) {
+            newMap.set(taskId, { ...task, progress: 100, status: 'error', message: 'Failed' })
+          }
+          return newMap
         })
 
-        // Error toast
         const errorToastId = `${Date.now()}-error`
         setToasts(prev => [...prev, { id: errorToastId, message: data.error || 'Enhancement failed', type: 'error' }])
         setTimeout(() => setToasts(prev => prev.filter(t => t.id !== errorToastId)), 5000)
@@ -500,27 +495,36 @@ function EditorContent() {
       console.error('Enhancement error:', error)
       const errorMsg = error instanceof Error ? error.message : 'Connection error'
       
-      // Error task update
       setActiveTasks(prev => {
-          const newMap = new Map(prev)
-          newMap.set(taskId, { progress: 100, status: 'error', message: 'Error' })
-          return newMap
+        const newMap = new Map(prev)
+        const task = newMap.get(taskId)
+        if (task) {
+          newMap.set(taskId, { ...task, progress: 100, status: 'error', message: 'Error' })
+        }
+        return newMap
       })
 
       const errorToastId = `${Date.now()}-error-catch`
       setToasts(prev => [...prev, { id: errorToastId, message: errorMsg, type: 'error' }])
       setTimeout(() => setToasts(prev => prev.filter(t => t.id !== errorToastId)), 5000)
     } finally {
-      setIsEnhancing(false)
-      setProgress(100)
+      const interval = taskIntervalsRef.current.get(taskId)
+      if (interval) {
+        clearInterval(interval)
+        taskIntervalsRef.current.delete(taskId)
+      }
       
-      // Clear task after delay
       setTimeout(() => {
-          setActiveTasks(prev => {
-              const newMap = new Map(prev)
-              newMap.delete(taskId)
-              return newMap
-          })
+        setActiveTasks(prev => {
+          const newMap = new Map(prev)
+          newMap.delete(taskId)
+          return newMap
+        })
+        setDismissedTaskIds(prev => {
+          const next = new Set(prev)
+          next.delete(taskId)
+          return next
+        })
       }, 4000)
     }
   }
@@ -812,7 +816,7 @@ function EditorContent() {
             <div className="p-5 pt-0">
               <button
                 onClick={handleEnhance}
-                disabled={isSubmitting || !uploadedImage}
+                disabled={!uploadedImage}
                 className="w-full bg-[#FFFF00] hover:bg-[#e6e600] text-black font-bold h-14 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(255,255,0,0.1)] hover:shadow-[0_0_30px_rgba(255,255,0,0.3)] text-base uppercase tracking-wider"
               >
                 {isSubmitting ? (
@@ -1004,10 +1008,15 @@ function EditorContent() {
 
       {/* Multi-task Loading Indicator */}
       <MyLoadingProcessIndicator 
-        isVisible={activeTasks.size > 0}
-        progress={0} 
-        status={globalStatus}
-        activeTasks={activeTasks}
+        isVisible={visibleTasks.length > 0}
+        tasks={visibleTasks}
+        onCloseTask={(taskId) => {
+          setDismissedTaskIds(prev => {
+            const next = new Set(prev)
+            next.add(taskId)
+            return next
+          })
+        }}
       />
 
       {toasts.length > 0 && (
