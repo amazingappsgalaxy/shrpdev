@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 
@@ -19,11 +19,46 @@ interface MyLoadingProcessIndicatorProps {
   onCloseTask?: (taskId: string) => void
 }
 
+const playSuccessSound = () => {
+  if (typeof window === 'undefined') return;
+  try {
+    // @ts-ignore
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(700, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1100, ctx.currentTime + 0.08);
+
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.002, ctx.currentTime + 0.08);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.1);
+  } catch (e) {
+    console.error("Audio play failed", e);
+  }
+}
+
 export default function MyLoadingProcessIndicator({
   isVisible = false,
   tasks,
   onCloseTask
 }: MyLoadingProcessIndicatorProps) {
+  const processedTaskIds = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    tasks.forEach(task => {
+      if (task.status === 'success' && !processedTaskIds.current.has(task.id)) {
+        playSuccessSound();
+        processedTaskIds.current.add(task.id);
+      }
+    });
+  }, [tasks]);
   return (
     <AnimatePresence>
       {isVisible && (

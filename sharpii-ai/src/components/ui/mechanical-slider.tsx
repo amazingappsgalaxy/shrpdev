@@ -57,8 +57,8 @@ const MechanicalSlider = React.forwardRef<
       osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.03);
 
       // Even shorter and quieter envelope
-      gain.gain.setValueAtTime(0.02, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
+      gain.gain.setValueAtTime(0.14, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.009, ctx.currentTime + 0.03);
 
       osc.connect(gain);
       gain.connect(ctx.destination);

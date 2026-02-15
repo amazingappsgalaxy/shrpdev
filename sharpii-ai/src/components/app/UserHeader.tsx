@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth, signOut as simpleSignOut } from '@/lib/auth-client-simple'
@@ -23,7 +23,6 @@ import {
 } from 'lucide-react'
 import { MyPricingPlans2 } from '@/components/ui/mypricingplans2'
 import { motion, AnimatePresence } from 'framer-motion'
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { CreditIcon } from '@/components/ui/CreditIcon'
 
 interface UserHeaderProps {
@@ -35,6 +34,8 @@ export function UserHeader({ className }: UserHeaderProps) {
     const pathname = usePathname()
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const [isPlansPopupOpen, setIsPlansPopupOpen] = useState(false)
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+    const userMenuRef = useRef<HTMLDivElement>(null)
     const { user: currentUser } = useAuth()
 
     // Get user credits
@@ -63,6 +64,20 @@ export function UserHeader({ className }: UserHeaderProps) {
         const interval = setInterval(fetchCredits, 30000)
         return () => clearInterval(interval)
     }, [currentUser?.id])
+
+    useEffect(() => {
+        if (!isUserMenuOpen) return
+        const handleOutsideClick = (event: MouseEvent) => {
+            if (!userMenuRef.current) return
+            if (!userMenuRef.current.contains(event.target as Node)) {
+                setIsUserMenuOpen(false)
+            }
+        }
+        document.addEventListener('mousedown', handleOutsideClick)
+        return () => {
+            document.removeEventListener('mousedown', handleOutsideClick)
+        }
+    }, [isUserMenuOpen])
 
     const user = currentUser
     const username = user?.name || user?.email?.split('@')[0] || 'User'
@@ -114,9 +129,9 @@ export function UserHeader({ className }: UserHeaderProps) {
                         </Link>
                     </div>
 
-                    {/* 2. Desktop Navigation - Clean Segmented Control */}
+                    {/* 2. Desktop Navigation - Standard Segmented Control (No Glow, Less Rounded) */}
                     <div className="hidden xl:flex items-center flex-1 justify-center">
-                        <div className="flex items-center p-1 bg-white/5 border border-white/10 rounded-full backdrop-blur-md relative h-10">
+                        <div className="flex items-center p-1 bg-white/5 border border-white/10 rounded-lg backdrop-blur-md relative h-9">
                             {navigationItems.map((item) => {
                                 const active = isActive(item.href)
                                 return (
@@ -124,17 +139,13 @@ export function UserHeader({ className }: UserHeaderProps) {
                                         key={item.href}
                                         href={item.href}
                                         className={`
-                                                relative px-6 h-full flex items-center justify-center rounded-full text-sm font-medium transition-colors duration-200 z-10
-                                                ${active ? 'text-black' : 'text-white/60 hover:text-white'}
+                                                relative px-4 h-full flex items-center justify-center rounded text-sm font-medium transition-all duration-200
+                                                ${active
+                                                ? 'bg-white/10 text-white shadow-sm'
+                                                : 'text-white/60 hover:text-white hover:bg-white/5'
+                                            }
                                             `}
                                     >
-                                        {active && (
-                                            <motion.div
-                                                layoutId="header-nav-pill"
-                                                className="absolute inset-0 bg-[#FFFF00] rounded-full shadow-[0_0_15px_rgba(255,255,0,0.4)] -z-10"
-                                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                            />
-                                        )}
                                         <span>{item.name}</span>
                                     </Link>
                                 )
@@ -143,86 +154,74 @@ export function UserHeader({ className }: UserHeaderProps) {
                     </div>
 
                     {/* 3. Right Side Actions */}
-                    <div className="flex items-center justify-end gap-4 flex-shrink-0 min-w-[140px]">
+                    <div className="flex items-center justify-end gap-5 flex-shrink-0 min-w-[140px]">
 
-                        {/* Credits Badge */}
-                        <div className="hidden md:flex items-center gap-3">
-                            <div className="bg-white/5 rounded-full border border-white/10 flex items-center pr-4 pl-1 py-1 gap-2.5 transition-all hover:bg-white/10 hover:border-white/20 select-none">
-                                <CreditIcon className="w-7 h-7 bg-[#FFFF00]/10 text-[#FFFF00]" iconClassName="w-3.5 h-3.5" />
-                                <div className="flex flex-col leading-none gap-0.5">
-                                    <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">Credits</span>
-                                    <span className="text-sm font-bold text-white numerical-font tabular-nums">
-                                        {creditsLoading ? '...' : credits.toLocaleString()}
-                                    </span>
-                                </div>
-                            </div>
+                        {/* Credits Badge - Minimal (Only Icon + Number) */}
+                        <div className="hidden md:flex items-center gap-2 select-none">
+                            <CreditIcon className="w-5 h-5 bg-transparent text-[#FFFF00]" iconClassName="w-4 h-4" />
+                            <span className="text-sm font-bold text-white numerical-font tabular-nums">
+                                {creditsLoading ? '...' : credits.toLocaleString()}
+                            </span>
                         </div>
 
                         {/* Upgrade Button */}
                         <button
                             onClick={() => setIsPlansPopupOpen(true)}
-                            className="hidden sm:flex items-center gap-2 bg-[#FFFF00] hover:bg-[#c9c900] text-black px-4 py-2 rounded-lg text-sm font-bold shadow-[0_0_20px_rgba(255,255,0,0.15)] hover:shadow-[0_0_30px_rgba(255,255,0,0.3)] transition-all duration-300 transform active:scale-95 whitespace-nowrap"
+                            className="hidden sm:flex items-center gap-2 bg-[#FFFF00] hover:bg-[#c9c900] text-black px-4 py-1.5 rounded-md text-sm font-bold shadow-sm transition-all duration-300 transform active:scale-95 whitespace-nowrap"
                         >
-                            <Crown className="w-4 h-4 fill-black" />
+                            <Crown className="w-3.5 h-3.5 fill-black" />
                             <span>Upgrade</span>
                         </button>
 
-                        {/* Profile Dropdown via Radix */}
-                        <DropdownMenu.Root>
-                            <DropdownMenu.Trigger asChild>
-                                <button
-                                    className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full transition-all duration-200 hover:bg-white/5 border border-transparent hover:border-white/10 outline-none focus:ring-0"
-                                >
-                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center border border-white/10 shadow-inner overflow-hidden ring-1 ring-white/10">
-                                        <span className="text-sm font-bold text-white">{username.charAt(0).toUpperCase()}</span>
-                                    </div>
-                                    <ChevronDown className="w-4 h-4 text-white/50" />
-                                </button>
-                            </DropdownMenu.Trigger>
+                        <div className="relative" ref={userMenuRef}>
+                            <button
+                                type="button"
+                                onClick={() => setIsUserMenuOpen((prev) => !prev)}
+                                className="flex items-center gap-2 pl-1 pr-1 py-1 rounded-md transition-all duration-200 hover:bg-white/5 outline-none focus:ring-0"
+                            >
+                                <div className="w-8 h-8 rounded-md bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center border border-white/10 shadow-inner overflow-hidden">
+                                    <span className="text-xs font-bold text-white">{username.charAt(0).toUpperCase()}</span>
+                                </div>
+                                <ChevronDown className="w-3.5 h-3.5 text-white/50" />
+                            </button>
 
-                            <DropdownMenu.Portal>
-                                <DropdownMenu.Content
-                                    className="min-w-[240px] bg-[#0A0A0B]/95 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl p-2 z-[10000] animate-in fade-in zoom-in-95 duration-200 slide-in-from-top-2"
-                                    sideOffset={8}
-                                    align="end"
-                                >
-                                    <div className="px-3 py-3 mb-2 bg-white/5 rounded-xl border border-white/5">
+                            {isUserMenuOpen && (
+                                <div className="absolute right-0 mt-2 min-w-[220px] bg-[#0A0A0B] rounded-lg border border-white/10 shadow-xl p-1.5 z-[10000] animate-in fade-in zoom-in-95 duration-200 slide-in-from-top-2">
+                                    <div className="px-2 py-2 mb-1 bg-white/5 rounded-md border border-white/5">
                                         <p className="text-sm font-bold text-white">{username}</p>
                                         <p className="text-xs text-white/50 truncate font-medium mt-0.5">{user?.email}</p>
                                     </div>
 
                                     {userMenuItems.map((item) => (
-                                        <DropdownMenu.Item key={item.href} asChild>
-                                            <Link
-                                                href={item.href}
-                                                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/10 outline-none cursor-pointer transition-colors group"
-                                            >
-                                                <item.icon className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />
-                                                {item.name}
-                                            </Link>
-                                        </DropdownMenu.Item>
+                                        <Link
+                                            key={item.href}
+                                            href={item.href}
+                                            onClick={() => setIsUserMenuOpen(false)}
+                                            className="flex items-center gap-2 px-2 py-2 rounded-md text-sm text-white/70 hover:text-white hover:bg-white/10 outline-none cursor-pointer transition-colors"
+                                        >
+                                            <item.icon className="w-4 h-4 opacity-70" />
+                                            {item.name}
+                                        </Link>
                                     ))}
 
-                                    <DropdownMenu.Separator className="h-px bg-white/5 my-2 mx-2" />
+                                    <div className="h-px bg-white/5 my-1 mx-1" />
 
-                                    <DropdownMenu.Item asChild>
-                                        <button
-                                            onClick={handleSignOut}
-                                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 outline-none cursor-pointer transition-colors group"
-                                        >
-                                            <LogOut className="w-4 h-4 opacity-70 group-hover:opacity-100 transition-opacity" />
-                                            Sign Out
-                                        </button>
-                                    </DropdownMenu.Item>
-                                </DropdownMenu.Content>
-                            </DropdownMenu.Portal>
-                        </DropdownMenu.Root>
+                                    <button
+                                        onClick={handleSignOut}
+                                        className="w-full flex items-center gap-2 px-2 py-2 rounded-md text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 outline-none cursor-pointer transition-colors"
+                                    >
+                                        <LogOut className="w-4 h-4 opacity-70" />
+                                        Sign Out
+                                    </button>
+                                </div>
+                            )}
+                        </div>
 
 
                         {/* Mobile Menu Toggle */}
                         <button
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="lg:hidden p-2 rounded-xl bg-white/5 text-white/70 hover:text-white border border-white/10"
+                            className="lg:hidden p-2 rounded-lg bg-white/5 text-white/70 hover:text-white border border-white/10"
                         >
                             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                         </button>
@@ -240,7 +239,7 @@ export function UserHeader({ className }: UserHeaderProps) {
                             transition={{ duration: 0.2 }}
                             className="absolute left-4 right-4 top-full mt-2 z-50 lg:hidden"
                         >
-                            <div className="glass-premium rounded-2xl border border-white/10 p-4 shadow-2xl overflow-hidden bg-[#09090b]">
+                            <div className="glass-premium rounded-xl border border-white/10 p-4 shadow-2xl overflow-hidden bg-[#09090b]">
                                 <div className="space-y-2">
                                     {mobileNavigationItems.map((item) => {
                                         const isActiveLink = isActive(item.href)
@@ -249,8 +248,8 @@ export function UserHeader({ className }: UserHeaderProps) {
                                                 key={item.href}
                                                 href={item.href}
                                                 onClick={() => setIsMobileMenuOpen(false)}
-                                                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActiveLink
-                                                    ? 'bg-[#FFFF00]/10 text-[#FFFF00] border border-[#FFFF00]/20 font-bold'
+                                                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActiveLink
+                                                    ? 'bg-white/10 text-white border border-white/10 font-medium'
                                                     : 'bg-white/5 text-white/70 border border-white/5 hover:bg-white/10'
                                                     }`}
                                             >
@@ -262,10 +261,10 @@ export function UserHeader({ className }: UserHeaderProps) {
 
                                     <div className="h-px bg-white/10 my-3" />
 
-                                    <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
+                                    <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
                                         <span className="text-white/60 text-sm">Credits</span>
                                         <div className="flex items-center gap-2">
-                                            <Coins className="w-4 h-4 text-[#FFFF00]" />
+                                            <CreditIcon className="w-5 h-5 bg-transparent text-[#FFFF00]" iconClassName="w-4 h-4" />
                                             <span className="font-bold text-white">{creditsLoading ? '...' : credits.toLocaleString()}</span>
                                         </div>
                                     </div>
@@ -275,7 +274,7 @@ export function UserHeader({ className }: UserHeaderProps) {
                                             setIsPlansPopupOpen(true);
                                             setIsMobileMenuOpen(false);
                                         }}
-                                        className="w-full bg-[#FFFF00] text-black font-bold py-3 rounded-xl flex items-center justify-center gap-2 mt-2"
+                                        className="w-full bg-[#FFFF00] text-black font-bold py-3 rounded-lg flex items-center justify-center gap-2 mt-2"
                                     >
                                         <Crown className="w-4 h-4 fill-black" />
                                         <span>Upgrade Plan</span>
@@ -298,7 +297,7 @@ export function UserHeader({ className }: UserHeaderProps) {
                     >
                         <button
                             onClick={() => setIsPlansPopupOpen(false)}
-                            className="absolute top-6 right-6 p-2 rounded-full bg-white/10 text-white/70 hover:text-white hover:bg-white/20 transition-all z-50"
+                            className="absolute top-6 right-6 p-2 rounded-lg bg-white/10 text-white/70 hover:text-white hover:bg-white/20 transition-all z-50"
                         >
                             <X className="w-6 h-6" />
                         </button>

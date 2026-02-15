@@ -97,7 +97,7 @@ const AVAILABLE_MODELS = [
 const MODEL_CONTROLS = {
   'skin-editor': {
     maxshift: { type: 'number', default: 1, min: 0.8, max: 1.2, step: 0.1, label: 'Detail Level', leftLabel: 'Low', rightLabel: 'High' },
-    megapixels: { type: 'number', default: 4, min: 2, max: 10, step: 1, label: 'Skin Texture Size', leftLabel: 'Low', rightLabel: 'High' },
+    megapixels: { type: 'number', default: 4, min: 2, max: 10, step: 1, label: 'Skin Texture Size', leftLabel: 'Dispersed', rightLabel: 'Dense' },
     denoise: { type: 'number', default: 0.20, min: 0.1, max: 0.38, step: 0.01, label: 'Transformation Strength', leftLabel: 'Subtle', rightLabel: 'Strong' }
   }
 }
@@ -262,7 +262,7 @@ function EditorContent() {
   // Backward compatibility accessor
   const selectedOutput = enhancedOutputs[selectedOutputIndex] || null
   const enhancedImage = selectedOutput?.type === 'image' ? selectedOutput.url : null
-  
+
   const [imageMetadata, setImageMetadata] = useState({ width: 1024, height: 1024 })
 
   // Settings
@@ -283,7 +283,7 @@ function EditorContent() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isExpandViewOpen, setIsExpandViewOpen] = useState(false)
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: 'loading' | 'success' | 'error' }>>([])
-  
+
   // Multi-task tracking
   type TaskStatus = 'loading' | 'success' | 'error'
   type TaskEntry = { id: string; progress: number; status: TaskStatus; message?: string; createdAt: number; inputImage: string }
@@ -308,10 +308,10 @@ function EditorContent() {
     if (modelParam && AVAILABLE_MODELS.find(m => m.id === modelParam)) {
       setSelectedModel(modelParam)
     }
-    
+
     // Ensure defaults are set on mount
     if (selectedModel === 'skin-editor') {
-        setModelSettings(SKIN_EDITOR_DEFAULTS['Subtle'])
+      setModelSettings(SKIN_EDITOR_DEFAULTS['Subtle'])
     }
   }, [searchParams])
 
@@ -391,7 +391,7 @@ function EditorContent() {
 
   const handleEnhance = async () => {
     if (!uploadedImage) return
-    
+
     setIsSubmitting(true)
     const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     const createdAt = Date.now()
@@ -422,7 +422,7 @@ function EditorContent() {
         })
       }, 500)
       taskIntervalsRef.current.set(taskId, progressInterval)
-      
+
       const shouldSmartUpscale = !!modelSettings['smartUpscale']
       const settingsSnapshot = {
         prompt: 'Enhance skin details, preserve identity, high quality',
@@ -465,7 +465,7 @@ function EditorContent() {
           setEnhancedOutputs(outputs)
           setSelectedOutputIndex(0)
         }
-        
+
         setActiveTasks(prev => {
           const newMap = new Map(prev)
           const task = newMap.get(taskId)
@@ -476,7 +476,7 @@ function EditorContent() {
         })
       } else {
         console.error('Enhancement failed:', data.error)
-        
+
         setActiveTasks(prev => {
           const newMap = new Map(prev)
           const task = newMap.get(taskId)
@@ -494,7 +494,7 @@ function EditorContent() {
     } catch (error) {
       console.error('Enhancement error:', error)
       const errorMsg = error instanceof Error ? error.message : 'Connection error'
-      
+
       setActiveTasks(prev => {
         const newMap = new Map(prev)
         const task = newMap.get(taskId)
@@ -513,7 +513,7 @@ function EditorContent() {
         clearInterval(interval)
         taskIntervalsRef.current.delete(taskId)
       }
-      
+
       setTimeout(() => {
         setActiveTasks(prev => {
           const newMap = new Map(prev)
@@ -553,11 +553,11 @@ function EditorContent() {
   }
 
   if (isLoading) return <ElegantLoading message="Initializing Editor..." />
-  
+
   if (!user) {
     // Redirect to login or show message
     if (typeof window !== 'undefined') {
-       window.location.href = '/login'
+      window.location.href = '/login'
     }
     return <ElegantLoading message="Redirecting to login..." />
   }
@@ -576,85 +576,83 @@ function EditorContent() {
       />
 
       {/* Main Layout - Grid with Wider Sidebar & Sticky Canvas */}
-      <div className="flex-1 pt-24 w-full grid grid-cols-1 lg:grid-cols-[420px_1fr] items-start">
+      <div className="flex-1 pt-20 w-full grid grid-cols-1 lg:grid-cols-[420px_1fr] items-start">
 
         {/* LEFT SIDEBAR - CONTROLS (Scrolls with page) */}
         <div className="flex flex-col border-r border-white/5 bg-[#0c0c0e] z-20 relative min-h-[calc(100vh-6rem)] lg:pb-32 order-2 lg:order-1">
 
           {/* 1. TOP SECTION: INPUT & STYLES (SIDE BY SIDE) */}
-          <div className="grid grid-cols-[40%_60%] items-stretch border-b border-white/5">
-            
-            {/* LEFT: INPUT IMAGE */}
-            <div className="p-4 flex flex-col gap-4 h-full">
-              <div className="flex justify-between items-center px-1">
-                 <div className="flex items-center gap-2">
-                   <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Input Image</span>
-                 </div>
-                 {uploadedImage && (
-                    <button 
-                        onClick={(e) => { 
-                            e.preventDefault();
-                            e.stopPropagation(); 
-                            handleDeleteImage(); 
-                        }} 
-                        className="p-2 -mr-2 text-gray-500 hover:text-red-400 hover:bg-white/5 rounded-full transition-all" 
-                        title="Delete Image"
-                    >
-                      <IconTrash className="w-4 h-4" />
-                    </button>
-                 )}
-              </div>
-              
-              <div 
-                className="w-full aspect-square rounded-lg bg-black border border-white/10 overflow-hidden relative cursor-pointer group hover:border-[#FFFF00]/50 transition-colors"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {uploadedImage ? (
-                  <>
-                    <img src={uploadedImage} className="w-full h-full object-cover" alt="Input" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                      <IconUpload className="w-5 h-5 text-white" />
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full gap-2">
-                    <IconUpload className="w-6 h-6 text-gray-500" />
-                    <span className="text-[10px] text-gray-600 font-medium">Select Image</span>
-                  </div>
+          <div className="border-b border-white/5">
+            <div className="grid grid-cols-[40%_60%] gap-4 px-5 pt-5 pb-[0.3rem]">
+              <div className="flex items-center justify-between h-6">
+                <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Input Image</span>
+                {uploadedImage && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      handleDeleteImage()
+                    }}
+                    className="p-2 -mr-2 text-gray-500 hover:text-red-400 hover:bg-white/5 rounded-full transition-all"
+                    title="Delete Image"
+                  >
+                    <IconTrash className="w-4 h-4" />
+                  </button>
                 )}
               </div>
-            </div>
-
-            {/* RIGHT: STYLES */}
-            <div className="p-4 flex flex-col gap-4 h-full">
-              <div className="flex items-center px-1">
+              <div className="flex items-center h-6">
                 <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Skin Style</span>
-             </div>
-              <div className="grid grid-cols-2 gap-2 flex-1">
-                {STYLES.map(style => (
-                  <button
-                    key={style.id}
-                    onClick={() => setSelectedStyle(style.id)}
-                    className={cn(
-                      "flex flex-row items-center justify-start px-3 rounded-md border transition-all gap-3 h-full",
-                      selectedStyle === style.id
-                        ? "bg-[#FFFF00] border-[#FFFF00] text-black shadow-[0_0_20px_rgba(255,255,0,0.3)]"
-                        : "bg-white/5 border-white/5 text-white hover:bg-white/10 hover:border-white/10"
-                    )}
-                  >
-                    <style.icon className={cn(
-                      "w-5 h-5 flex-shrink-0",
-                      selectedStyle === style.id ? "text-black" : "text-white"
-                    )} />
-                    <span className="text-xs font-bold">{style.name}</span>
-                  </button>
-                ))}
               </div>
-              <p className="text-[10px] text-white text-left px-1">
-                Enhances natural detail for the highest visual fidelity
-              </p>
             </div>
 
+            <div className="grid grid-cols-[40%_60%] gap-4 px-5 pt-1 pb-3">
+              <div className="flex flex-col gap-4">
+                <div
+                  className="w-full aspect-square rounded-lg bg-black border border-white/10 overflow-hidden relative cursor-pointer group hover:border-[#FFFF00]/50 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {uploadedImage ? (
+                    <>
+                      <img src={uploadedImage} className="w-full h-full object-cover" alt="Input" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <IconUpload className="w-5 h-5 text-white" />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full gap-2">
+                      <IconUpload className="w-6 h-6 text-gray-500" />
+                      <span className="text-[10px] text-gray-600 font-medium">Select Image</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 pr-2">
+                <div className="grid grid-cols-2 gap-3">
+                  {STYLES.map(style => (
+                    <button
+                      key={style.id}
+                      onClick={() => setSelectedStyle(style.id)}
+                      className={cn(
+                        "flex flex-row items-center justify-start px-3 h-10 rounded-md border transition-all gap-3",
+                        selectedStyle === style.id
+                          ? "bg-[#FFFF00] border-[#FFFF00] text-black"
+                          : "bg-white/5 border-white/5 text-white hover:bg-white/10 hover:border-white/10"
+                      )}
+                    >
+                      <style.icon className={cn(
+                        "w-5 h-5 flex-shrink-0",
+                        selectedStyle === style.id ? "text-black" : "text-white"
+                      )} />
+                      <span className="text-xs font-bold">{style.name}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-white/70 text-left">
+                  Enhances natural detail for the highest visual fidelity
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* 3. SETTINGS SCROLL AREA */}
@@ -662,33 +660,33 @@ function EditorContent() {
 
             {/* GROUP 1: Primary Controls */}
             <div className="space-y-2 px-1">
-              
+
               {/* Smart Upscale Special Setting */}
-              <div className="rounded-xl bg-white/[0.03] border border-white/5 overflow-hidden">
+              <div className="rounded-xl bg-black/40 border border-white/5 overflow-hidden">
                 <div className="flex items-center justify-between p-3 border-b border-white/5 bg-white/[0.02]">
-                    <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded border border-[#FFFF00]/30 text-[#FFFF00] accent-shimmer">
-                            <IconSparkles className="w-4 h-4" />
-                        </div>
-                        <span className="text-xs font-bold text-white">Smart Upscale</span>
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded bg-[rgb(164_164_0_/_17%)] text-[#FFFF00]">
+                      <IconSparkles className="w-4 h-4" />
                     </div>
-                    <Switch
-                      checked={!!modelSettings['smartUpscale']}
-                      onCheckedChange={(c) => setModelSettings(prev => ({ ...prev, smartUpscale: c }))}
-                      className="scale-90 data-[state=checked]:bg-[#FFFF00]"
-                    />
+                    <span className="text-xs font-bold text-white">Smart Upscale</span>
+                  </div>
+                  <Switch
+                    checked={!!modelSettings['smartUpscale']}
+                    onCheckedChange={(c) => setModelSettings(prev => ({ ...prev, smartUpscale: c }))}
+                    className="scale-90 data-[state=checked]:bg-[#FFFF00]"
+                  />
                 </div>
 
                 {/* Cupertino Segmented Control for 4K/8K - ALWAYS VISIBLE */}
-                <div className={cn("p-2 bg-black/20 transition-opacity duration-200", !modelSettings['smartUpscale'] && "pointer-events-none")}>
-                  <div className="flex bg-black/40 p-1 rounded-lg border border-white/5">
+                <div className="p-2 bg-black/20">
+                  <div className="flex bg-[rgb(255_255_255_/_0.04)] p-1 rounded-lg border border-[rgb(255_255_255_/_0.04)]">
                     {(['4k', '8k'] as const).map((res) => (
                       <button
                         key={res}
                         disabled={!modelSettings['smartUpscale']}
                         onClick={() => setUpscaleResolution(res)}
                         className={cn(
-                          "flex-1 py-2 text-[11px] font-black rounded-md transition-all uppercase tracking-wider",
+                          "flex-1 py-2 text-[11px] font-black rounded-md transition-all uppercase tracking-wider disabled:opacity-100 disabled:cursor-not-allowed",
                           upscaleResolution === res
                             ? "bg-[#FFFF00] text-black shadow-md scale-[1.02]"
                             : "text-white hover:text-white"
@@ -751,11 +749,11 @@ function EditorContent() {
               <div className="grid grid-cols-2 gap-3">
                 {/* Face Column */}
                 <div className="space-y-2">
-                  <p className="text-[10px] font-bold text-white uppercase tracking-wider pl-1 flex items-center gap-1">Face</p>
+                  <p className="text-xs font-bold text-white uppercase tracking-wider pl-1 flex items-center gap-1">Face</p>
                   <div className="space-y-1">
                     {Object.entries(areaSettings.face).map(([key, val]) => (
                       <div key={key} className="flex items-center justify-between p-2 rounded bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group">
-                        <span className="text-[10px] font-medium text-white capitalize transition-colors w-full">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                        <span className="text-xs font-medium text-white capitalize transition-colors w-full">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
                         <Switch
                           checked={val}
                           onCheckedChange={(c) => setAreaSettings(prev => ({ ...prev, face: { ...prev.face, [key]: c } }))}
@@ -768,11 +766,11 @@ function EditorContent() {
 
                 {/* Eyes Column */}
                 <div className="space-y-2">
-                  <p className="text-[10px] font-bold text-white uppercase tracking-wider pl-1 flex items-center gap-1">Eyes</p>
+                  <p className="text-xs font-bold text-white uppercase tracking-wider pl-1 flex items-center gap-1">Eyes</p>
                   <div className="space-y-1">
                     {Object.entries(areaSettings.eyes).map(([key, val]) => (
                       <div key={key} className="flex items-center justify-between p-2 rounded bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group">
-                        <span className="text-[10px] font-medium text-white capitalize transition-colors w-full">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                        <span className="text-xs font-medium text-white capitalize transition-colors w-full">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
                         <Switch
                           checked={val}
                           onCheckedChange={(c) => setAreaSettings(prev => ({ ...prev, eyes: { ...prev.eyes, [key]: c } }))}
@@ -786,16 +784,16 @@ function EditorContent() {
 
               {/* Other Section - Single Row, 4 Columns */}
               <div className="grid grid-cols-4 gap-2">
-                 {Object.entries(areaSettings.other).map(([key, val]) => (
-                    <div key={key} className="flex flex-col items-center justify-center p-2 rounded bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group gap-2">
-                      <span className="text-[9px] font-medium text-white capitalize transition-colors text-center">{key}</span>
-                      <Switch
-                        checked={val}
-                        onCheckedChange={(c) => setAreaSettings(prev => ({ ...prev, other: { ...prev.other, [key]: c } }))}
-                        className="scale-75"
-                      />
-                    </div>
-                 ))}
+                {Object.entries(areaSettings.other).map(([key, val]) => (
+                  <div key={key} className="flex flex-col items-center justify-center p-2 rounded bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group gap-2">
+                    <span className="text-xs font-medium text-white capitalize transition-colors text-center">{key}</span>
+                    <Switch
+                      checked={val}
+                      onCheckedChange={(c) => setAreaSettings(prev => ({ ...prev, other: { ...prev.other, [key]: c } }))}
+                      className="scale-75"
+                    />
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -1007,7 +1005,7 @@ function EditorContent() {
       )}
 
       {/* Multi-task Loading Indicator */}
-      <MyLoadingProcessIndicator 
+      <MyLoadingProcessIndicator
         isVisible={visibleTasks.length > 0}
         tasks={visibleTasks}
         onCloseTask={(taskId) => {
@@ -1025,8 +1023,8 @@ function EditorContent() {
             <div key={toast.id} className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-full text-xs text-white/90 backdrop-blur border shadow-lg transition-all",
               toast.type === 'error' ? "bg-red-500/20 border-red-500/30 text-red-100" :
-              toast.type === 'success' ? "bg-green-500/20 border-green-500/30 text-green-100" :
-              "bg-black/70 border-white/10"
+                toast.type === 'success' ? "bg-green-500/20 border-green-500/30 text-green-100" :
+                  "bg-black/70 border-white/10"
             )}>
               {toast.type === 'success' ? (
                 <IconCheck className="w-3.5 h-3.5 text-green-400" />
