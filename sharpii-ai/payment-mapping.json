@@ -53,25 +53,295 @@
       "userName": "Billing Test 04",
       "paymentId": "pay_0NYcThf4JtbnM2ANtXewN",
       "timestamp": 1771243116297
+    },
+    "sub_0NYd0DSaDSmSLrn1ZH2LW": {
+      "userId": "30a6a179-b5f4-4fd7-824a-45bacae90884",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_billing11@example.com",
+      "userName": "test_billing11@example.com",
+      "paymentId": "pay_0NYd0DSTOjTlCsC32ROlc",
+      "timestamp": 1771253373169
+    },
+    "pay_0NYd0DSTOjTlCsC32ROlc": {
+      "userId": "30a6a179-b5f4-4fd7-824a-45bacae90884",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_billing11@example.com",
+      "userName": "test_billing11@example.com",
+      "paymentId": "pay_0NYd0DSTOjTlCsC32ROlc",
+      "timestamp": 1771253373169
+    },
+    "sub_0NYd1ZcvMVbHVcT4Yo2Mq": {
+      "userId": "4ae8a3b0-4c1e-4771-9f81-f36eaf16adf4",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_billing12@example.com",
+      "userName": "test_billing12@example.com",
+      "paymentId": "pay_0NYd1ZcsM49joJMcIF2Ds",
+      "timestamp": 1771253801405
+    },
+    "pay_0NYd1ZcsM49joJMcIF2Ds": {
+      "userId": "4ae8a3b0-4c1e-4771-9f81-f36eaf16adf4",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_billing12@example.com",
+      "userName": "test_billing12@example.com",
+      "paymentId": "pay_0NYd1ZcsM49joJMcIF2Ds",
+      "timestamp": 1771253801405
+    },
+    "sub_0NYd2DoWnLsQbOxncX8yw": {
+      "userId": "4ae8a3b0-4c1e-4771-9f81-f36eaf16adf4",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_billing12@example.com",
+      "userName": "test_billing12@example.com",
+      "paymentId": "pay_0NYd2DoT1DBdMqXODjDAH",
+      "timestamp": 1771254006125
+    },
+    "pay_0NYd2DoT1DBdMqXODjDAH": {
+      "userId": "4ae8a3b0-4c1e-4771-9f81-f36eaf16adf4",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_billing12@example.com",
+      "userName": "test_billing12@example.com",
+      "paymentId": "pay_0NYd2DoT1DBdMqXODjDAH",
+      "timestamp": 1771254006125
+    },
+    "sub_0NYd2DxgubjsQQbCfwzN8": {
+      "userId": "4ae8a3b0-4c1e-4771-9f81-f36eaf16adf4",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_billing12@example.com",
+      "userName": "test_billing12@example.com",
+      "paymentId": "pay_0NYd2Dxa6x5s3ZnpV0NDO",
+      "timestamp": 1771254006820
+    },
+    "pay_0NYd2Dxa6x5s3ZnpV0NDO": {
+      "userId": "4ae8a3b0-4c1e-4771-9f81-f36eaf16adf4",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_billing12@example.com",
+      "userName": "test_billing12@example.com",
+      "paymentId": "pay_0NYd2Dxa6x5s3ZnpV0NDO",
+      "timestamp": 1771254006820
+    },
+    "sub_0NYd2Dy55cZsPqAUWXlQO": {
+      "userId": "4ae8a3b0-4c1e-4771-9f81-f36eaf16adf4",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_billing12@example.com",
+      "userName": "test_billing12@example.com",
+      "paymentId": "pay_0NYd2DxyJopPbHhbGlUcu",
+      "timestamp": 1771254006821
+    },
+    "pay_0NYd2DxyJopPbHhbGlUcu": {
+      "userId": "4ae8a3b0-4c1e-4771-9f81-f36eaf16adf4",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_billing12@example.com",
+      "userName": "test_billing12@example.com",
+      "paymentId": "pay_0NYd2DxyJopPbHhbGlUcu",
+      "timestamp": 1771254006821
+    },
+    "sub_0NYd3SSu1smY07ZA247XF": {
+      "userId": "d489bccf-a6fa-4746-a093-e8bf3c4c12d6",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_payment_flow_1739718426000@example.com",
+      "userName": "Payment Test User",
+      "paymentId": "pay_0NYd3SSmUQZgRsdIa3OL7",
+      "timestamp": 1771254396107
+    },
+    "pay_0NYd3SSmUQZgRsdIa3OL7": {
+      "userId": "d489bccf-a6fa-4746-a093-e8bf3c4c12d6",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_payment_flow_1739718426000@example.com",
+      "userName": "Payment Test User",
+      "paymentId": "pay_0NYd3SSmUQZgRsdIa3OL7",
+      "timestamp": 1771254396107
+    },
+    "sub_0NYd4DRcXjHqtnpf1L9jl": {
+      "userId": "d489bccf-a6fa-4746-a093-e8bf3c4c12d6",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_payment_flow_1739718426000@example.com",
+      "userName": "Payment Test User",
+      "paymentId": "pay_0NYd4DRYmRr45larlq81E",
+      "timestamp": 1771254635117
+    },
+    "pay_0NYd4DRYmRr45larlq81E": {
+      "userId": "d489bccf-a6fa-4746-a093-e8bf3c4c12d6",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_payment_flow_1739718426000@example.com",
+      "userName": "Payment Test User",
+      "paymentId": "pay_0NYd4DRYmRr45larlq81E",
+      "timestamp": 1771254635117
+    },
+    "sub_0NYdEYrIiEu0wHK9ir02j": {
+      "userId": "7faadd1e-ab2f-4932-b27b-b2ac14b3f136",
+      "plan": "professional",
+      "billingPeriod": "monthly",
+      "userEmail": "test_e2e_payment_feb16_2133@example.com",
+      "userName": "E2E Test User",
+      "paymentId": "pay_0NYdEYrEx0M2SjUMszLU2",
+      "timestamp": 1771257898590
+    },
+    "pay_0NYdEYrEx0M2SjUMszLU2": {
+      "userId": "7faadd1e-ab2f-4932-b27b-b2ac14b3f136",
+      "plan": "professional",
+      "billingPeriod": "monthly",
+      "userEmail": "test_e2e_payment_feb16_2133@example.com",
+      "userName": "E2E Test User",
+      "paymentId": "pay_0NYdEYrEx0M2SjUMszLU2",
+      "timestamp": 1771257898590
+    },
+    "sub_0NYdFMpAah0Ktxota2qR5": {
+      "userId": "7faadd1e-ab2f-4932-b27b-b2ac14b3f136",
+      "plan": "professional",
+      "billingPeriod": "monthly",
+      "userEmail": "test_e2e_payment_feb16_2133@example.com",
+      "userName": "E2E Test User",
+      "paymentId": "pay_0NYdFMp32zomTLcMbCrfj",
+      "timestamp": 1771258153006
+    },
+    "pay_0NYdFMp32zomTLcMbCrfj": {
+      "userId": "7faadd1e-ab2f-4932-b27b-b2ac14b3f136",
+      "plan": "professional",
+      "billingPeriod": "monthly",
+      "userEmail": "test_e2e_payment_feb16_2133@example.com",
+      "userName": "E2E Test User",
+      "paymentId": "pay_0NYdFMp32zomTLcMbCrfj",
+      "timestamp": 1771258153006
+    },
+    "sub_0NYdGZrDFHZinwnpg5pY8": {
+      "userId": "7faadd1e-ab2f-4932-b27b-b2ac14b3f136",
+      "plan": "professional",
+      "billingPeriod": "monthly",
+      "userEmail": "test_e2e_payment_feb16_2133@example.com",
+      "userName": "E2E Test User",
+      "paymentId": "pay_0NYdGZr9UArlEo9GfuV0k",
+      "timestamp": 1771258534630
+    },
+    "pay_0NYdGZr9UArlEo9GfuV0k": {
+      "userId": "7faadd1e-ab2f-4932-b27b-b2ac14b3f136",
+      "plan": "professional",
+      "billingPeriod": "monthly",
+      "userEmail": "test_e2e_payment_feb16_2133@example.com",
+      "userName": "E2E Test User",
+      "paymentId": "pay_0NYdGZr9UArlEo9GfuV0k",
+      "timestamp": 1771258534630
+    },
+    "sub_0NYdGsAUTgFvP6Gb3HFY7": {
+      "userId": "7faadd1e-ab2f-4932-b27b-b2ac14b3f136",
+      "plan": "professional",
+      "billingPeriod": "monthly",
+      "userEmail": "test_e2e_payment_feb16_2133@example.com",
+      "userName": "E2E Test User",
+      "paymentId": "pay_0NYdGsASDghDQkw6FoUDo",
+      "timestamp": 1771258627888
+    },
+    "pay_0NYdGsASDghDQkw6FoUDo": {
+      "userId": "7faadd1e-ab2f-4932-b27b-b2ac14b3f136",
+      "plan": "professional",
+      "billingPeriod": "monthly",
+      "userEmail": "test_e2e_payment_feb16_2133@example.com",
+      "userName": "E2E Test User",
+      "paymentId": "pay_0NYdGsASDghDQkw6FoUDo",
+      "timestamp": 1771258627888
+    },
+    "sub_0NYdH62gDHkfZB0KFe2Mf": {
+      "userId": "7faadd1e-ab2f-4932-b27b-b2ac14b3f136",
+      "plan": "professional",
+      "billingPeriod": "monthly",
+      "userEmail": "test_e2e_payment_feb16_2133@example.com",
+      "userName": "E2E Test User",
+      "paymentId": "pay_0NYdH62cQeWpmXpedpihM",
+      "timestamp": 1771258698472
+    },
+    "pay_0NYdH62cQeWpmXpedpihM": {
+      "userId": "7faadd1e-ab2f-4932-b27b-b2ac14b3f136",
+      "plan": "professional",
+      "billingPeriod": "monthly",
+      "userEmail": "test_e2e_payment_feb16_2133@example.com",
+      "userName": "E2E Test User",
+      "paymentId": "pay_0NYdH62cQeWpmXpedpihM",
+      "timestamp": 1771258698472
+    },
+    "sub_0NYdHLImkEdE7HiB2qB7S": {
+      "userId": "7faadd1e-ab2f-4932-b27b-b2ac14b3f136",
+      "plan": "professional",
+      "billingPeriod": "monthly",
+      "userEmail": "test_e2e_payment_feb16_2133@example.com",
+      "userName": "E2E Test User",
+      "paymentId": "pay_0NYdHLIhPjyVxF7iOD2ES",
+      "timestamp": 1771258776082
+    },
+    "pay_0NYdHLIhPjyVxF7iOD2ES": {
+      "userId": "7faadd1e-ab2f-4932-b27b-b2ac14b3f136",
+      "plan": "professional",
+      "billingPeriod": "monthly",
+      "userEmail": "test_e2e_payment_feb16_2133@example.com",
+      "userName": "E2E Test User",
+      "paymentId": "pay_0NYdHLIhPjyVxF7iOD2ES",
+      "timestamp": 1771258776082
+    },
+    "sub_0NYdIDXJRq1GxTy720Pd1": {
+      "userId": "7faadd1e-ab2f-4932-b27b-b2ac14b3f136",
+      "plan": "basic",
+      "billingPeriod": "monthly",
+      "userEmail": "test_e2e_payment_feb16_2133@example.com",
+      "userName": "E2E Test User",
+      "paymentId": "pay_0NYdIDXH9tGPhkleXDqrZ",
+      "timestamp": 1771259052066
+    },
+    "pay_0NYdIDXH9tGPhkleXDqrZ": {
+      "userId": "7faadd1e-ab2f-4932-b27b-b2ac14b3f136",
+      "plan": "basic",
+      "billingPeriod": "monthly",
+      "userEmail": "test_e2e_payment_feb16_2133@example.com",
+      "userName": "E2E Test User",
+      "paymentId": "pay_0NYdIDXH9tGPhkleXDqrZ",
+      "timestamp": 1771259052066
+    },
+    "sub_0NYdJLlQpQROjqVAzfbuy": {
+      "userId": "7faadd1e-ab2f-4932-b27b-b2ac14b3f136",
+      "plan": "professional",
+      "billingPeriod": "monthly",
+      "userEmail": "test_e2e_payment_feb16_2133@example.com",
+      "userName": "E2E Test User",
+      "paymentId": "pay_0NYdJLlNppSPXY9G34UqX",
+      "timestamp": 1771259409351
+    },
+    "pay_0NYdJLlNppSPXY9G34UqX": {
+      "userId": "7faadd1e-ab2f-4932-b27b-b2ac14b3f136",
+      "plan": "professional",
+      "billingPeriod": "monthly",
+      "userEmail": "test_e2e_payment_feb16_2133@example.com",
+      "userName": "E2E Test User",
+      "paymentId": "pay_0NYdJLlNppSPXY9G34UqX",
+      "timestamp": 1771259409351
     }
   },
   "pending": {
-    "70288de8-b892-4403-ab4a-0a8ab5517474:creator:monthly": {
-      "userId": "70288de8-b892-4403-ab4a-0a8ab5517474",
-      "plan": "creator",
+    "7faadd1e-ab2f-4932-b27b-b2ac14b3f136:professional:monthly": {
+      "userId": "7faadd1e-ab2f-4932-b27b-b2ac14b3f136",
+      "plan": "professional",
       "billingPeriod": "monthly",
-      "userEmail": "rishaby304@gmail.com",
-      "userName": "rish",
-      "timestamp": 1771190444352
+      "userEmail": "test_e2e_payment_feb16_2133@example.com",
+      "userName": "E2E Test User",
+      "timestamp": 1771259409351
     },
-    "1467655d-8e5f-4fd1-b872-c35c501aca15:creator:monthly": {
-      "userId": "1467655d-8e5f-4fd1-b872-c35c501aca15",
-      "plan": "creator",
+    "7faadd1e-ab2f-4932-b27b-b2ac14b3f136:basic:monthly": {
+      "userId": "7faadd1e-ab2f-4932-b27b-b2ac14b3f136",
+      "plan": "basic",
       "billingPeriod": "monthly",
-      "userEmail": "test_billing_04@example.com",
-      "userName": "Billing Test 04",
-      "timestamp": 1771243116297
+      "userEmail": "test_e2e_payment_feb16_2133@example.com",
+      "userName": "E2E Test User",
+      "timestamp": 1771259052066
     }
   },
-  "updated": 1771243116297
+  "updated": 1771262226707
 }

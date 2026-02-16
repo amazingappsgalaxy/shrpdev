@@ -41,7 +41,7 @@ export default function MinimalUsageSection({ className }: MinimalUsageSectionPr
 
       // Get current balance
       const balance = await UnifiedCreditsService.getUserCredits(user.id)
-      setCurrentBalance(balance.remaining)
+      setCurrentBalance(balance.total || 0)
 
       // Get credit transactions
       const creditHistory = await UnifiedCreditsService.getCreditHistory(user.id, 50)
@@ -59,7 +59,7 @@ export default function MinimalUsageSection({ className }: MinimalUsageSectionPr
       allTransactions.sort((a, b) => b.timestamp - a.timestamp)
 
       // Calculate running balance (working backwards from current balance)
-      let runningBalance = balance.remaining
+      let runningBalance = balance.total || 0
       for (let i = 0; i < allTransactions.length; i++) {
         const transaction = allTransactions[i]
         if (!transaction) continue
@@ -150,11 +150,10 @@ export default function MinimalUsageSection({ className }: MinimalUsageSectionPr
                   className="flex items-center justify-between p-3 rounded-lg border hover:bg-slate-50 transition-colors"
                 >
                   <div className="flex items-center space-x-3 flex-1 min-w-0">
-                    <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                      transaction.type === 'credit'
+                    <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${transaction.type === 'credit'
                         ? 'bg-green-100 text-green-600'
                         : 'bg-red-100 text-red-600'
-                    }`}>
+                      }`}>
                       {transaction.type === 'credit' ? (
                         <Plus className="w-4 h-4" />
                       ) : (
@@ -171,9 +170,8 @@ export default function MinimalUsageSection({ className }: MinimalUsageSectionPr
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0 ml-4">
-                    <div className={`text-sm font-semibold ${
-                      transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'
-                    }`}>
+                    <div className={`text-sm font-semibold ${transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'
+                      }`}>
                       {transaction.type === 'credit' ? '+' : '-'}{transaction.amount.toLocaleString()}
                     </div>
                     <div className="text-xs text-slate-500">

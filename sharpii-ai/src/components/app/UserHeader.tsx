@@ -50,7 +50,7 @@ export function UserHeader({ className }: UserHeaderProps) {
                 try {
                     setCreditsLoading(true)
                     const balance = await UnifiedCreditsService.getUserCredits(currentUser.id)
-                    setCredits(balance.remaining)
+                    setCredits(balance.total || 0)
                 } catch (error) {
                     console.error('Error fetching credits:', error)
                     setCredits(0)

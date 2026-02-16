@@ -45,7 +45,7 @@ const normalizeOutputs = (value: unknown): EnhancementOutputItem[] => {
 export async function POST(request: NextRequest) {
   let taskId: string | null = null;
   let historySettings: any = null;
-  
+
   // Initialize Supabase client
   const supabase = createClient(
     config.database.supabaseUrl,
@@ -355,7 +355,7 @@ export async function POST(request: NextRequest) {
     // Check user credit balance before enhancement
     const creditBalance = await UnifiedCreditsService.getUserCredits(authenticatedUserId)
     const userCreditBalance = creditBalance.remaining
-    
+
     if (userCreditBalance < estimatedCredits && estimatedCredits > 0) {
       console.log('❌ API: Insufficient credits for enhancement:', {
         userId: authenticatedUserId,
@@ -363,7 +363,7 @@ export async function POST(request: NextRequest) {
         available: userCreditBalance,
         taskId
       })
-      
+
       // Update task status to failed due to insufficient credits
       await supabase
         .from('history_items')
@@ -381,9 +381,9 @@ export async function POST(request: NextRequest) {
           }
         })
         .eq('id', taskId)
-      
+
       return NextResponse.json(
-        { 
+        {
           error: 'Insufficient credits',
           required: estimatedCredits,
           available: userCreditBalance,
@@ -564,7 +564,7 @@ export async function POST(request: NextRequest) {
               newBalance: (await UnifiedCreditsService.getUserCredits(authenticatedUserId)).remaining
             })
           } else {
-             throw new Error('Credit deduction returned false')
+            throw new Error('Credit deduction returned false')
           }
 
         } catch (creditError) {

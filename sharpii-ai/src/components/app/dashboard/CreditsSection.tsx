@@ -1,485 +1,224 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { useAuth, useSession } from '@/lib/auth-client-simple'
-import { UnifiedCreditsService } from '@/lib/unified-credits'
-import { Clock, AlertCircle, Loader2, Calendar, Star } from 'lucide-react'
-import { toast } from 'sonner'
-import { formatDistanceToNow } from 'date-fns'
+import React, { useState, useEffect } from 'react'
+import { useAuth } from '@/lib/auth-client-simple'
+import { Coins, Crown, TrendingUp, Calendar } from 'lucide-react'
+import { motion } from 'framer-motion'
 
-// Safe date formatter with caching
-const dateFormatCache = new Map<number, string>()
-const safeFormatDistance = (date: Date | number) => {
-  try {
-    if (!date) return 'Unknown time'
+export default function CreditsSection() {
+    const { user } = useAuth()
+    const [credits, setCredits] = useState({
+        total: 0,
+        subscription_credits: 0,
+        permanent_credits: 0,
+        subscription_expire_at: null as Date | null
+    })
+    const [subscription, setSubscription] = useState({
+        has_active_subscription: false,
+        current_plan: 'free',
+        subscription: null as any
+    })
+    const [loading, setLoading] = useState(true)
 
-    const timestamp = typeof date === 'number' ? date : date.getTime()
-    if (isNaN(timestamp)) return 'Unknown time'
+    useEffect(() => {
+        if (!user?.id) return
 
-    if (dateFormatCache.has(timestamp)) {
-      return dateFormatCache.get(timestamp)!
-    }
+        const fetchData = async () => {
+            try {
+                // Fetch credits
+                const creditsRes = await fetch('/api/credits/balance', {
+                    credentials: 'include'
+                })
+                if (creditsRes.ok) {
+                    const data = await creditsRes.json()
+                    setCredits(data.balance)
+                }
 
-    const dateObj = new Date(timestamp)
-    const formatted = formatDistanceToNow(dateObj, { addSuffix: true })
-
-    if (dateFormatCache.size > 100) {
-      const firstKey = dateFormatCache.keys().next().value
-      if (firstKey !== undefined) {
-        dateFormatCache.delete(firstKey)
-      }
-    }
-    dateFormatCache.set(timestamp, formatted)
-
-    return formatted
-  } catch (error) {
-    console.warn('Date formatting error:', error)
-    return 'Unknown time'
-  }
-}
-
-interface CreditsSectionProps {
-  className?: string
-}
-
-interface CreditPackage {
-  credits: number
-  price: number
-  currency: string
-  description: string
-  productId: string
-  bonus?: number
-}
-
-interface CreditPackages {
-  starter: CreditPackage
-  popular: CreditPackage
-  premium: CreditPackage
-  ultimate: CreditPackage
-  pro: CreditPackage
-  enterprise: CreditPackage
-}
-
-// Add caching for better performance
-const creditDataCache = new Map<string, { data: any; timestamp: number }>()
-const CACHE_DURATION = 30000 // 30 seconds
-
-export default function CreditsSection({ className }: CreditsSectionProps) {
-  const { user } = useAuth()
-  const { data } = useSession()
-  const [creditBalance, setCreditBalance] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [packages, setPackages] = useState<CreditPackages | null>(null)
-  const [purchasingPackage, setPurchasingPackage] = useState<string | null>(null)
-  const [actualCredits, setActualCredits] = useState(0)
-
-  // Fetch actual credits using the same method as UserHeader
-  useEffect(() => {
-    const fetchActualCredits = async () => {
-      if (user?.id) {
-        try {
-          const balance = await UnifiedCreditsService.getUserCredits(user.id)
-          setActualCredits(balance.remaining)
-        } catch (error) {
-          console.error('Error fetching actual credits:', error)
-          setActualCredits(53118) // Fallback to the value shown in dropdown
-        }
-      }
-    }
-
-    fetchActualCredits()
-    // Refresh credits every 30 seconds to match UserHeader
-    const interval = setInterval(fetchActualCredits, 30000)
-    return () => clearInterval(interval)
-  }, [user?.id])
-
-  const loadCreditData = useCallback(async () => {
-    if (!user?.id) return
-
-    try {
-      setIsLoading(true)
-      
-      // Check cache first
-      const cacheKey = `credits_${user.id}`
-      const cached = creditDataCache.get(cacheKey)
-      const now = Date.now()
-      
-      if (cached && (now - cached.timestamp) < CACHE_DURATION) {
-        setCreditBalance(cached.data.balance)
-        setPackages(cached.data.packages)
-        setIsLoading(false)
-        return
-      }
-      
-      // Load credit balance and packages data
-      const [balanceResponse, packagesResponse] = await Promise.all([
-        fetch('/api/credits/balance', {
-          method: 'GET',
-          credentials: 'include',
-        }),
-        fetch('/api/credits/purchase', {
-          method: 'GET',
-          credentials: 'include',
-        })
-      ])
-
-      let balance = null
-      if (balanceResponse.ok) {
-        const balanceData = await balanceResponse.json()
-        balance = {
-          totalCredits: balanceData.remaining || 0,
-          remaining: balanceData.remaining || 0,
-          subscriptionCredits: balanceData.subscriptionCredits || 0,
-          permanentCredits: balanceData.permanentCredits || 0,
-          expiringCredits: balanceData.subscriptionCredits || 0,
-          breakdown: balanceData.breakdown || {
-            expiring: [],
-            permanent: 0
-          }
-        }
-      } else {
-        // Fallback to zero balance for new users
-        balance = {
-          totalCredits: 0,
-          remaining: 0,
-          subscriptionCredits: 0,
-          permanentCredits: 0,
-          expiringCredits: 0,
-          breakdown: {
-            expiring: [],
-            permanent: 0
-          }
-        }
-      }
-      
-      setCreditBalance(balance)
-      
-      if (packagesResponse.ok) {
-        const packagesData = await packagesResponse.json()
-        // Extend packages to include 6 options with better structure
-        const extendedPackages = {
-          starter: packagesData.packages?.starter || {
-            credits: 100,
-            price: 9.99,
-            currency: 'USD',
-            description: 'Perfect for getting started',
-            productId: 'starter_package'
-          },
-          popular: packagesData.packages?.popular || {
-            credits: 500,
-            price: 29.99,
-            currency: 'USD',
-            description: 'Most popular choice',
-            productId: 'popular_package',
-            bonus: 100
-          },
-          premium: packagesData.packages?.premium || {
-            credits: 1000,
-            price: 49.99,
-            currency: 'USD',
-            description: 'For power users',
-            productId: 'premium_package',
-            bonus: 200
-          },
-          ultimate: packagesData.packages?.ultimate || {
-            credits: 2000,
-            price: 79.99,
-            currency: 'USD',
-            description: 'Maximum value',
-            productId: 'ultimate_package',
-            bonus: 400
-          },
-          pro: {
-            credits: 2500,
-            price: 99.99,
-            currency: 'USD',
-            description: 'For professional creators',
-            productId: 'pro_package',
-            bonus: 500
-          },
-          enterprise: {
-            credits: 5000,
-            price: 149.99,
-            currency: 'USD',
-            description: 'For teams and agencies',
-            productId: 'enterprise_package',
-            bonus: 1000
-          }
-        }
-        setPackages(extendedPackages)
-        
-        // Cache the results
-        creditDataCache.set(cacheKey, {
-          data: { balance, packages: extendedPackages },
-          timestamp: now
-        })
-      }
-    } catch (error) {
-      console.error('Error loading credit data:', error)
-      // Set fallback data to prevent blank screen
-      setCreditBalance({
-        totalCredits: 1250,
-        remaining: 1250,
-        expiringCredits: 500,
-        permanentCredits: 750,
-        breakdown: {
-          expiring: [
-            {
-              amount: 500,
-              expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                // Fetch subscription
+                const subRes = await fetch('/api/user/subscription', {
+                    credentials: 'include'
+                })
+                if (subRes.ok) {
+                    const data = await subRes.json()
+                    setSubscription({
+                        has_active_subscription: data.has_active_subscription,
+                        current_plan: data.current_plan,
+                        subscription: data.subscription
+                    })
+                }
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error)
+            } finally {
+                setLoading(false)
             }
-          ],
-          permanent: 750
         }
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }, [user?.id])
 
-  useEffect(() => {
-    loadCreditData()
-  }, [user?.id, loadCreditData])
+        fetchData()
+    }, [user?.id])
 
-  const buildAuthHeaders = () => {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (data?.session?.token) {
-      headers['Authorization'] = `Bearer ${data.session.token}`
-    }
-    return headers
-  }
-
-  const handlePurchasePackage = async (packageType: string) => {
-    if (!user) {
-      toast.error('Please login to purchase credits')
-      return
-    }
-    
-    setPurchasingPackage(packageType)
-    
-    try {
-      const response = await fetch('/api/credits/purchase', {
-        method: 'POST',
-        headers: buildAuthHeaders(),
-        credentials: 'include',
-        body: JSON.stringify({ packageType })
-      })
-      
-      if (response.status === 401) {
-        toast.error('Your session has expired. Please login again.')
-        return
-      }
-      
-      const data = await response.json().catch(() => null)
-      
-      if (response.ok && data?.checkoutUrl) {
-        toast.success('Redirecting to payment...')
-        window.location.href = data.checkoutUrl
-      } else {
-        const message = data?.error || 'Failed to create payment'
-        toast.error(message)
-      }
-    } catch (error) {
-      console.error('Purchase error:', error)
-      toast.error('Something went wrong. Please try again.')
-    } finally {
-      setPurchasingPackage(null)
-    }
-  }
-
-  if (isLoading) {
-    return (
-      <div className={`${className}`}>
-        <div className="animate-pulse space-y-4">
-          <div className="h-24 bg-white/5 rounded-lg"></div>
-          <div className="h-32 bg-white/5 rounded-lg"></div>
-        </div>
-      </div>
-    )
-  }
-
-  if (!creditBalance) {
-    return (
-      <div className={`${className}`}>
-        <div className="text-center py-8">
-          <p className="text-white/60">Unable to load credit information</p>
-          <Button 
-            onClick={loadCreditData}
-            variant="outline" 
-            className="mt-4 bg-white/5 border-white/10 text-white hover:bg-white/10"
-          >
-            Retry
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className={`space-y-4 ${className || ''}`}>
-      {/* Credits Balance Section - Dark Theme & Compact */}
-      <div className="bg-[#0a0a0a] border border-[#1c1c1e] rounded-lg p-4">
-        <div className="mb-3">
-          <h3 className="text-base font-medium text-white">Credits Available</h3>
-          <p className="text-xs text-white/60">Your current balance</p>
-        </div>
-
-        {isLoading ? (
-          <div className="flex items-center justify-center py-6">
-            <Loader2 className="h-5 w-5 animate-spin text-white/60" />
-          </div>
-        ) : creditBalance ? (
-          <div className="space-y-3">
-            <div className="text-center py-3">
-              <div className="text-2xl font-bold text-white">
-                {actualCredits > 0 ? actualCredits.toLocaleString() : (creditBalance.remaining || creditBalance.totalCredits || 1250).toLocaleString()}
-              </div>
-              <div className="text-xs text-white/60 mt-0.5">Total Credits</div>
+    if (loading) {
+        return (
+            <div className="space-y-6">
+                <div className="h-48 bg-white/5 rounded-2xl animate-pulse" />
+                <div className="h-64 bg-white/5 rounded-2xl animate-pulse" />
             </div>
+        )
+    }
 
-            {/* Credit Breakdown - Compact */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white/5 rounded-lg p-3">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <Calendar className="h-3 w-3 text-blue-400" />
-                  <span className="text-xs font-medium text-white/80">Subscription Credits</span>
-                </div>
-                <div className="text-lg font-semibold text-white">
-                  {(creditBalance.subscriptionCredits || 0).toLocaleString()}
-                </div>
-                {/* Show expiration date for subscription credits */}
-                {creditBalance.breakdown?.expiring?.length > 0 && (
-                  <div className="text-xs text-white/50 mt-1">
-                    Expires: {new Date(creditBalance.breakdown.expiring[0].expires_at).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}
-                  </div>
-                )}
-                {creditBalance.subscriptionCredits === 0 && (
-                  <div className="text-xs text-white/50 mt-1">
-                    No active subscription
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-white/5 rounded-lg p-3">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <Star className="h-3 w-3 text-yellow-400" />
-                  <span className="text-xs font-medium text-white/80">Permanent Credits</span>
-                </div>
-                <div className="text-lg font-semibold text-white">
-                  {(creditBalance.permanentCredits || 0).toLocaleString()}
-                </div>
-                <div className="text-xs text-white/50 mt-1">
-                  No expiration
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="text-center py-6">
-            <AlertCircle className="h-6 w-6 text-white/40 mx-auto mb-2" />
-            <p className="text-white/60 text-sm">Unable to load credit balance</p>
-          </div>
-        )}
-      </div>
-
-      {/* Purchase Credits Section - 6 Packages & Compact */}
-      <div id="purchase-section" className="space-y-3">
-        <div className="mb-3">
-          <h3 className="text-base font-medium text-white">Purchase Credits</h3>
-          <p className="text-sm text-white/60 mt-1">Choose the perfect plan for your needs</p>
-        </div>
-
-        {packages ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {Object.entries(packages as CreditPackages).map(([packageType, pkg]) => {
-              const isPurchasing = purchasingPackage === packageType
-              const isPopular = packageType === 'popular'
-              
-              return (
-                <Card 
-                  key={packageType} 
-                  className={`relative bg-[#0a0a0a] border-[#1c1c1e] rounded-lg transition-all duration-200 hover:border-white/20 ${
-                    isPopular ? 'border-blue-500/50' : ''
-                  }`}
-                >
-                  {isPopular && (
-                    <div className="absolute -top-2.5 left-1/2 transform -translate-x-1/2">
-                      <div className="bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-xs font-medium">
-                        Most Popular
-                      </div>
+    return (
+        <div className="space-y-6">
+            {/* Credits Display */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="relative overflow-hidden bg-gradient-to-br from-white/10 to-white/5 rounded-2xl border border-white/10 p-8"
+            >
+                <div className="relative z-10">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-3 bg-[#FFFF00]/10 rounded-xl">
+                            <Coins className="w-6 h-6 text-[#FFFF00]" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-white">Total Credits</h2>
                     </div>
-                  )}
-                  
-                  <CardContent className="p-4">
-                    <div className="text-center space-y-3">
-                      <div>
-                        <h4 className="text-base font-medium text-white capitalize mb-1">
-                          {packageType}
-                        </h4>
-                        <div className="text-xl font-bold text-white">
-                          ${pkg.price}
-                        </div>
-                        <div className="text-xs text-white/60 mt-0.5">
-                          {pkg.credits.toLocaleString()} credits
-                          {pkg.bonus && (
-                            <span className="text-green-400"> + {pkg.bonus.toLocaleString()} bonus</span>
-                          )}
-                        </div>
-                      </div>
 
-                      <div className="text-xs text-white/50 px-1">
-                        {pkg.description}
-                      </div>
+                    <div className="mb-6">
+                        <div className="text-6xl font-bold text-white mb-2">
+                            {credits.total.toLocaleString()}
+                        </div>
+                        <p className="text-white/50">Available credits</p>
+                    </div>
 
-                      <Button
-                        onClick={() => handlePurchasePackage(packageType)}
-                        disabled={isPurchasing}
-                        className={`w-full rounded-lg font-medium transition-all duration-200 text-sm py-2 ${
-                          isPopular 
-                            ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                            : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
-                        }`}
-                      >
-                        {isPurchasing ? (
-                          <>
-                            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                            Processing...
-                          </>
-                        ) : (
-                          'Buy Now'
+                    {/* Breakdown */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm text-white/60">Subscription Credits</span>
+                                <TrendingUp className="w-4 h-4 text-[#FFFF00]" />
+                            </div>
+                            <div className="text-2xl font-bold text-white">
+                                {credits.subscription_credits.toLocaleString()}
+                            </div>
+                            {credits.subscription_expire_at && (
+                                <div className="flex items-center gap-1 mt-2 text-xs text-white/40">
+                                    <Calendar className="w-3 h-3" />
+                                    Expires {new Date(credits.subscription_expire_at).toLocaleDateString()}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm text-white/60">Permanent Credits</span>
+                                <Coins className="w-4 h-4 text-green-400" />
+                            </div>
+                            <div className="text-2xl font-bold text-white">
+                                {credits.permanent_credits.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-white/40 mt-2">
+                                Never expires
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
+
+            {/* Current Plan */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white/5 rounded-2xl border border-white/10 p-8"
+            >
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="p-3 bg-[#FFFF00]/10 rounded-xl">
+                        <Crown className="w-6 h-6 text-[#FFFF00]" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-white">Current Plan</h2>
+                </div>
+
+                {subscription.has_active_subscription ? (
+                    <div className="space-y-4">
+                        <div>
+                            <div className="text-3xl font-bold text-white capitalize mb-2">
+                                {subscription.current_plan}
+                            </div>
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-500/10 text-green-400 rounded-full text-sm">
+                                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                                Active
+                            </div>
+                        </div>
+
+                        {subscription.subscription?.next_billing_date && (
+                            <div className="text-white/60">
+                                Renews on {new Date(subscription.subscription.next_billing_date).toLocaleDateString()}
+                            </div>
                         )}
-                      </Button>
+
+                        <button className="px-6 py-3 bg-[#FFFF00] hover:bg-[#c9c900] text-black font-bold rounded-lg transition-colors">
+                            Upgrade Plan
+                        </button>
                     </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Card key={i} className="bg-[#0a0a0a] border-[#1c1c1e] rounded-lg">
-                <CardContent className="p-4">
-                  <div className="animate-pulse space-y-3">
-                    <div className="space-y-1.5">
-                      <div className="h-3.5 bg-white/10 rounded w-16 mx-auto"></div>
-                      <div className="h-5 bg-white/10 rounded w-12 mx-auto"></div>
-                      <div className="h-3 bg-white/10 rounded w-20 mx-auto"></div>
+                ) : (
+                    <div className="space-y-4">
+                        <div className="text-xl text-white/60 mb-4">
+                            No Active Plan
+                        </div>
+                        <p className="text-white/40 mb-6">
+                            Subscribe to unlock premium features and get monthly credits.
+                        </p>
+                        <button className="px-6 py-3 bg-[#FFFF00] hover:bg-[#c9c900] text-black font-bold rounded-lg transition-colors">
+                            View Plans
+                        </button>
                     </div>
-                    <div className="h-8 bg-white/10 rounded-lg"></div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
+                )}
+            </motion.div>
+
+            {/* Top-Up Section */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-white/5 rounded-2xl border border-white/10 p-8"
+            >
+                <h2 className="text-2xl font-bold text-white mb-6">Top-Up Permanent Credits</h2>
+
+                {subscription.has_active_subscription ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {[
+                            { credits: 500, price: 5 },
+                            { credits: 1000, price: 9 },
+                            { credits: 2500, price: 20 },
+                            { credits: 5000, price: 35 }
+                        ].map((pkg) => (
+                            <button
+                                key={pkg.credits}
+                                className="p-6 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#FFFF00]/50 rounded-xl transition-all group"
+                            >
+                                <div className="text-2xl font-bold text-white mb-2">
+                                    {pkg.credits.toLocaleString()}
+                                </div>
+                                <div className="text-white/60 mb-4">credits</div>
+                                <div className="text-[#FFFF00] font-bold text-xl">
+                                    ${pkg.price}
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
+                        <div className="text-4xl mb-4">🔒</div>
+                        <div className="text-xl font-bold text-white mb-2">
+                            Top-Up Credits Locked
+                        </div>
+                        <p className="text-white/60 mb-6 max-w-md mx-auto">
+                            Subscribe to any plan to unlock the ability to purchase permanent credits.
+                        </p>
+                        <button className="px-6 py-3 bg-[#FFFF00] hover:bg-[#c9c900] text-black font-bold rounded-lg transition-colors">
+                            View Plans
+                        </button>
+                    </div>
+                )}
+            </motion.div>
+        </div>
+    )
 }

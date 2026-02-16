@@ -6,9 +6,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth-client-simple'
 import { UnifiedCreditsService } from '@/lib/unified-credits'
-import { 
-  TrendingUp, 
-  TrendingDown, 
+import {
+  TrendingUp,
+  TrendingDown,
   Calendar,
   CreditCard,
   Activity,
@@ -47,7 +47,7 @@ export default function UsageSection({ className }: UsageSectionProps) {
 
       // Use unified credit service
       const balance = await UnifiedCreditsService.getUserCredits(user.id)
-      setCreditBalance(balance.remaining)
+      setCreditBalance(balance.total || 0)
 
       const history = await UnifiedCreditsService.getCreditHistory(user.id, 20)
       const mappedHistory: CreditTransaction[] = history.map((item) => ({
@@ -156,7 +156,7 @@ export default function UsageSection({ className }: UsageSectionProps) {
             <h3 className="text-sm font-medium text-slate-900">All Credits & Debits</h3>
             <Badge variant="secondary">{creditHistory.length} transactions</Badge>
           </div>
-          
+
           {creditHistory.length === 0 ? (
             <div className="text-center py-8">
               <Activity className="w-12 h-12 text-slate-300 mx-auto mb-4" />
@@ -177,8 +177,8 @@ export default function UsageSection({ className }: UsageSectionProps) {
                         {transaction.description}
                       </p>
                       <div className="flex items-center space-x-2 mt-1">
-                        <Badge 
-                          variant="outline" 
+                        <Badge
+                          variant="outline"
                           className="text-xs"
                         >
                           {transaction.reason.replace('_', ' ')}

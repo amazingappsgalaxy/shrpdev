@@ -62,9 +62,9 @@ export async function GET(request: NextRequest) {
       },
       credits: {
         total: balance.total,
-        used: balance.used,
-        remaining: balance.remaining,
-        expires_at: balance.expires_at
+        subscription_credits: balance.subscription_credits,
+        permanent_credits: balance.permanent_credits,
+        subscription_expire_at: balance.subscription_expire_at
       }
     })
 
