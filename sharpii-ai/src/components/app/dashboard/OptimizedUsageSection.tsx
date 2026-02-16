@@ -87,11 +87,15 @@ export default function OptimizedUsageSection({ className }: OptimizedUsageSecti
 
       let recentTransactions: Transaction[] = []
 
-      // Process history data
+      let historyData = null
       if (historyResponse && historyResponse.ok) {
-        const historyData = await historyResponse.json()
+        historyData = await historyResponse.json()
+      }
+
+      // Process history data
+      if (historyData) {
         const history = historyData.history || []
-        
+
         recentTransactions = history.map((item: any) => ({
           id: item.id,
           type: item.type,
@@ -101,8 +105,6 @@ export default function OptimizedUsageSection({ className }: OptimizedUsageSecti
           balanceAfter: item.balance_after || 0
         }))
       }
-
-
 
       // Process credits data
       if (creditsResponse && creditsResponse.ok) {
@@ -146,8 +148,8 @@ export default function OptimizedUsageSection({ className }: OptimizedUsageSecti
       }
 
       // Process credit history data (additions and deductions)
-      if (historyResponse && historyResponse.ok) {
-        const historyData = await historyResponse.json()
+      // Since we already parsed historyData, reuse it
+      if (historyData) {
         if (historyData.history) {
           const creditTransactions = historyData.history.map((h: any) => ({
             id: h.id,

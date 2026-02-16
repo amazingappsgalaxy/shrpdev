@@ -37,23 +37,33 @@ export class CreditsService {
       .gt('expires_at', new Date().toISOString())
 
     if (creditsError) {
-      console.error('Error fetching user credits:', creditsError)
-      throw new Error('Failed to fetch credits')
+      console.error('Error fetching user credits:', JSON.stringify(creditsError, null, 2))
+      // DO NOT THROW, return 0 instead
+      // throw new Error('Failed to fetch credits')
     }
 
     // Get total used credits from transactions
-    const { data: transactions, error: transError } = await client
-      .from('credit_transactions')
-      .select('amount')
-      .eq('user_id', userId)
-      .eq('type', 'debit')
+    let transactions: any[] = []
+    try {
+      const { data, error: transError } = await client
+        .from('credit_transactions')
+        .select('amount')
+        .eq('user_id', userId)
+        .eq('type', 'debit')
 
-    if (transError) {
-      console.error('Error fetching credit transactions:', transError)
-      throw new Error('Failed to fetch credit usage')
+      if (transError) {
+        console.error('Error fetching credit transactions:', JSON.stringify(transError, null, 2))
+        // Default to empty transactions
+        transactions = []
+      } else {
+        transactions = data || []
+      }
+    } catch (e) {
+      console.error('Exception fetching credit transactions:', e)
+      transactions = []
     }
 
-    const totalCredits = credits?.reduce((sum: number, credit: { amount: number }) => sum + credit.amount, 0) || 0
+    const totalCredits = (credits || [])?.reduce((sum: number, credit: { amount: number }) => sum + credit.amount, 0) || 0
     const usedCredits = Math.abs(transactions?.reduce((sum: number, trans: { amount: number }) => sum + trans.amount, 0) || 0)
     const remainingCredits = Math.max(0, totalCredits - usedCredits)
 

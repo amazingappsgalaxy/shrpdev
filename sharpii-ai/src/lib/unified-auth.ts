@@ -38,7 +38,7 @@ export const auth: { api: AuthAPI } = {
       // Return a mock session for development
       return {
         user: {
-          id: 'mock-user-id',
+          id: '00000000-0000-0000-0000-000000000000',
           email: 'test@example.com',
           name: 'Test User'
         },
