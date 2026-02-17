@@ -148,7 +148,21 @@ async function handleSubscriptionActive(subscription: any) {
     const plan = subscription.metadata?.plan || subscription.plan || 'creator'
     const billingPeriod = subscription.metadata?.billingPeriod || subscription.billing_period || 'monthly'
     const subscriptionId = subscription.subscription_id || subscription.id
-    const paymentId = subscription.latest_payment_id || subscription.payment_id || `sub-${subscriptionId}`
+    // Generate a deterministic transaction ID based on the period end date
+    // This allows identifying duplicate events (e.g. Active + Renewed firing together for the same period)
+    const periodEnd = subscription.next_billing_date || subscription.current_period_end
+    let paymentId = subscription.latest_payment_id || subscription.payment_id
+
+    if (periodEnd) {
+      // Create a unique ID for this billing period
+      // Format: sub_period_{subscriptionId}_{periodEnd}
+      const dateStr = new Date(periodEnd).toISOString().split('T')[0]
+      paymentId = `sub_period_${subscriptionId}_${dateStr}`
+    } else {
+      paymentId = paymentId || `sub-${subscriptionId}`
+    }
+
+    console.log(`🔍 [Active] Processing Transaction ID: ${paymentId}`)
 
     if (!userId) {
       console.error('❌ No userId found in subscription metadata')
@@ -205,13 +219,25 @@ async function handleSubscriptionRenewed(subscription: any) {
     const plan = subscription.metadata?.plan || subscription.plan || 'creator'
     const billingPeriod = subscription.metadata?.billingPeriod || subscription.billing_period || 'monthly'
     const subscriptionId = subscription.subscription_id || subscription.id
-    const paymentId = subscription.latest_payment_id || subscription.payment_id || `renewal-${subscriptionId}-${Date.now()}`
+    // Generate a deterministic transaction ID based on the period end date
+    // This allows identifying duplicate events (e.g. Active + Renewed firing together for the same period)
+    const periodEnd = subscription.next_billing_date || subscription.current_period_end
+    let paymentId = subscription.latest_payment_id || subscription.payment_id
 
-    if (!userId) {
-      console.error('❌ No userId found in subscription metadata')
-      return
+    if (periodEnd) {
+      // Create a unique ID for this billing period
+      // Format: sub_period_{subscriptionId}_{periodEnd}
+      // This ensures both "Active" and "Renewed" events for the same period generate the same ID
+      const dateStr = new Date(periodEnd).toISOString().split('T')[0]
+      paymentId = `sub_period_${subscriptionId}_${dateStr}`
+    } else {
+      // Fallback if no date available
+      paymentId = paymentId || `renewal-${subscriptionId}-${Date.now()}`
     }
 
+    console.log(`🔍 [Renewed] Processing Transaction ID: ${paymentId}`)
+
+    // Also use this ID for the user's reference in logs
     console.log(`👤 User: ${userId}, Plan: ${plan}, Period: ${billingPeriod}`)
 
     // Update subscription in database

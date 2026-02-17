@@ -323,6 +323,60 @@
       "userName": "E2E Test User",
       "paymentId": "pay_0NYdJLlNppSPXY9G34UqX",
       "timestamp": 1771259409351
+    },
+    "sub_0NYh54qInHKGRvqcAwssP": {
+      "userId": "04636b0b-e4b3-4b0c-8154-226894a12cfb",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_billing137@example.com",
+      "userName": "test_billing137@example.com",
+      "paymentId": "pay_0NYh54qF0tGL8tnJLxAyc",
+      "timestamp": 1771333143109
+    },
+    "pay_0NYh54qF0tGL8tnJLxAyc": {
+      "userId": "04636b0b-e4b3-4b0c-8154-226894a12cfb",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_billing137@example.com",
+      "userName": "test_billing137@example.com",
+      "paymentId": "pay_0NYh54qF0tGL8tnJLxAyc",
+      "timestamp": 1771333143109
+    },
+    "sub_0NYh81dudGGUgCZ7LcyFw": {
+      "userId": "25f3350f-83bd-403e-9f67-28fe6e5a90c9",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_billing138@example.com",
+      "userName": "test_billing138@example.com",
+      "paymentId": "pay_0NYh81dqpxOQbvx8YIKmT",
+      "timestamp": 1771334073236
+    },
+    "pay_0NYh81dqpxOQbvx8YIKmT": {
+      "userId": "25f3350f-83bd-403e-9f67-28fe6e5a90c9",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_billing138@example.com",
+      "userName": "test_billing138@example.com",
+      "paymentId": "pay_0NYh81dqpxOQbvx8YIKmT",
+      "timestamp": 1771334073236
+    },
+    "sub_0NYh9C6MtxydymKerXBpz": {
+      "userId": "a88b037a-7a3b-4c80-97ee-0c70b28e9b7d",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_billing140@example.com",
+      "userName": "test_billing140@example.com",
+      "paymentId": "pay_0NYh9C6KbbmIcrbBZDphK",
+      "timestamp": 1771334441990
+    },
+    "pay_0NYh9C6KbbmIcrbBZDphK": {
+      "userId": "a88b037a-7a3b-4c80-97ee-0c70b28e9b7d",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_billing140@example.com",
+      "userName": "test_billing140@example.com",
+      "paymentId": "pay_0NYh9C6KbbmIcrbBZDphK",
+      "timestamp": 1771334441990
     }
   },
   "pending": {
@@ -341,7 +395,31 @@
       "userEmail": "test_e2e_payment_feb16_2133@example.com",
       "userName": "E2E Test User",
       "timestamp": 1771259052066
+    },
+    "04636b0b-e4b3-4b0c-8154-226894a12cfb:creator:monthly": {
+      "userId": "04636b0b-e4b3-4b0c-8154-226894a12cfb",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_billing137@example.com",
+      "userName": "test_billing137@example.com",
+      "timestamp": 1771333143109
+    },
+    "25f3350f-83bd-403e-9f67-28fe6e5a90c9:creator:monthly": {
+      "userId": "25f3350f-83bd-403e-9f67-28fe6e5a90c9",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_billing138@example.com",
+      "userName": "test_billing138@example.com",
+      "timestamp": 1771334073236
+    },
+    "a88b037a-7a3b-4c80-97ee-0c70b28e9b7d:creator:monthly": {
+      "userId": "a88b037a-7a3b-4c80-97ee-0c70b28e9b7d",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "test_billing140@example.com",
+      "userName": "test_billing140@example.com",
+      "timestamp": 1771334441990
     }
   },
-  "updated": 1771262226707
+  "updated": 1771334441991
 }
