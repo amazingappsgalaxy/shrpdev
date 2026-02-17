@@ -312,9 +312,12 @@ export function MyPricingPlans2({
         return
       }
 
+      const isDayPass = plan.name.toLowerCase().includes('day') // Robust check for "Day Pass"
+      const actualBillingPeriod = isDayPass ? 'daily' : frequency
+
       const requestBody = {
-        plan: plan.name.toLowerCase().replace(/\s+/g, '_'),
-        billingPeriod: frequency
+        plan: isDayPass ? 'day pass' : plan.name.toLowerCase().replace(/\s+/g, '_'),
+        billingPeriod: actualBillingPeriod
       }
 
       const controller = new AbortController()
@@ -342,8 +345,8 @@ export function MyPricingPlans2({
 
       if (response.status === 401) {
         const planData = {
-          plan: plan.name.toLowerCase().replace(/\s+/g, '_'),
-          billingPeriod: frequency
+          plan: requestBody.plan,
+          billingPeriod: actualBillingPeriod
         }
         localStorage.setItem('selectedPlan', JSON.stringify(planData))
         router.push('/app/login')

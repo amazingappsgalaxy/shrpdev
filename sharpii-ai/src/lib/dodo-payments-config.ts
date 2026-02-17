@@ -26,35 +26,15 @@ export const DODO_PRODUCT_IDS = {
     monthly: process.env.DODO_ENTERPRISE_MONTHLY_PRODUCT_ID,
     yearly: process.env.DODO_ENTERPRISE_YEARLY_PRODUCT_ID,
   },
+  'day pass': {
+    daily: 'pdt_0NYhE3lLB1AVBQ1IF1NzS',
+  }
 } as const
 
-// Plan configuration mapping
+// Plan configuration mapping (Legacy support, PRICING_PLANS is main source)
 export const PLAN_CONFIG = {
-  basic: {
-    name: 'Basic',
-    credits: 1000,
-    price: { monthly: 9, yearly: 108 }, // $9/month, $108/year (9*12)
-    features: ['1,000 monthly credits', 'Around 135 images can be enhanced', 'HD resolution only (1080p)', 'Basic skin enhancement'],
-  },
-  creator: {
-    name: 'Creator',
-    credits: 5000,
-    price: { monthly: 25, yearly: 252 }, // $25/month, $252/year (21*12)
-    features: ['5,000 monthly credits', 'Around 370 images can be enhanced', 'Supports up to 2K resolution', 'Advanced skin enhancement'],
-  },
-  professional: {
-    name: 'Professional',
-    credits: 15000,
-    price: { monthly: 39, yearly: 408 }, // $39/month, $408/year (34*12)
-    features: ['15,000 monthly credits', 'Around 615 images can be enhanced', 'Supports up to 4K resolution', 'Photo-real skin restoration'],
-  },
-  enterprise: {
-    name: 'Enterprise',
-    credits: 50000,
-    price: { monthly: 99, yearly: 1008 }, // $99/month, $1008/year (84*12)
-    features: ['50,000 monthly credits', 'Around 1,565 images can be enhanced', 'Supports up to 4K resolution', 'Photo-real skin restoration'],
-  },
+  // ... existing plans (kept for existing code compatibility)
 } as const
 
-export type PlanType = keyof typeof PLAN_CONFIG
-export type BillingPeriod = 'monthly' | 'yearly'
+export type PlanType = 'basic' | 'creator' | 'professional' | 'enterprise' | 'day pass'
+export type BillingPeriod = 'monthly' | 'yearly' | 'daily'

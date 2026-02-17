@@ -61,8 +61,8 @@ export const PRICING_PLANS: PricingPlan[] = [
   {
     name: "Creator",
     subtitle: "Creators & small teams",
-    price: { 
-      monthly: 25, 
+    price: {
+      monthly: 25,
       yearly: 252 // $252/year as specified
     },
     description: "Advanced features for content creators and small teams",
@@ -98,8 +98,8 @@ export const PRICING_PLANS: PricingPlan[] = [
   {
     name: "Professional",
     subtitle: "Studios & power users",
-    price: { 
-      monthly: 39, 
+    price: {
+      monthly: 39,
       yearly: 34 * 12 // $34/month if yearly = $408/year
     },
     description: "Professional-grade features for studios and power users",
@@ -135,8 +135,8 @@ export const PRICING_PLANS: PricingPlan[] = [
   {
     name: "Enterprise",
     subtitle: "Large teams & agencies",
-    price: { 
-      monthly: 99, 
+    price: {
+      monthly: 99,
       yearly: 84 * 12 // $84/month if yearly = $1008/year
     },
     description: "Enterprise-grade solution for large teams and agencies",
@@ -168,6 +168,33 @@ export const PRICING_PLANS: PricingPlan[] = [
     icon: Building2,
     highlight: false,
     badge: "Enterprise"
+  },
+  {
+    name: "Day Pass",
+    subtitle: "24-hour access for testing",
+    price: {
+      monthly: 10, // Use monthly field but treat as daily price
+      yearly: 0
+    },
+    description: "Perfect for short-term projects and testing",
+    credits: {
+      monthly: 9900, // Credits provided for the 24h period
+      images: 82
+    },
+    resolution: "Supports up to 4K resolution",
+    skinEnhancement: "Advanced skin enhancement",
+    modes: ["Standard Mode", "Heavy Mode"],
+    processing: "Priority processing",
+    features: [
+      "9,900 credits for 24 hours",
+      "Credits expire after 24 hours",
+      "Appropriate for rapid testing",
+      "Same features as Creator plan",
+      "Auto-renews daily (for testing)"
+    ],
+    icon: Zap,
+    highlight: false,
+    badge: "Test"
   }
 ]
 
@@ -177,7 +204,8 @@ export const PRICING_CONFIG = {
   currency: "USD",
   billingPeriods: {
     monthly: "month",
-    yearly: "year"
+    yearly: "year",
+    daily: "day"
   }
 } as const
 

@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate plan exists in PRICING_PLANS
-    const validPlans = ['basic', 'creator', 'professional', 'enterprise']
+    const validPlans = ['basic', 'creator', 'professional', 'enterprise', 'day pass']
     if (!validPlans.includes(plan.toLowerCase())) {
       return NextResponse.json(
         { error: 'Invalid plan' },
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!['monthly', 'yearly'].includes(billingPeriod)) {
+    if (!['monthly', 'yearly', 'daily'].includes(billingPeriod)) {
       return NextResponse.json(
         { error: 'Invalid billing period' },
         { status: 400 }
@@ -67,8 +67,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const amount = planConfig.price[billingPeriod as 'monthly' | 'yearly']
-    const productId = DODO_PRODUCT_IDS[plan.toLowerCase() as PlanType][billingPeriod as BillingPeriod]
+    let amount = 0
+    if (billingPeriod === 'monthly' || billingPeriod === 'yearly') {
+      amount = planConfig.price[billingPeriod]
+    } else if (billingPeriod === 'daily' && plan.toLowerCase() === 'day pass') {
+      // Manual override for day pass price if not in types properly yet
+      amount = 10
+    }
+
+    // For Day Pass, the amount is already set above to 10 manually if needed
+    // Look up the product ID
+    let productId = ''
+    try {
+      // Use any for flexible access since we validated plan and billingPeriod above
+      const productConfig = (DODO_PRODUCT_IDS as any)[plan.toLowerCase()]
+      if (productConfig) {
+        productId = productConfig[billingPeriod]
+      }
+    } catch (e) {
+      console.error('Error looking up product ID:', e)
+    }
+
     console.log('DEBUG - Plan:', plan, 'Period:', billingPeriod, 'Amount:', amount, 'Amount in cents:', amount * 100)
     console.log('🛍️ [CHECKOUT API] Using product ID:', productId)
 

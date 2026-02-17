@@ -192,7 +192,7 @@ async function handleSubscriptionActive(subscription: any) {
     const result = await CreditsService.allocateSubscriptionCredits(
       userId,
       plan,
-      billingPeriod as 'monthly' | 'yearly',
+      billingPeriod as 'monthly' | 'yearly' | 'daily',
       subscriptionId,
       paymentId
     )
@@ -249,11 +249,11 @@ async function handleSubscriptionRenewed(subscription: any) {
       }).eq('dodo_subscription_id', subscriptionId)
     }
 
-    // Allocate new credits for renewal (with idempotency built-in)
+    // Allocate credits (with idempotency built-in)
     const result = await CreditsService.allocateSubscriptionCredits(
       userId,
       plan,
-      billingPeriod as 'monthly' | 'yearly',
+      billingPeriod as 'monthly' | 'yearly' | 'daily',
       subscriptionId,
       paymentId
     )

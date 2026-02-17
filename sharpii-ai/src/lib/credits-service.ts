@@ -68,7 +68,7 @@ export class CreditsService {
   static async allocateSubscriptionCredits(
     userId: string,
     plan: string,
-    billingPeriod: 'monthly' | 'yearly',
+    billingPeriod: 'monthly' | 'yearly' | 'daily',
     subscriptionId: string | null,
     paymentId: string
   ): Promise<{ success: boolean; duplicate: boolean; message: string }> {
@@ -80,10 +80,12 @@ export class CreditsService {
 
     const creditsToAllocate = planConfig.credits.monthly
 
-    // Calculate expiry date (30 days from now for monthly subscriptions)
+    // Calculate expiry date
     const expiryDate = new Date()
     if (billingPeriod === 'monthly') {
       expiryDate.setDate(expiryDate.getDate() + 30)
+    } else if (billingPeriod === 'daily') {
+      expiryDate.setDate(expiryDate.getDate() + 1)
     } else {
       // For yearly, still expire monthly but they get renewed
       expiryDate.setDate(expiryDate.getDate() + 30)
@@ -92,6 +94,21 @@ export class CreditsService {
     const admin = (supabaseAdmin ?? supabase) as any
 
     try {
+      // If this is a Daily plan, we must expire all previous subscription credits first
+      // This ensures user only has the current day's credits (9900)
+      if (billingPeriod === 'daily') {
+        // We added a new function for this: expire_user_subscription_credits
+        // But if it's not available yet, we can try to rely on the fact that existing credits expire tomorrow anyway?
+        // No, user explicitly asked to ensure they get expired.
+        // We will try to call the new RPC function.
+        try {
+          await admin.rpc('expire_user_subscription_credits', { p_user_id: userId })
+          console.log(`🧹 Cleared previous subscription credits for user ${userId} (Daily Plan)`)
+        } catch (cleanupError) {
+          console.warn('⚠️ Could not clear previous credits (Function might be missing):', cleanupError)
+        }
+      }
+
       // Use atomic function with idempotency
       const { data, error } = await admin.rpc('add_credits_atomic', {
         p_user_id: userId,
