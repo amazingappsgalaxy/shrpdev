@@ -93,6 +93,7 @@ async function handlePaymentSucceeded(payment: any) {
 
     // Record payment in database
     if (admin) {
+      // @ts-ignore - Supabase type definitions are camelCase but DB is snake_case
       await admin.from('payments').insert({
         user_id: userId,
         dodo_payment_id: paymentId,
@@ -173,7 +174,9 @@ async function handleSubscriptionActive(subscription: any) {
 
     // Update subscription in database
     if (admin) {
-      await admin.from('subscriptions').upsert({
+      console.log('📝 Attempting to upsert subscription:', subscriptionId)
+      // @ts-ignore - Supabase type definitions are camelCase but DB is snake_case
+      const { error: upsertError } = await admin.from('subscriptions').upsert({
         user_id: userId,
         plan,
         status: 'active',
@@ -181,11 +184,26 @@ async function handleSubscriptionActive(subscription: any) {
         dodo_subscription_id: subscriptionId,
         dodo_customer_id: subscription.customer_id,
         next_billing_date: subscription.next_billing_date || subscription.current_period_end,
+        billing_name: subscription.customer?.name || subscription.metadata?.user_name,
+        billing_email: subscription.customer?.email || subscription.metadata?.user_email,
+        billing_address: subscription.billing || subscription.customer?.billing,
+        currency: subscription.currency || 'USD',
+        amount: subscription.recurring_pre_tax_amount || subscription.amount || 0,
+        start_date: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }, {
-        onConflict: 'dodo_subscription_id'
+        onConflict: 'user_id'
       })
+
+      if (upsertError) {
+        console.error('❌ database upsert error:', upsertError)
+        console.error('❌ upsert error details:', JSON.stringify(upsertError))
+      } else {
+        console.log('✅ Subscription upserted successfully')
+      }
+    } else {
+      console.error('❌ Admin client not available for subscription upsert')
     }
 
     // Allocate credits (with idempotency built-in)
@@ -242,6 +260,7 @@ async function handleSubscriptionRenewed(subscription: any) {
 
     // Update subscription in database
     if (admin) {
+      // @ts-ignore - Supabase type definitions are camelCase but DB is snake_case
       await admin.from('subscriptions').update({
         status: 'active',
         next_billing_date: subscription.next_billing_date || subscription.current_period_end,
