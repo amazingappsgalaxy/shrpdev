@@ -46,7 +46,20 @@
       "mcp__streamable-mcp-server__chrome_screenshot",
       "mcp__streamable-mcp-server__get_windows_and_tabs",
       "mcp__streamable-mcp-server__chrome_network_request",
-      "mcp__streamable-mcp-server__chrome_close_tabs"
+      "mcp__streamable-mcp-server__chrome_close_tabs",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__list_projects",
+      "mcp__supabase__execute_sql",
+      "WebFetch(domain:docs.dodopayments.com)",
+      "Bash(pnpm dev)",
+      "Bash(pnpm dev:*)",
+      "Bash(python3:*)",
+      "mcp__browsermcp__browser_navigate",
+      "mcp__browsermcp__browser_wait",
+      "mcp__browsermcp__browser_screenshot",
+      "mcp__browsermcp__browser_snapshot",
+      "Bash(head:*)",
+      "mcp__browsermcp__browser_click"
     ],
     "deny": [],
     "ask": []

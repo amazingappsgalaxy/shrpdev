@@ -28,7 +28,7 @@ export class SubscriptionService {
                 .from('subscriptions')
                 .select('*')
                 .eq('user_id', userId)
-                .in('status', ['active', 'trialing'])
+                .in('status', ['active', 'pending_cancellation', 'trialing'])
                 .order('created_at', { ascending: false })
                 .limit(1)
                 .single()

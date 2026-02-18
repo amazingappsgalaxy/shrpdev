@@ -5,7 +5,7 @@ import { dodoClient as dodo } from '@/lib/dodo-client'
 
 export async function POST(request: NextRequest) {
     try {
-        // Authenticate user
+        // Authenticate user via cookie or auth header
         const authHeader = request.headers.get('authorization')
         const token = authHeader?.replace('Bearer ', '') || request.cookies.get('session')?.value
 
@@ -30,38 +30,46 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'No active subscription found' }, { status: 404 })
         }
 
-        // @ts-ignore
-        if (!subscription.dodoSubscriptionId && !subscription.dodo_subscription_id) {
+        const subId = subscription.dodo_subscription_id
+        if (!subId) {
             return NextResponse.json({ error: 'Subscription ID not found' }, { status: 400 })
         }
 
-        // @ts-ignore
-        const subId = subscription.dodoSubscriptionId || subscription.dodo_subscription_id
-
-        // Cancel in Dodo Payments
+        // Cancel in Dodo Payments - use cancel_at_next_billing_date
+        // This stops recurring payments but keeps the subscription active until the billing period ends
         try {
-            // Using update to set status to cancelled
-            // @ts-ignore - Dynamic method usage if typing is incomplete
-            await dodo.subscriptions.update(subId, { status: 'cancelled' })
+            console.log('🔄 Cancelling subscription in DodoPayments:', subId)
+            const updatedSub = await dodo.subscriptions.update(subId, {
+                cancel_at_next_billing_date: true
+            })
+            console.log('✅ DodoPayments cancellation response:', JSON.stringify(updatedSub))
         } catch (dodoError: any) {
-            console.error('Dodo cancellation error:', dodoError)
+            console.error('❌ Dodo cancellation error:', dodoError)
             return NextResponse.json({
                 error: 'Failed to cancel subscription with payment provider',
                 details: dodoError.message
             }, { status: 500 })
         }
 
-        // Update DB status immediately (webhook will eventually confirm)
+        // Update DB: mark as pending_cancellation so UI knows it's cancelled but still active
+        // The subscription remains usable until the current billing period ends
         const { error: updateError } = await supabase
             .from('subscriptions')
-            .update({ status: 'cancelled' })
+            .update({
+                status: 'pending_cancellation',
+                updated_at: new Date().toISOString()
+            })
             .eq('id', subscription.id)
 
         if (updateError) {
             console.error('DB update error:', updateError)
         }
 
-        return NextResponse.json({ success: true, message: 'Subscription cancelled successfully' })
+        return NextResponse.json({
+            success: true,
+            message: 'Subscription will be cancelled at the end of your current billing period. You can continue using your credits until then.',
+            next_billing_date: subscription.next_billing_date
+        })
 
     } catch (error) {
         console.error('Cancellation error:', error)

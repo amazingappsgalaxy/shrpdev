@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-simple'
 import { supabaseAdmin as supabase } from '@/lib/supabase'
-import { dodoClient as dodo } from '@/lib/dodo-client'
 
 export async function GET(request: NextRequest) {
     try {
@@ -13,66 +12,34 @@ export async function GET(request: NextRequest) {
         const session = await getSession(token)
         if (!session || !session.user) return NextResponse.json({ error: 'Invalid session' }, { status: 401 })
 
-        // Get customer ID from subscription
-        const { data: subscription } = await supabase
-            .from('subscriptions')
-            .select('dodo_customer_id')
+        // Get payment history from the payments table (primary source of truth)
+        const { data: payments, error } = await supabase
+            .from('payments')
+            .select('*')
             .eq('user_id', session.user.id)
-            .single()
+            .order('created_at', { ascending: false })
+            .limit(50)
 
-        if (!subscription?.dodo_customer_id) {
+        if (error) {
+            console.error('Error fetching payments:', error)
             return NextResponse.json({ invoices: [] })
         }
 
-        // Fetch payments/invoices from Dodo
-        // This is hypothetical as per typical payment provider APIs
-        // Adjust based on actual Dodo SDK methods if available
-        // Fallback: list our own payments table if Dodo API is tricky
+        // Map payments to invoice format for the frontend
+        const invoices = (payments || []).map((p: any) => ({
+            id: p.dodo_payment_id || p.id,
+            amount: p.amount,
+            currency: p.currency || 'USD',
+            status: p.status,
+            date: p.paid_at || p.created_at,
+            created_at: p.created_at,
+            plan: p.plan,
+            billing_period: p.billing_period,
+            payment_method: p.payment_method,
+            invoice_url: p.invoice_url || p.metadata?.invoice_url || p.metadata?.receipt_url || null
+        }))
 
-        // Using Dodo Client to list payments
-        try {
-            // @ts-ignore - Dynamic method usage if typing is incomplete
-            const response = await dodo.payments.list({
-                // @ts-ignore - Supabase types might be outdated
-                customer_id: subscription.dodo_customer_id,
-                limit: 10
-            })
-
-            const invoices = response.data.map((payment: any) => ({
-                id: payment.payment_id,
-                amount: payment.total_amount,
-                currency: payment.currency,
-                status: payment.status,
-                date: payment.created_at,
-                // Adjust property names based on actual API response, but fallbacks are good
-                invoice_url: payment.receipt_url || payment.invoice_url
-            }))
-
-            if (invoices.length === 0) {
-                throw new Error('No invoices found in Dodo, checking local DB')
-            }
-            return NextResponse.json({ invoices })
-        } catch (dodoError: any) {
-            console.error('Dodo fetch error:', dodoError)
-            // Fallback to local DB
-            const { data: localPayments } = await supabase
-                .from('payments')
-                .select('*')
-                .eq('user_id', session.user.id)
-                .order('created_at', { ascending: false })
-
-            const invoices = (localPayments || []).map((p: any) => ({
-                id: p.dodo_payment_id || p.id,
-                amount: p.amount,
-                currency: p.currency,
-                status: p.status,
-                date: p.created_at,
-                // Use the new column first, then metadata fallback
-                invoice_url: p.invoice_url || p.metadata?.invoice_url || p.metadata?.receipt_url
-            }))
-
-            return NextResponse.json({ invoices })
-        }
+        return NextResponse.json({ invoices })
     } catch (error) {
         console.error('Invoices error:', error)
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
