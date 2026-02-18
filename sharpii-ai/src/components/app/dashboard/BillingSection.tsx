@@ -81,7 +81,7 @@ export default function BillingSection() {
             const data = await res.json()
 
             if (res.ok) {
-                toast.success(data.message || 'Subscription cancelled successfully')
+                toast.success(data.message || 'Auto-renew turned off. Your plan stays active until period end.')
                 setShowCancelConfirm(false)
                 // Refresh subscription data
                 const subRes = await fetch('/api/user/subscription', { credentials: 'include' })
@@ -240,9 +240,9 @@ export default function BillingSection() {
                                 <div className="flex items-start gap-3">
                                     <AlertTriangle className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
                                     <div>
-                                        <p className="text-yellow-200 font-medium">Subscription ending</p>
+                                        <p className="text-yellow-200 font-medium">Auto-renew is off</p>
                                         <p className="text-yellow-200/70 text-sm mt-1">
-                                            Your subscription has been cancelled and will not renew. You can continue using your credits and features until{' '}
+                                            Your plan will remain active and won&apos;t renew. You can continue using your credits and features until{' '}
                                             {subscription.next_billing_date
                                                 ? new Date(subscription.next_billing_date).toLocaleString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
                                                 : 'the end of your billing period'}.
@@ -290,12 +290,12 @@ export default function BillingSection() {
                                             className="px-6 py-3 bg-white/5 hover:bg-red-500/10 text-white hover:text-red-400 font-bold rounded-lg border border-white/10 transition-colors flex items-center gap-2"
                                         >
                                             <XCircle className="w-4 h-4" />
-                                            Cancel Subscription
+                            Turn off auto-renew
                                         </button>
                                     ) : (
                                         <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3">
                                             <span className="text-red-300 text-sm">
-                                                Are you sure? You&apos;ll keep access until the end of your billing period.
+                                Are you sure? Your plan will stay active until the end of the billing period.
                                             </span>
                                             <button
                                                 onClick={handleCancelSubscription}
@@ -303,7 +303,7 @@ export default function BillingSection() {
                                                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-colors flex items-center gap-2"
                                             >
                                                 {cancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                                                Yes, Cancel
+                                Yes, turn off
                                             </button>
                                             <button
                                                 onClick={() => setShowCancelConfirm(false)}
@@ -318,7 +318,7 @@ export default function BillingSection() {
                             {(isPendingCancellation || subscription.status === 'cancelled') && (
                                 <Link href="/plans">
                                     <button className="px-6 py-3 bg-[#FFFF00] hover:bg-[#baba00] text-black font-bold rounded-lg transition-colors">
-                                        Reactivate Subscription
+                                        Turn auto-renew back on
                                     </button>
                                 </Link>
                             )}

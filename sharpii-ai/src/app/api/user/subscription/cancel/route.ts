@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
         if (subscription.status === 'pending_cancellation') {
             return NextResponse.json({
                 success: true,
-                message: 'Subscription is already set to cancel at period end.',
+                message: 'Auto-renew is already turned off. Your plan stays active until the end of the billing period.',
                 next_billing_date: subscription.next_billing_date
             })
         }
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            message: 'Subscription will be cancelled at the end of your current billing period. You can continue using your credits until then.',
+            message: 'Auto-renew turned off. Your plan stays active until the end of the billing period, and credits expire at that time.',
             next_billing_date: providerSubscription?.next_billing_date || subscription.next_billing_date,
             provider: {
                 subscription_id: providerSubscription?.subscription_id || subId,
