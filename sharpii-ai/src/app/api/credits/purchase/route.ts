@@ -97,6 +97,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const adminDb = createClient(config.database.supabaseUrl, config.database.supabaseServiceKey)
+    const { data: subRow } = await adminDb
+      .from('subscriptions')
+      .select('status, next_billing_date')
+      .eq('user_id', userId)
+      .limit(1)
+      .maybeSingle()
+
+    const isActiveLike = !!subRow?.status && ['active', 'trialing', 'pending', 'pending_cancellation'].includes(subRow.status)
+    const isNotExpired = !subRow?.next_billing_date || new Date(subRow.next_billing_date).getTime() > Date.now()
+    if (!isActiveLike || !isNotExpired) {
+      return NextResponse.json(
+        { error: 'An active plan is required to purchase credit top-ups' },
+        { status: 403 }
+      )
+    }
+
     let credits: number
     let amount: number
     let description: string
@@ -200,9 +217,7 @@ export async function POST(request: NextRequest) {
       const purchaseId = uuidv4()
       const now = new Date().toISOString()
 
-      const supabase = createClient(config.database.supabaseUrl, config.database.supabaseServiceKey)
-
-      const { data, error } = await supabase
+      const { data, error } = await adminDb
         .from('credit_purchases')
         .insert({
           id: purchaseId,

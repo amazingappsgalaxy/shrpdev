@@ -30,10 +30,11 @@ function PaymentSuccessClient() {
   const searchParams = useSearchParams()
   const [status, setStatus] = useState('processing')
   const [countdown, setCountdown] = useState(5)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   
   useEffect(() => {
     const paymentId = searchParams.get('payment_id')
-    const sessionId = searchParams.get('session_id')
+    const sessionId = searchParams.get('session_id') || searchParams.get('session')
     const paymentStatus = searchParams.get('status')
     const subscriptionId = searchParams.get('subscription_id') || searchParams.get('subscriptionId')
     
@@ -61,15 +62,26 @@ function PaymentSuccessClient() {
     }
 
     const run = async () => {
-      if (subscriptionId) {
+      if (subscriptionId || paymentId || sessionId) {
         try {
-          await fetch('/api/payments/complete', {
+          const res = await fetch('/api/payments/complete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ subscriptionId }),
+            body: JSON.stringify(
+              subscriptionId ? { subscriptionId } : paymentId ? { paymentId } : { sessionId }
+            ),
           })
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({} as any))
+            setErrorMessage(data?.error || data?.details || 'Failed to complete payment')
+            setStatus('error')
+            return
+          }
         } catch {
+          setErrorMessage('Failed to complete payment')
+          setStatus('error')
+          return
         }
       }
 
@@ -94,6 +106,12 @@ function PaymentSuccessClient() {
                 Processing Payment...
               </CardTitle>
             </>
+          ) : status === 'error' ? (
+            <>
+              <CardTitle className="text-2xl font-bold text-gray-900">
+                Payment Processing Failed
+              </CardTitle>
+            </>
           ) : (
             <>
               <CheckCircle className="h-16 w-16 text-green-600 mx-auto" />
@@ -108,6 +126,26 @@ function PaymentSuccessClient() {
             <p className="text-gray-600">
               We're confirming your payment and setting up your credits...
             </p>
+          ) : status === 'error' ? (
+            <>
+              <p className="text-gray-600">
+                {errorMessage || 'We could not confirm your payment. Please try again.'}
+              </p>
+              <Button
+                onClick={() => window.location.reload()}
+                className="w-full"
+                variant="outline"
+              >
+                Retry
+              </Button>
+              <Button
+                onClick={handleManualRedirect}
+                className="w-full"
+              >
+                Go to Dashboard
+                <ExternalLink className="w-4 h-4 ml-2" />
+              </Button>
+            </>
           ) : (
             <>
               <p className="text-gray-600 mb-4">

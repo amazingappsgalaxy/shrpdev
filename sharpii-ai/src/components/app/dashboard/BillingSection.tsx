@@ -228,11 +228,7 @@ export default function BillingSection() {
                                 </div>
                                 <div className="text-xl font-bold text-white">
                                     {subscription.next_billing_date
-                                        ? new Date(subscription.next_billing_date).toLocaleDateString('en-US', {
-                                            month: 'long',
-                                            day: 'numeric',
-                                            year: 'numeric'
-                                        })
+                                        ? new Date(subscription.next_billing_date).toLocaleString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
                                         : '-'}
                                 </div>
                             </div>
@@ -248,7 +244,7 @@ export default function BillingSection() {
                                         <p className="text-yellow-200/70 text-sm mt-1">
                                             Your subscription has been cancelled and will not renew. You can continue using your credits and features until{' '}
                                             {subscription.next_billing_date
-                                                ? new Date(subscription.next_billing_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                                                ? new Date(subscription.next_billing_date).toLocaleString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
                                                 : 'the end of your billing period'}.
                                         </p>
                                     </div>

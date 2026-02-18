@@ -1,16 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CreditsService } from '@/lib/credits-service'
-import { PRICING_PLANS } from '@/lib/pricing-config'
 import { supabaseAdmin } from '@/lib/supabase'
+import { dodoClient as dodo } from '@/lib/dodo-client'
 import crypto from 'crypto'
 
-const admin = supabaseAdmin
+const admin = supabaseAdmin as any
+
+function normalizeBillingPeriod(value: unknown): 'monthly' | 'yearly' | 'daily' {
+  const v = String(value || 'monthly').toLowerCase()
+  if (v === 'monthly' || v === 'yearly' || v === 'daily') return v
+  if (v.startsWith('month')) return 'monthly'
+  if (v.startsWith('year')) return 'yearly'
+  if (v.startsWith('day')) return 'daily'
+  return 'monthly'
+}
 
 // Verify Dodo webhook signature
 function verifyDodoSignature(body: string, signature: string): boolean {
-  const webhookSecret = process.env.DODO_PAYMENTS_WEBHOOK_SECRET
+  const webhookSecret = process.env.DODO_WEBHOOK_SECRET || process.env.DODO_PAYMENTS_WEBHOOK_SECRET
   if (!webhookSecret) {
-    console.warn('⚠️ DODO_PAYMENTS_WEBHOOK_SECRET not set')
+    console.warn('⚠️ Webhook secret not set (DODO_WEBHOOK_SECRET / DODO_PAYMENTS_WEBHOOK_SECRET)')
     return false
   }
 
@@ -74,6 +83,10 @@ export async function POST(request: NextRequest) {
       case 'subscription.renewed':
         await handleSubscriptionRenewed(event.data)
         break
+      
+      case 'subscription.updated':
+        await handleSubscriptionUpdated(event.data)
+        break
 
       default:
         console.log(`ℹ️ Unhandled event type: ${event.type}`)
@@ -97,7 +110,7 @@ async function handlePaymentSucceeded(payment: any) {
     // Extract user and plan info
     let userId = payment.metadata?.userId || payment.customer?.metadata?.userId
     const plan = payment.metadata?.plan || 'creator'
-    const billingPeriod = payment.metadata?.billingPeriod || 'monthly'
+    const billingPeriod = normalizeBillingPeriod(payment.metadata?.billingPeriod || 'monthly')
     const paymentId = payment.payment_id || payment.id
     const subscriptionId = payment.subscription_id
 
@@ -163,10 +176,48 @@ async function handlePaymentSucceeded(payment: any) {
       }
     }
 
-    // For subscription payments, credits are handled by subscription.active
-    // Only allocate credits here for one-time payments (no subscription_id)
     if (subscriptionId) {
-      console.log('🔄 Subscription payment - credits will be allocated by subscription.active event')
+      try {
+        const creditsOverrideRaw = payment.metadata?.credits
+        const creditsOverride =
+          creditsOverrideRaw !== undefined && creditsOverrideRaw !== null && !Number.isNaN(Number(creditsOverrideRaw))
+            ? Number(creditsOverrideRaw)
+            : undefined
+
+        const providerSubscription: any = await (dodo as any).subscriptions.retrieve(subscriptionId)
+        const periodEnd = providerSubscription?.next_billing_date || providerSubscription?.current_period_end || null
+        const dateStr = periodEnd ? new Date(periodEnd).toISOString().split('T')[0] : null
+        const transactionId = dateStr ? `sub_period_${subscriptionId}_${dateStr}` : `sub-${subscriptionId}`
+        const resolvedUserId =
+          providerSubscription?.metadata?.userId ||
+          providerSubscription?.metadata?.user_id ||
+          providerSubscription?.customer?.metadata?.userId ||
+          providerSubscription?.customer?.metadata?.user_id ||
+          userId
+        const resolvedPlan = providerSubscription?.metadata?.plan || providerSubscription?.plan || plan
+        const resolvedBillingPeriod = normalizeBillingPeriod(
+          providerSubscription?.metadata?.billingPeriod ||
+            providerSubscription?.billing_period ||
+            billingPeriod ||
+            'monthly'
+        )
+
+        if (!resolvedUserId) return
+
+        await CreditsService.allocateSubscriptionCredits(
+          resolvedUserId,
+          resolvedPlan,
+          resolvedBillingPeriod,
+          subscriptionId,
+          transactionId,
+          {
+            expiresAt: periodEnd ? new Date(periodEnd) : undefined,
+            credits: creditsOverride,
+            metadata: { source: 'webhook.payment_succeeded' }
+          }
+        )
+      } catch (e) {
+      }
       return
     }
 
@@ -197,9 +248,14 @@ async function handleSubscriptionActive(subscription: any) {
   console.log('✅ Processing subscription.active:', subscription.subscription_id || subscription.id)
 
   try {
-    const userId = subscription.metadata?.userId || subscription.customer?.metadata?.userId
+    let userId =
+      subscription.metadata?.userId ||
+      subscription.metadata?.user_id ||
+      subscription.customer?.metadata?.userId ||
+      subscription.customer?.metadata?.user_id ||
+      null
     const plan = subscription.metadata?.plan || subscription.plan || 'creator'
-    const billingPeriod = subscription.metadata?.billingPeriod || subscription.billing_period || 'monthly'
+    const billingPeriod = normalizeBillingPeriod(subscription.metadata?.billingPeriod || subscription.billing_period || 'monthly')
     const subscriptionId = subscription.subscription_id || subscription.id
     // Generate a deterministic transaction ID based on the period end date
     // This allows identifying duplicate events (e.g. Active + Renewed firing together for the same period)
@@ -217,10 +273,20 @@ async function handleSubscriptionActive(subscription: any) {
 
     console.log(`🔍 [Active] Processing Transaction ID: ${paymentId}`)
 
-    if (!userId) {
-      console.error('❌ No userId found in subscription metadata')
-      return
+    if (!userId && admin) {
+      const customerId = subscription.customer?.customer_id || subscription.customer_id || null
+      if (customerId) {
+        const { data: subRow } = await admin
+          .from('subscriptions')
+          .select('user_id')
+          .eq('dodo_customer_id', customerId)
+          .limit(1)
+          .maybeSingle()
+        if ((subRow as any)?.user_id) userId = (subRow as any).user_id
+      }
     }
+
+    if (!userId) return
 
     console.log(`👤 User: ${userId}, Plan: ${plan}, Period: ${billingPeriod}`)
 
@@ -262,9 +328,10 @@ async function handleSubscriptionActive(subscription: any) {
     const result = await CreditsService.allocateSubscriptionCredits(
       userId,
       plan,
-      billingPeriod as 'monthly' | 'yearly' | 'daily',
+      billingPeriod,
       subscriptionId,
-      paymentId
+      paymentId,
+      { expiresAt: periodEnd ? new Date(periodEnd) : undefined }
     )
 
     if (result.duplicate) {
@@ -285,9 +352,14 @@ async function handleSubscriptionRenewed(subscription: any) {
   console.log('🔄 Processing subscription.renewed:', subscription.subscription_id || subscription.id)
 
   try {
-    const userId = subscription.metadata?.userId || subscription.customer?.metadata?.userId
+    let userId =
+      subscription.metadata?.userId ||
+      subscription.metadata?.user_id ||
+      subscription.customer?.metadata?.userId ||
+      subscription.customer?.metadata?.user_id ||
+      null
     const plan = subscription.metadata?.plan || subscription.plan || 'creator'
-    const billingPeriod = subscription.metadata?.billingPeriod || subscription.billing_period || 'monthly'
+    const billingPeriod = normalizeBillingPeriod(subscription.metadata?.billingPeriod || subscription.billing_period || 'monthly')
     const subscriptionId = subscription.subscription_id || subscription.id
     // Generate a deterministic transaction ID based on the period end date
     // This allows identifying duplicate events (e.g. Active + Renewed firing together for the same period)
@@ -307,7 +379,21 @@ async function handleSubscriptionRenewed(subscription: any) {
 
     console.log(`🔍 [Renewed] Processing Transaction ID: ${paymentId}`)
 
-    // Also use this ID for the user's reference in logs
+    if (!userId && admin) {
+      const customerId = subscription.customer?.customer_id || subscription.customer_id || null
+      if (customerId) {
+        const { data: subRow } = await admin
+          .from('subscriptions')
+          .select('user_id')
+          .eq('dodo_customer_id', customerId)
+          .limit(1)
+          .maybeSingle()
+        if ((subRow as any)?.user_id) userId = (subRow as any).user_id
+      }
+    }
+
+    if (!userId) return
+
     console.log(`👤 User: ${userId}, Plan: ${plan}, Period: ${billingPeriod}`)
 
     // Update subscription in database
@@ -324,9 +410,10 @@ async function handleSubscriptionRenewed(subscription: any) {
     const result = await CreditsService.allocateSubscriptionCredits(
       userId,
       plan,
-      billingPeriod as 'monthly' | 'yearly' | 'daily',
+      billingPeriod,
       subscriptionId,
-      paymentId
+      paymentId,
+      { expiresAt: periodEnd ? new Date(periodEnd) : undefined }
     )
 
     if (result.duplicate) {
@@ -336,5 +423,50 @@ async function handleSubscriptionRenewed(subscription: any) {
     }
   } catch (error) {
     console.error('❌ Error handling subscription.renewed:', error)
+  }
+}
+
+async function handleSubscriptionUpdated(subscription: any) {
+  try {
+    const subscriptionId = subscription.subscription_id || subscription.id
+    if (!admin || !subscriptionId) return
+    const nextBillingDate = subscription.next_billing_date || subscription.current_period_end || null
+    const cancelAtNextBilling = !!subscription.cancel_at_next_billing_date
+    const subscriptionStatus = cancelAtNextBilling ? 'pending_cancellation' : subscription.status || 'active'
+    const customerId = subscription.customer?.customer_id || subscription.customer_id || null
+
+    let userId =
+      subscription.metadata?.userId ||
+      subscription.metadata?.user_id ||
+      subscription.customer?.metadata?.userId ||
+      subscription.customer?.metadata?.user_id ||
+      null
+
+    if (!userId && customerId) {
+      const { data: subRow } = await admin
+        .from('subscriptions')
+        .select('user_id')
+        .eq('dodo_customer_id', customerId)
+        .limit(1)
+        .maybeSingle()
+      if ((subRow as any)?.user_id) userId = (subRow as any).user_id
+    }
+
+    if (!userId) return
+
+    await admin.from('subscriptions').upsert(
+      {
+        user_id: userId,
+        plan: subscription.metadata?.plan || subscription.plan || 'creator',
+        status: subscriptionStatus,
+        billing_period: normalizeBillingPeriod(subscription.metadata?.billingPeriod || subscription.billing_period || 'monthly'),
+        dodo_subscription_id: subscriptionId,
+        dodo_customer_id: customerId,
+        next_billing_date: nextBillingDate,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id' }
+    )
+  } catch {
   }
 }

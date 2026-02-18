@@ -36,6 +36,26 @@ export async function GET(request: NextRequest) {
         }
 
         if (subscription) {
+            const now = Date.now()
+            const nextBilling = subscription.next_billing_date ? new Date(subscription.next_billing_date).getTime() : null
+            const isExpiredCancellation = subscription.status === 'pending_cancellation' && !!nextBilling && nextBilling <= now
+
+            if (isExpiredCancellation) {
+                try {
+                    await supabase
+                        .from('subscriptions')
+                        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+                        .eq('id', subscription.id)
+                } catch {
+                }
+                return NextResponse.json({
+                    success: true,
+                    has_active_subscription: false,
+                    current_plan: 'free',
+                    subscription: null
+                })
+            }
+
             return NextResponse.json({
                 success: true,
                 has_active_subscription: true,

@@ -48,6 +48,30 @@ export function PricingSection({
         return
       }
       
+      const selectedPlan = plan.name.toLowerCase().replace(/\s+/g, '_')
+      const selectedBillingPeriod = isYearly ? 'yearly' : 'monthly'
+
+      const subRes = await fetch('/api/user/subscription', { credentials: 'include' }).catch(() => null as any)
+      const subData = subRes?.ok ? await subRes.json() : null
+      const hasActiveSubscription = !!subData?.has_active_subscription
+      const currentPlan = String(subData?.subscription?.plan || '').toLowerCase()
+
+      if (hasActiveSubscription && currentPlan && currentPlan !== selectedPlan.replace(/_/g, ' ')) {
+        const changeRes = await fetch('/api/user/subscription/change-plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ plan: selectedPlan, billingPeriod: selectedBillingPeriod })
+        })
+        const changeData = await changeRes.json().catch(() => ({} as any))
+        if (!changeRes.ok) {
+          throw new Error(changeData.error || 'Failed to change plan')
+        }
+        toast.success('Plan updated successfully')
+        router.push('/app/dashboard?tab=billing')
+        return
+      }
+
       // User is authenticated, proceed to checkout
       const response = await fetch('/api/payments/checkout', {
         method: 'POST',
@@ -56,8 +80,8 @@ export function PricingSection({
         },
         credentials: 'include',
         body: JSON.stringify({
-          plan: plan.name.toLowerCase().replace(/\s+/g, '_'),
-          billingPeriod: isYearly ? 'yearly' : 'monthly'
+          plan: selectedPlan,
+          billingPeriod: selectedBillingPeriod
         })
       })
       

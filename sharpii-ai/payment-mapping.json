@@ -1,41 +1,5 @@
 {
   "mappings": {
-    "sub_0NYh81dudGGUgCZ7LcyFw": {
-      "userId": "25f3350f-83bd-403e-9f67-28fe6e5a90c9",
-      "plan": "creator",
-      "billingPeriod": "monthly",
-      "userEmail": "test_billing138@example.com",
-      "userName": "test_billing138@example.com",
-      "paymentId": "pay_0NYh81dqpxOQbvx8YIKmT",
-      "timestamp": 1771334073236
-    },
-    "pay_0NYh81dqpxOQbvx8YIKmT": {
-      "userId": "25f3350f-83bd-403e-9f67-28fe6e5a90c9",
-      "plan": "creator",
-      "billingPeriod": "monthly",
-      "userEmail": "test_billing138@example.com",
-      "userName": "test_billing138@example.com",
-      "paymentId": "pay_0NYh81dqpxOQbvx8YIKmT",
-      "timestamp": 1771334073236
-    },
-    "sub_0NYh9C6MtxydymKerXBpz": {
-      "userId": "a88b037a-7a3b-4c80-97ee-0c70b28e9b7d",
-      "plan": "creator",
-      "billingPeriod": "monthly",
-      "userEmail": "test_billing140@example.com",
-      "userName": "test_billing140@example.com",
-      "paymentId": "pay_0NYh9C6KbbmIcrbBZDphK",
-      "timestamp": 1771334441990
-    },
-    "pay_0NYh9C6KbbmIcrbBZDphK": {
-      "userId": "a88b037a-7a3b-4c80-97ee-0c70b28e9b7d",
-      "plan": "creator",
-      "billingPeriod": "monthly",
-      "userEmail": "test_billing140@example.com",
-      "userName": "test_billing140@example.com",
-      "paymentId": "pay_0NYh9C6KbbmIcrbBZDphK",
-      "timestamp": 1771334441990
-    },
     "sub_0NYhYWc3MWAQV9MjBvW2V": {
       "userId": "0accfada-c8b6-4ff0-bf72-65c53bc9a987",
       "plan": "day pass",
@@ -239,33 +203,89 @@
       "userEmail": "canceltest-20260218-1333@example.com",
       "userName": "Cancel Test",
       "timestamp": 1771423015188
+    },
+    "cks_0NYllvBgjkJobAaYLCI0A": {
+      "userId": "31a6b408-225c-4e9c-9672-b1df1f555928",
+      "plan": "day pass",
+      "billingPeriod": "daily",
+      "userEmail": "tesr@gmail.com",
+      "userName": "tesr@gmail.com",
+      "timestamp": 1771424895481
+    },
+    "cks_0NYlmAYd5FrYkcKoz5NYo": {
+      "userId": "31a6b408-225c-4e9c-9672-b1df1f555928",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "tesr@gmail.com",
+      "userName": "tesr@gmail.com",
+      "timestamp": 1771424973691
+    },
+    "cks_0NYlmK1rTdDLztwKd7a6C": {
+      "userId": "31a6b408-225c-4e9c-9672-b1df1f555928",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "tesr@gmail.com",
+      "userName": "tesr@gmail.com",
+      "timestamp": 1771425021882
+    },
+    "cks_0NYlyw6PBXt2sCP0XHwYQ": {
+      "userId": "cb048063-842f-42bc-8905-81f39b8f8dbd",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "tesr1@gmail.com",
+      "userName": "tesr1@gmail.com",
+      "timestamp": 1771429001239
+    },
+    "cks_0NYm0zuSts5n4Hch8YdjC": {
+      "userId": "cb048063-842f-42bc-8905-81f39b8f8dbd",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "tesr1@gmail.com",
+      "userName": "tesr1@gmail.com",
+      "timestamp": 1771429651552
+    },
+    "cks_0NYm1TCqfmHmAUal8wWyF": {
+      "userId": "cf28c7ca-efe3-4016-9146-a754223496fd",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "demo_1771427557652@example.com",
+      "userName": "demo_1771427557652",
+      "timestamp": 1771429800626
+    },
+    "cks_0NYm1it4wsnjcLRdHbg0f": {
+      "userId": "cb048063-842f-42bc-8905-81f39b8f8dbd",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "tesr1@gmail.com",
+      "userName": "tesr1@gmail.com",
+      "timestamp": 1771429880409
     }
   },
   "pending": {
-    "fe92727a-db0f-4271-b0ce-3bd128126508:creator:monthly": {
-      "userId": "fe92727a-db0f-4271-b0ce-3bd128126508",
+    "31a6b408-225c-4e9c-9672-b1df1f555928:creator:monthly": {
+      "userId": "31a6b408-225c-4e9c-9672-b1df1f555928",
       "plan": "creator",
       "billingPeriod": "monthly",
-      "userEmail": "testcreator+e2e1@example.com",
-      "userName": "Test Creator",
-      "timestamp": 1771420827560
+      "userEmail": "tesr@gmail.com",
+      "userName": "tesr@gmail.com",
+      "timestamp": 1771425021882
     },
-    "308d825b-ffb0-4f60-9942-c63d9073a388:creator:monthly": {
-      "userId": "308d825b-ffb0-4f60-9942-c63d9073a388",
+    "cb048063-842f-42bc-8905-81f39b8f8dbd:creator:monthly": {
+      "userId": "cb048063-842f-42bc-8905-81f39b8f8dbd",
       "plan": "creator",
       "billingPeriod": "monthly",
-      "userEmail": "canceltest-20260218-1333@example.com",
-      "userName": "Cancel Test",
-      "timestamp": 1771421745125
+      "userEmail": "tesr1@gmail.com",
+      "userName": "tesr1@gmail.com",
+      "timestamp": 1771429880409
     },
-    "308d825b-ffb0-4f60-9942-c63d9073a388:basic:monthly": {
-      "userId": "308d825b-ffb0-4f60-9942-c63d9073a388",
-      "plan": "basic",
+    "cf28c7ca-efe3-4016-9146-a754223496fd:creator:monthly": {
+      "userId": "cf28c7ca-efe3-4016-9146-a754223496fd",
+      "plan": "creator",
       "billingPeriod": "monthly",
-      "userEmail": "canceltest-20260218-1333@example.com",
-      "userName": "Cancel Test",
-      "timestamp": 1771423015188
+      "userEmail": "demo_1771427557652@example.com",
+      "userName": "demo_1771427557652",
+      "timestamp": 1771429800626
     }
   },
-  "updated": 1771423015188
+  "updated": 1771429880409
 }

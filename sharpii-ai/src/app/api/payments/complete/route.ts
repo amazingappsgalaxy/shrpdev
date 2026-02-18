@@ -17,10 +17,33 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) return NextResponse.json({ error: 'Invalid session' }, { status: 401 })
 
     const body = await request.json().catch(() => ({} as any))
-    const subscriptionId = body.subscriptionId || body.subscription_id
+    let subscriptionId = body.subscriptionId || body.subscription_id
+    const paymentId = body.paymentId || body.payment_id
+    const sessionId = body.sessionId || body.session_id || body.session
+
+    if (!subscriptionId && sessionId) {
+      try {
+        const checkoutSession: any = await (dodo as any).checkoutSessions.retrieve(sessionId)
+        subscriptionId =
+          checkoutSession?.subscription_id ||
+          checkoutSession?.subscriptionId ||
+          checkoutSession?.subscription?.subscription_id ||
+          checkoutSession?.subscription?.id ||
+          null
+      } catch {
+      }
+    }
+
+    if (!subscriptionId && paymentId) {
+      try {
+        const payment: any = await (dodo as any).payments.retrieve(paymentId)
+        subscriptionId = payment?.subscription_id || null
+      } catch {
+      }
+    }
 
     if (!subscriptionId) {
-      return NextResponse.json({ error: 'subscriptionId is required' }, { status: 400 })
+      return NextResponse.json({ error: 'subscriptionId, paymentId, or sessionId is required' }, { status: 400 })
     }
 
     const providerSubscription: any = await (dodo as any).subscriptions.retrieve(subscriptionId)
@@ -56,7 +79,8 @@ export async function POST(request: NextRequest) {
         ? billingPeriodRaw
         : 'monthly'
 
-    const nextBillingDate = providerSubscription?.next_billing_date || providerSubscription?.current_period_end || null
+    const periodEnd = providerSubscription?.next_billing_date || providerSubscription?.current_period_end || null
+    const nextBillingDate = periodEnd
     const cancelAtNextBilling = !!providerSubscription?.cancel_at_next_billing_date
     const subscriptionStatus = cancelAtNextBilling ? 'pending_cancellation' : 'active'
 
@@ -91,12 +115,33 @@ export async function POST(request: NextRequest) {
       transactionId = transactionId || `sub-${subscriptionId}`
     }
 
+    const creditsOverrideRaw = providerSubscription?.metadata?.credits
+    let creditsOverride =
+      creditsOverrideRaw !== undefined && creditsOverrideRaw !== null && !Number.isNaN(Number(creditsOverrideRaw))
+        ? Number(creditsOverrideRaw)
+        : undefined
+
+    if (creditsOverride === undefined) {
+      try {
+        for await (const item of (dodo as any).payments.list({ subscription_id: subscriptionId })) {
+          const payment: any = item
+          const raw = payment?.metadata?.credits
+          if (raw !== undefined && raw !== null && !Number.isNaN(Number(raw))) {
+            creditsOverride = Number(raw)
+          }
+          break
+        }
+      } catch {
+      }
+    }
+
     const creditsResult = await CreditsService.allocateSubscriptionCredits(
       session.user.id,
       plan,
       billingPeriod,
       subscriptionId,
-      transactionId
+      transactionId,
+      { expiresAt: periodEnd ? new Date(periodEnd) : undefined, credits: creditsOverride, metadata: { source: 'return_flow.complete' } }
     )
 
     if (admin) {

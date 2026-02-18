@@ -70,7 +70,13 @@ export class CreditsService {
     plan: string,
     billingPeriod: 'monthly' | 'yearly' | 'daily',
     subscriptionId: string | null,
-    paymentId: string
+    paymentId: string,
+    options?: {
+      expiresAt?: Date | string | null
+      credits?: number
+      description?: string
+      metadata?: Record<string, unknown>
+    }
   ): Promise<{ success: boolean; duplicate: boolean; message: string }> {
     // Get plan configuration
     const planConfig = PRICING_PLANS.find(p => p.name.toLowerCase() === plan.toLowerCase())
@@ -78,18 +84,20 @@ export class CreditsService {
       throw new Error(`Plan configuration not found: ${plan}`)
     }
 
-    const creditsToAllocate = planConfig.credits.monthly
+    const creditsToAllocate = typeof options?.credits === 'number' ? options.credits : planConfig.credits.monthly
 
-    // Calculate expiry date
-    const expiryDate = new Date()
-    if (billingPeriod === 'monthly') {
-      expiryDate.setDate(expiryDate.getDate() + 30)
-    } else if (billingPeriod === 'daily') {
-      expiryDate.setDate(expiryDate.getDate() + 1)
-    } else {
-      // For yearly, still expire monthly but they get renewed
-      expiryDate.setDate(expiryDate.getDate() + 30)
-    }
+    const expiryDate = (() => {
+      if (options?.expiresAt) return new Date(options.expiresAt)
+      const d = new Date()
+      if (billingPeriod === 'monthly') {
+        d.setDate(d.getDate() + 30)
+      } else if (billingPeriod === 'daily') {
+        d.setDate(d.getDate() + 1)
+      } else {
+        d.setDate(d.getDate() + 30)
+      }
+      return d
+    })()
 
     const admin = (supabaseAdmin ?? supabase) as any
 
@@ -117,11 +125,12 @@ export class CreditsService {
         p_transaction_id: paymentId,
         p_subscription_id: subscriptionId,
         p_expires_at: expiryDate.toISOString(),
-        p_description: `${plan} plan credits (${billingPeriod})`,
+        p_description: options?.description || `${plan} plan credits (${billingPeriod})`,
         p_metadata: {
           plan,
           billing_period: billingPeriod,
-          allocated_at: new Date().toISOString()
+          allocated_at: new Date().toISOString(),
+          ...(options?.metadata || {})
         }
       })
 

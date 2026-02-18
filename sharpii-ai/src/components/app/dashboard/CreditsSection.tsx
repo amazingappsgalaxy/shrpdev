@@ -4,9 +4,11 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-client-simple'
 import { Coins, Crown, TrendingUp, Calendar } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { useRouter } from 'next/navigation'
 
 export default function CreditsSection() {
     const { user } = useAuth()
+    const router = useRouter()
     const [credits, setCredits] = useState({
         total: 0,
         subscription_credits: 0,
@@ -101,7 +103,7 @@ export default function CreditsSection() {
                             {credits.subscription_expire_at && (
                                 <div className="flex items-center gap-1 mt-2 text-xs text-white/40">
                                     <Calendar className="w-3 h-3" />
-                                    Expires {new Date(credits.subscription_expire_at).toLocaleDateString()}
+                                    Expires {new Date(credits.subscription_expire_at).toLocaleString(undefined, { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                                 </div>
                             )}
                         </div>
@@ -150,11 +152,14 @@ export default function CreditsSection() {
 
                         {subscription.subscription?.next_billing_date && (
                             <div className="text-white/60">
-                                Renews on {new Date(subscription.subscription.next_billing_date).toLocaleDateString()}
+                                Renews on {new Date(subscription.subscription.next_billing_date).toLocaleString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </div>
                         )}
 
-                        <button className="px-6 py-3 bg-[#FFFF00] hover:bg-[#c9c900] text-black font-bold rounded-lg transition-colors">
+                        <button
+                            onClick={() => router.push('/#pricing-section')}
+                            className="px-6 py-3 bg-[#FFFF00] hover:bg-[#c9c900] text-black font-bold rounded-lg transition-colors"
+                        >
                             Upgrade Plan
                         </button>
                     </div>
@@ -166,7 +171,10 @@ export default function CreditsSection() {
                         <p className="text-white/40 mb-6">
                             Subscribe to unlock premium features and get monthly credits.
                         </p>
-                        <button className="px-6 py-3 bg-[#FFFF00] hover:bg-[#c9c900] text-black font-bold rounded-lg transition-colors">
+                        <button
+                            onClick={() => router.push('/#pricing-section')}
+                            className="px-6 py-3 bg-[#FFFF00] hover:bg-[#c9c900] text-black font-bold rounded-lg transition-colors"
+                        >
                             View Plans
                         </button>
                     </div>

@@ -127,9 +127,10 @@ export async function POST(request: NextRequest) {
       console.log('📋 [CHECKOUT API] Request data:', { plan, billingPeriod })
       console.log('💰 [CHECKOUT API] Plan amount:', amount, 'cents:', amount * 100)
 
-      const origin = new URL(request.url).origin
-      const successUrl = `${origin}/payment-success`
-      const cancelUrl = `${origin}/?payment=cancelled#pricing-section`
+      const baseUrlRaw = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin
+      const baseUrl = baseUrlRaw.replace(/\/$/, '')
+      const successUrl = `${baseUrl}/payment-success`
+      const cancelUrl = `${baseUrl}/?payment=cancelled#pricing-section`
 
       const checkoutSessionData = {
         product_cart: [{ product_id: productId, quantity: 1 }],
