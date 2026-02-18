@@ -1,156 +1,89 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
-import { supabase } from '@/lib/supabase'
+import { getSession } from '@/lib/auth-simple'
+import { supabase, supabaseAdmin } from '@/lib/supabase'
+import { dodoClient as dodo } from '@/lib/dodo-client'
 
 export async function GET(request: NextRequest) {
   try {
-    // Skip authentication for now to avoid 500 errors
-    console.log('Billing payments API called')
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '') || request.cookies.get('session')?.value
+    if (!token) return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
 
-    // TODO: Re-enable authentication once Better Auth is properly configured
-    // const session = await auth.api.getSession({
-    //   headers: Object.fromEntries(request.headers) as Record<string, string>
-    // })
+    const session = await getSession(token)
+    if (!session?.user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
 
-    // if (!session || !session.user) {
-    //   return NextResponse.json(
-    //     { error: 'Authentication required' },
-    //     { status: 401 }
-    //   )
-    // }
+    const userId = session.user.id
+    const db = (supabaseAdmin ?? supabase) as any
 
-    const userId = 'mock-user-id' // Mock user ID for testing
+    const { data: paymentRows, error } = await db
+      .from('payments')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(50)
 
-    // Skip Supabase calls if not configured properly
-    let checkoutData = null
-    let paymentsData = null
-
-    try {
-      // Only attempt Supabase queries if properly configured
-      if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        // Get all checkout sessions for the user (primary payment tracking)
-        const { data: checkoutResult, error: checkoutError } = await (supabase as any)
-          .from('checkout_sessions')
-          .select('*')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false })
-
-        if (checkoutError) {
-          console.error('Checkout sessions error:', checkoutError)
-        } else {
-          checkoutData = checkoutResult
-        }
-
-        // Get legacy payments for the user (fallback)
-        const { data: paymentsResult, error: paymentsError } = await supabase
-          .from('payments')
-          .select('*')
-          .eq('userId', userId)
-          .order('createdAt', { ascending: false })
-
-        if (paymentsError) {
-          console.error('Legacy payments error:', paymentsError)
-        } else {
-          paymentsData = paymentsResult
-        }
-      }
-    } catch (error) {
-      console.error('Supabase error:', error)
-      // Continue with empty data
+    if (error) {
+      console.error('Billing payments query error:', error)
+      return NextResponse.json({ success: true, payments: [], total: 0, completed: 0, totalAmount: 0 })
     }
 
-    // Combine checkout sessions and legacy payments
-    const checkoutPayments = (checkoutData || []).map((session: any) => ({
-      id: session.id,
-      dodoPaymentId: session.subscription_id,
-      amount: session.amount,
-      currency: session.currency,
-      status: session.status,
-      plan: session.plan,
-      billingPeriod: session.billing_period,
-      creditsGranted: 0, // Will be fetched from credits table
-      createdAt: session.created_at,
-      paidAt: session.updated_at || session.created_at,
-      metadata: { user_email: session.user_email }
+    let payments = (paymentRows || []).map((p: any) => ({
+      id: p.id,
+      dodoPaymentId: p.dodo_payment_id || p.id,
+      amount: p.amount || 0,
+      currency: (p.currency || 'USD').toLowerCase(),
+      status: p.status || 'pending',
+      plan: p.plan || null,
+      billingPeriod: p.billing_period || null,
+      creditsGranted: p.credits_granted || 0,
+      createdAt: p.created_at ? new Date(p.created_at).getTime() : Date.now(),
+      paidAt: p.paid_at ? new Date(p.paid_at).getTime() : (p.created_at ? new Date(p.created_at).getTime() : Date.now()),
+      invoiceUrl: p.metadata?.invoice_url || p.metadata?.receipt_url || null
     }))
 
-    const legacyPayments = (paymentsData || []).map((payment: any) => ({
-      id: payment.id,
-      dodoPaymentId: payment.dodoPaymentId,
-      amount: payment.amount,
-      currency: payment.currency,
-      status: payment.status,
-      plan: payment.plan,
-      billingPeriod: payment.billingPeriod,
-      creditsGranted: payment.creditsGranted || 0,
-      createdAt: payment.createdAt,
-      paidAt: payment.paidAt || payment.createdAt,
-      metadata: payment.metadata ? JSON.parse(payment.metadata) : null
-    }))
-
-    // Merge and deduplicate payments
-    const allPayments = [...checkoutPayments, ...legacyPayments]
-    const uniquePayments = allPayments.filter((payment, index, self) =>
-      index === self.findIndex(p => p.dodoPaymentId === payment.dodoPaymentId)
-    )
-
-    let payments = uniquePayments.sort((a, b) =>
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )
-
-    // Add mock payment data if no payments found for testing
     if (payments.length === 0) {
-      const mockPayments = [
-        {
-          id: 'pay_1abc-def-ghi-jkl',
-          dodoPaymentId: 'dodo_payment_123456',
-          amount: 2999, // $29.99 in cents
-          currency: 'USD',
-          status: 'completed',
-          plan: 'Creator',
-          billingPeriod: 'monthly',
-          creditsGranted: 10000,
-          createdAt: Date.now() - 86400000 * 5, // 5 days ago
-          paidAt: Date.now() - 86400000 * 5,
-          metadata: { user_email: userId + '@example.com' }
-        },
-        {
-          id: 'pay_2abc-def-ghi-jkl',
-          dodoPaymentId: 'dodo_payment_234567',
-          amount: 9999, // $99.99 in cents
-          currency: 'USD',
-          status: 'completed',
-          plan: 'Pro',
-          billingPeriod: 'monthly',
-          creditsGranted: 50000,
-          createdAt: Date.now() - 86400000 * 35, // 35 days ago
-          paidAt: Date.now() - 86400000 * 35,
-          metadata: { user_email: userId + '@example.com' }
-        },
-        {
-          id: 'pay_3abc-def-ghi-jkl',
-          dodoPaymentId: 'dodo_payment_345678',
-          amount: 1999, // $19.99 in cents
-          currency: 'USD',
-          status: 'completed',
-          plan: 'Basic',
-          billingPeriod: 'one-time',
-          creditsGranted: 5000,
-          createdAt: Date.now() - 86400000 * 60, // 60 days ago
-          paidAt: Date.now() - 86400000 * 60,
-          metadata: { user_email: userId + '@example.com' }
+      try {
+        const { data: subscription } = await db
+          .from('subscriptions')
+          .select('dodo_subscription_id')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        const dodoSubscriptionId = subscription?.dodo_subscription_id
+        if (dodoSubscriptionId) {
+          const dodoPayments: any[] = []
+          for await (const item of (dodo as any).payments.list({ subscription_id: dodoSubscriptionId })) {
+            dodoPayments.push(item)
+            if (dodoPayments.length >= 50) break
+          }
+          payments = dodoPayments.map((p: any) => ({
+            id: p.payment_id,
+            dodoPaymentId: p.payment_id,
+            amount: p.total_amount ?? 0,
+            currency: (p.currency || 'USD').toLowerCase(),
+            status: p.status || 'pending',
+            plan: p.metadata?.plan || null,
+            billingPeriod: p.metadata?.billingPeriod || null,
+            creditsGranted: 0,
+            createdAt: p.created_at ? new Date(p.created_at).getTime() : Date.now(),
+            paidAt: p.created_at ? new Date(p.created_at).getTime() : Date.now(),
+            invoiceUrl: p.invoice_url || null
+          }))
         }
-      ]
-      payments = mockPayments
+      } catch (dodoError) {
+        console.error('Billing payments Dodo fallback error:', dodoError)
+      }
     }
 
     return NextResponse.json({
       success: true,
       payments,
       total: payments.length,
-      completed: payments.filter((p: any) => p.status === 'completed').length,
+      completed: payments.filter((p: any) => p.status === 'completed' || p.status === 'succeeded' || p.status === 'paid').length,
       totalAmount: payments
-        .filter((p: any) => p.status === 'completed')
+        .filter((p: any) => p.status === 'completed' || p.status === 'succeeded' || p.status === 'paid')
         .reduce((sum: number, p: any) => sum + p.amount, 0)
     })
 

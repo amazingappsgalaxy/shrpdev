@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
             .from('subscriptions')
             .select('*')
             .eq('user_id', userId)
-            .in('status', ['active', 'pending_cancellation', 'trialing'])
+            .in('status', ['active', 'pending', 'pending_cancellation', 'trialing'])
             .order('created_at', { ascending: false })
             .limit(1)
             .single()

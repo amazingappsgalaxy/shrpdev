@@ -1,23 +1,5 @@
 {
   "mappings": {
-    "sub_0NYh54qInHKGRvqcAwssP": {
-      "userId": "04636b0b-e4b3-4b0c-8154-226894a12cfb",
-      "plan": "creator",
-      "billingPeriod": "monthly",
-      "userEmail": "test_billing137@example.com",
-      "userName": "test_billing137@example.com",
-      "paymentId": "pay_0NYh54qF0tGL8tnJLxAyc",
-      "timestamp": 1771333143109
-    },
-    "pay_0NYh54qF0tGL8tnJLxAyc": {
-      "userId": "04636b0b-e4b3-4b0c-8154-226894a12cfb",
-      "plan": "creator",
-      "billingPeriod": "monthly",
-      "userEmail": "test_billing137@example.com",
-      "userName": "test_billing137@example.com",
-      "paymentId": "pay_0NYh54qF0tGL8tnJLxAyc",
-      "timestamp": 1771333143109
-    },
     "sub_0NYh81dudGGUgCZ7LcyFw": {
       "userId": "25f3350f-83bd-403e-9f67-28fe6e5a90c9",
       "plan": "creator",
@@ -215,8 +197,75 @@
       "userName": "Webhook Tester",
       "paymentId": "pay_0NYiaUYwjpqq0L99lKyTg",
       "timestamp": 1771362612869
+    },
+    "sub_0NYl5Hfn2G7bAYxS5AIrc": {
+      "userId": "fe92727a-db0f-4271-b0ce-3bd128126508",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "testcreator+e2e1@example.com",
+      "userName": "Test Creator",
+      "paymentId": "pay_0NYl5HfklJ06glptc4xgm",
+      "timestamp": 1771411444748
+    },
+    "pay_0NYl5HfklJ06glptc4xgm": {
+      "userId": "fe92727a-db0f-4271-b0ce-3bd128126508",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "testcreator+e2e1@example.com",
+      "userName": "Test Creator",
+      "paymentId": "pay_0NYl5HfklJ06glptc4xgm",
+      "timestamp": 1771411444748
+    },
+    "cks_0NYlZ1hfA406pqWSjkUSU": {
+      "userId": "fe92727a-db0f-4271-b0ce-3bd128126508",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "testcreator+e2e1@example.com",
+      "userName": "Test Creator",
+      "timestamp": 1771420827560
+    },
+    "cks_0NYlbw2MbFGSw9WmVczJk": {
+      "userId": "308d825b-ffb0-4f60-9942-c63d9073a388",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "canceltest-20260218-1333@example.com",
+      "userName": "Cancel Test",
+      "timestamp": 1771421745125
+    },
+    "cks_0NYlfxeDfD7sv6JMwHydz": {
+      "userId": "308d825b-ffb0-4f60-9942-c63d9073a388",
+      "plan": "basic",
+      "billingPeriod": "monthly",
+      "userEmail": "canceltest-20260218-1333@example.com",
+      "userName": "Cancel Test",
+      "timestamp": 1771423015188
     }
   },
-  "pending": {},
-  "updated": 1771369774263
+  "pending": {
+    "fe92727a-db0f-4271-b0ce-3bd128126508:creator:monthly": {
+      "userId": "fe92727a-db0f-4271-b0ce-3bd128126508",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "testcreator+e2e1@example.com",
+      "userName": "Test Creator",
+      "timestamp": 1771420827560
+    },
+    "308d825b-ffb0-4f60-9942-c63d9073a388:creator:monthly": {
+      "userId": "308d825b-ffb0-4f60-9942-c63d9073a388",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "canceltest-20260218-1333@example.com",
+      "userName": "Cancel Test",
+      "timestamp": 1771421745125
+    },
+    "308d825b-ffb0-4f60-9942-c63d9073a388:basic:monthly": {
+      "userId": "308d825b-ffb0-4f60-9942-c63d9073a388",
+      "plan": "basic",
+      "billingPeriod": "monthly",
+      "userEmail": "canceltest-20260218-1333@example.com",
+      "userName": "Cancel Test",
+      "timestamp": 1771423015188
+    }
+  },
+  "updated": 1771423015188
 }

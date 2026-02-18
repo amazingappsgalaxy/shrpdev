@@ -130,8 +130,18 @@ async function handlePaymentSucceeded(payment: any) {
 
     // Record payment in database
     if (admin) {
+      const { data: existingPayment } = await admin
+        .from('payments')
+        .select('id')
+        .eq('dodo_payment_id', paymentId)
+        .limit(1)
+        .maybeSingle()
+
+      if (existingPayment?.id) {
+        console.log('ℹ️ Payment already recorded:', paymentId)
+      } else {
       // @ts-ignore - Supabase type definitions are camelCase but DB is snake_case
-      await admin.from('payments').insert({
+      const { error: insertError } = await admin.from('payments').insert({
         user_id: userId,
         dodo_payment_id: paymentId,
         dodo_customer_id: payment.customer?.customer_id || payment.customer_id,
@@ -144,9 +154,13 @@ async function handlePaymentSucceeded(payment: any) {
         paid_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        metadata: payment,
-        invoice_url: payment.invoice_url || payment.receipt_url // Save invoice URL
+        metadata: payment
       })
+
+      if (insertError) {
+        console.error('❌ Failed to insert payment:', insertError)
+      }
+      }
     }
 
     // For subscription payments, credits are handled by subscription.active

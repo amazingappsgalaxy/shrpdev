@@ -127,27 +127,16 @@ export async function POST(request: NextRequest) {
       console.log('📋 [CHECKOUT API] Request data:', { plan, billingPeriod })
       console.log('💰 [CHECKOUT API] Plan amount:', amount, 'cents:', amount * 100)
 
-      // Use tunnel URL or request origin as fallback
       const origin = new URL(request.url).origin
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || origin
-      const successUrl = process.env.DODO_PAYMENTS_RETURN_URL || `${baseUrl}/app/dashboard?payment=success`
-      const cancelUrl = process.env.DODO_PAYMENTS_CANCEL_URL || `${baseUrl}/?payment=cancelled#pricing-section`
+      const successUrl = `${origin}/payment-success`
+      const cancelUrl = `${origin}/?payment=cancelled#pricing-section`
 
-      // Create subscription with Dodo API with timeout
-      const subscriptionData = {
-        billing: {
-          city: 'San Francisco',
-          country: 'US' as const,
-          state: 'CA',
-          street: '123 Main St',
-          zipcode: '94105'
-        },
+      const checkoutSessionData = {
+        product_cart: [{ product_id: productId, quantity: 1 }],
         customer: {
           email: session.user.email as string,
           name: (session.user.name || session.user.email) as string
         },
-        product_id: productId,
-        quantity: 1,
         return_url: successUrl,
         metadata: {
           userId,
@@ -162,60 +151,48 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      console.log('📤 [CHECKOUT API] Creating subscription with data:', JSON.stringify(subscriptionData, null, 2))
+      console.log('📤 [CHECKOUT API] Creating checkout session with data:', JSON.stringify(checkoutSessionData, null, 2))
 
-      // Add timeout wrapper for Dodo API call
-      const createSubscriptionWithTimeout = () => {
+      const createCheckoutSessionWithTimeout = () => {
         return Promise.race([
-          dodo.subscriptions.create(subscriptionData),
+          (dodo as any).checkoutSessions.create(checkoutSessionData),
           new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Dodo API call timed out after 15 seconds')), 15000)
           )
         ])
       }
 
-      const subscription: any = await createSubscriptionWithTimeout()
-      console.log('✅ [CHECKOUT API] Created subscription:', subscription)
+      const checkoutSession: any = await createCheckoutSessionWithTimeout()
+      console.log('✅ [CHECKOUT API] Created checkout session:', checkoutSession)
 
-      // Store user mapping in memory (using shared utility)
+      const checkoutUrl = checkoutSession.checkout_url || checkoutSession.url
+      if (!checkoutUrl) {
+        return NextResponse.json(
+          { error: 'Payment service error: missing checkout URL' },
+          { status: 500 }
+        )
+      }
+
       try {
-        PaymentUtils.storeMapping(subscription.subscription_id, {
+        PaymentUtils.storeMapping(checkoutSession.session_id || checkoutSession.id, {
           userId: userId,
           plan: plan,
           billingPeriod: billingPeriod,
           userEmail: session.user.email as string,
           userName: (session.user.name || session.user.email) as string,
-          paymentId: subscription.payment_id
+          paymentId: checkoutSession.payment_id
         })
       } catch (mappingError) {
         console.error('❌ Error storing user mapping:', mappingError)
-        // Continue anyway, we have fallback user lookup
       }
 
-      // Create custom checkout URL with metadata parameters
-      const metadataParams = new URLSearchParams({
-        'metadata_userId': userId,
-        'metadata_plan': plan,
-        'metadata_billingPeriod': billingPeriod,
-        'metadata_type': 'subscription',
-        'metadata_user_email': session.user.email as string,
-        'metadata_user_name': (session.user.name || session.user.email) as string,
-        'customer_email': session.user.email as string,
-      })
-
-      // Use the subscription's payment_link or generate a checkout URL with metadata
-      const checkoutUrl = subscription.payment_link
-        ? `${subscription.payment_link}?${metadataParams.toString()}`
-        : `https://test.checkout.dodopayments.com/buy/${productId}?${metadataParams.toString()}`
-
-      console.log('🔗 [CHECKOUT API] Generated checkout URL:', checkoutUrl)
+      console.log('🔗 [CHECKOUT API] Checkout URL:', checkoutUrl)
 
       return NextResponse.json({
         success: true,
         checkoutUrl,
-        paymentId: subscription.payment_id,
-        subscriptionId: subscription.subscription_id,
-        clientSecret: subscription.client_secret,
+        sessionId: checkoutSession.session_id || checkoutSession.id,
+        paymentId: checkoutSession.payment_id,
         metadata: {
           successUrl,
           cancelUrl,

@@ -146,8 +146,10 @@ export default function BillingSection() {
         })
     }
 
-    const isSubscriptionActive = subscription?.status === 'active'
-    const isPendingCancellation = subscription?.status === 'pending_cancellation'
+    const subscriptionStatus = subscription?.status
+    const isActiveLike = !!subscriptionStatus && ['active', 'trialing', 'pending'].includes(subscriptionStatus)
+    const isPendingCancellation = subscriptionStatus === 'pending_cancellation'
+    const canCancel = isActiveLike && !isPendingCancellation
 
     if (loading) {
         return (
@@ -171,12 +173,24 @@ export default function BillingSection() {
                         <div className="p-3 bg-[#FFFF00]/10 rounded-xl">
                             <CreditCard className="w-6 h-6 text-[#FFFF00]" />
                         </div>
-                        <h2 className="text-2xl font-bold text-white">Active Subscription</h2>
+                        <h2 className="text-2xl font-bold text-white">Subscription</h2>
                     </div>
-                    {isSubscriptionActive && (
+                    {subscriptionStatus === 'active' && (
                         <div className="px-3 py-1 bg-green-500/20 text-green-400 text-sm font-medium rounded-full flex items-center gap-2">
                             <CheckCircle className="w-4 h-4" />
                             Active
+                        </div>
+                    )}
+                    {subscriptionStatus === 'trialing' && (
+                        <div className="px-3 py-1 bg-blue-500/20 text-blue-300 text-sm font-medium rounded-full flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4" />
+                            Trialing
+                        </div>
+                    )}
+                    {subscriptionStatus === 'pending' && (
+                        <div className="px-3 py-1 bg-white/10 text-white/80 text-sm font-medium rounded-full flex items-center gap-2">
+                            <Clock className="w-4 h-4" />
+                            Pending
                         </div>
                     )}
                     {isPendingCancellation && (
@@ -267,7 +281,7 @@ export default function BillingSection() {
                         )}
 
                         <div className="flex flex-wrap gap-4 pt-4 border-t border-white/10 mt-6">
-                            {isSubscriptionActive && !isPendingCancellation && (
+                            {canCancel && (
                                 <>
                                     <Link href="/plans">
                                         <button className="px-6 py-3 bg-[#FFFF00] hover:bg-[#baba00] text-black font-bold rounded-lg transition-colors">
@@ -361,7 +375,13 @@ export default function BillingSection() {
                             </thead>
                             <tbody className="divide-y divide-white/5">
                                 {payments.map((payment, index) => {
-                                    const isPaid = payment.status === 'succeeded' || payment.status === 'paid'
+                                    const normalizedStatus = (payment.status || '').toLowerCase()
+                                    const isPaid = normalizedStatus === 'succeeded' || normalizedStatus === 'paid'
+                                    const isProcessing = normalizedStatus === 'processing' || normalizedStatus === 'pending'
+                                    const canDownloadInvoice =
+                                        normalizedStatus !== 'failed' &&
+                                        normalizedStatus !== 'cancelled' &&
+                                        normalizedStatus !== 'canceled'
 
                                     return (
                                         <motion.tr
@@ -391,20 +411,26 @@ export default function BillingSection() {
                                                 {formatAmount(payment.amount, payment.currency)}
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${isPaid
-                                                    ? 'bg-green-500/10 text-green-400'
-                                                    : 'bg-red-500/10 text-red-400'
-                                                    }`}>
+                                                <div
+                                                    className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${isPaid
+                                                        ? 'bg-green-500/10 text-green-400'
+                                                        : isProcessing
+                                                            ? 'bg-yellow-500/10 text-yellow-300'
+                                                            : 'bg-red-500/10 text-red-400'
+                                                        }`}
+                                                >
                                                     {isPaid ? (
                                                         <CheckCircle className="w-3 h-3" />
+                                                    ) : isProcessing ? (
+                                                        <Clock className="w-3 h-3" />
                                                     ) : (
                                                         <AlertTriangle className="w-3 h-3" />
                                                     )}
-                                                    {isPaid ? 'Paid' : payment.status}
+                                                    {isPaid ? 'Paid' : isProcessing ? 'Processing' : (payment.status || 'Failed')}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                {isPaid ? (
+                                                {canDownloadInvoice ? (
                                                     <button
                                                         onClick={() => {
                                                             if (payment.invoice_url) {

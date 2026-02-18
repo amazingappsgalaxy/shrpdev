@@ -1,101 +1,11 @@
 
-TEST EXECUTION TIMESTAMP: 2026-02-15T11:18:34.185Z
+TEST EXECUTION TIMESTAMP: 2026-02-18T14:18:18.236Z
 
 SCENARIO: Smart Upscale Disabled
-
-PAYLOAD NODE 229 SETTINGS:
-[
-  {
-    "nodeId": "229",
-    "fieldName": "Enable SeedVR2 (Down)Load DiT Model",
-    "fieldValue": "false"
-  },
-  {
-    "nodeId": "229",
-    "fieldName": "Enable SeedVR2 Video Upscaler (v2.5.15)",
-    "fieldValue": "false"
-  },
-  {
-    "nodeId": "229",
-    "fieldName": "Enable RunningHub Deepcleaner",
-    "fieldValue": "false"
-  },
-  {
-    "nodeId": "229",
-    "fieldName": "Enable SeedVR2 (Down)Load VAE Model",
-    "fieldValue": "false"
-  },
-  {
-    "nodeId": "229",
-    "fieldName": "Enable Clean VRAM Used",
-    "fieldValue": "false"
-  },
-  {
-    "nodeId": "229",
-    "fieldName": "Enable 🔧 Image Contrast Adaptive Sharpening",
-    "fieldValue": "false"
-  },
-  {
-    "nodeId": "229",
-    "fieldName": "Enable Output Resolution (4k/8k)",
-    "fieldValue": "false"
-  },
-  {
-    "nodeId": "229",
-    "fieldName": "Enable TTP_Tile_image_size",
-    "fieldValue": "false"
-  },
-  {
-    "nodeId": "229",
-    "fieldName": "Enable TTP_Image_Tile_Batch",
-    "fieldValue": "false"
-  },
-  {
-    "nodeId": "229",
-    "fieldName": "Enable Upscale Image By",
-    "fieldValue": "false"
-  },
-  {
-    "nodeId": "229",
-    "fieldName": "Enable 🔧 Image Resize",
-    "fieldValue": "false"
-  },
-  {
-    "nodeId": "229",
-    "fieldName": "Enable TTP_Image_Assy",
-    "fieldValue": "false"
-  },
-  {
-    "nodeId": "229",
-    "fieldName": "Enable set",
-    "fieldValue": "false"
-  },
-  {
-    "nodeId": "229",
-    "fieldName": "Enable 🔧 Get Image Size",
-    "fieldValue": "false"
-  },
-  {
-    "nodeId": "229",
-    "fieldName": "Enable Image Comparer (rgthree)",
-    "fieldValue": "false"
-  },
-  {
-    "nodeId": "229",
-    "fieldName": "Enable Number to Float",
-    "fieldValue": "false"
-  },
-  {
-    "nodeId": "229",
-    "fieldName": "Enable Save Image",
-    "fieldValue": "false"
-  }
-]
 
 FULL PAYLOAD:
 {
   "apiKey": "test-api-key",
-  "workflowId": "2021189307448434690",
   "nodeInfoList": [
     {
       "nodeId": "97",
@@ -196,91 +106,7 @@ FULL PAYLOAD:
       "nodeId": "138",
       "fieldName": "neck",
       "fieldValue": "false"
-    },
-    {
-      "nodeId": "229",
-      "fieldName": "Enable SeedVR2 (Down)Load DiT Model",
-      "fieldValue": "false"
-    },
-    {
-      "nodeId": "229",
-      "fieldName": "Enable SeedVR2 Video Upscaler (v2.5.15)",
-      "fieldValue": "false"
-    },
-    {
-      "nodeId": "229",
-      "fieldName": "Enable RunningHub Deepcleaner",
-      "fieldValue": "false"
-    },
-    {
-      "nodeId": "229",
-      "fieldName": "Enable SeedVR2 (Down)Load VAE Model",
-      "fieldValue": "false"
-    },
-    {
-      "nodeId": "229",
-      "fieldName": "Enable Clean VRAM Used",
-      "fieldValue": "false"
-    },
-    {
-      "nodeId": "229",
-      "fieldName": "Enable 🔧 Image Contrast Adaptive Sharpening",
-      "fieldValue": "false"
-    },
-    {
-      "nodeId": "229",
-      "fieldName": "Enable Output Resolution (4k/8k)",
-      "fieldValue": "false"
-    },
-    {
-      "nodeId": "229",
-      "fieldName": "Enable TTP_Tile_image_size",
-      "fieldValue": "false"
-    },
-    {
-      "nodeId": "229",
-      "fieldName": "Enable TTP_Image_Tile_Batch",
-      "fieldValue": "false"
-    },
-    {
-      "nodeId": "229",
-      "fieldName": "Enable Upscale Image By",
-      "fieldValue": "false"
-    },
-    {
-      "nodeId": "229",
-      "fieldName": "Enable 🔧 Image Resize",
-      "fieldValue": "false"
-    },
-    {
-      "nodeId": "229",
-      "fieldName": "Enable TTP_Image_Assy",
-      "fieldValue": "false"
-    },
-    {
-      "nodeId": "229",
-      "fieldName": "Enable set",
-      "fieldValue": "false"
-    },
-    {
-      "nodeId": "229",
-      "fieldName": "Enable 🔧 Get Image Size",
-      "fieldValue": "false"
-    },
-    {
-      "nodeId": "229",
-      "fieldName": "Enable Image Comparer (rgthree)",
-      "fieldValue": "false"
-    },
-    {
-      "nodeId": "229",
-      "fieldName": "Enable Number to Float",
-      "fieldValue": "false"
-    },
-    {
-      "nodeId": "229",
-      "fieldName": "Enable Save Image",
-      "fieldValue": "false"
     }
-  ]
+  ],
+  "workflowId": "2023005806844710914"
 }

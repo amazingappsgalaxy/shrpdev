@@ -18,16 +18,28 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Invalid session' }, { status: 401 })
         }
 
+        if (!supabase) {
+            return NextResponse.json({ error: 'Billing system not configured' }, { status: 500 })
+        }
+
         // Get active subscription from DB
         const { data: subscription, error } = await supabase
             .from('subscriptions')
             .select('*')
             .eq('user_id', session.user.id)
-            .eq('status', 'active')
+            .in('status', ['active', 'trialing', 'pending', 'pending_cancellation'])
             .single()
 
         if (error || !subscription) {
             return NextResponse.json({ error: 'No active subscription found' }, { status: 404 })
+        }
+
+        if (subscription.status === 'pending_cancellation') {
+            return NextResponse.json({
+                success: true,
+                message: 'Subscription is already set to cancel at period end.',
+                next_billing_date: subscription.next_billing_date
+            })
         }
 
         const subId = subscription.dodo_subscription_id
@@ -37,12 +49,14 @@ export async function POST(request: NextRequest) {
 
         // Cancel in Dodo Payments - use cancel_at_next_billing_date
         // This stops recurring payments but keeps the subscription active until the billing period ends
+        let providerSubscription: any = null
         try {
             console.log('🔄 Cancelling subscription in DodoPayments:', subId)
-            const updatedSub = await dodo.subscriptions.update(subId, {
+            await dodo.subscriptions.update(subId, {
                 cancel_at_next_billing_date: true
             })
-            console.log('✅ DodoPayments cancellation response:', JSON.stringify(updatedSub))
+            providerSubscription = await dodo.subscriptions.retrieve(subId)
+            console.log('✅ DodoPayments subscription after cancellation:', JSON.stringify(providerSubscription))
         } catch (dodoError: any) {
             console.error('❌ Dodo cancellation error:', dodoError)
             return NextResponse.json({
@@ -57,6 +71,7 @@ export async function POST(request: NextRequest) {
             .from('subscriptions')
             .update({
                 status: 'pending_cancellation',
+                next_billing_date: providerSubscription?.next_billing_date || subscription.next_billing_date,
                 updated_at: new Date().toISOString()
             })
             .eq('id', subscription.id)
@@ -68,7 +83,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
             success: true,
             message: 'Subscription will be cancelled at the end of your current billing period. You can continue using your credits until then.',
-            next_billing_date: subscription.next_billing_date
+            next_billing_date: providerSubscription?.next_billing_date || subscription.next_billing_date,
+            provider: {
+                subscription_id: providerSubscription?.subscription_id || subId,
+                status: providerSubscription?.status,
+                cancel_at_next_billing_date: providerSubscription?.cancel_at_next_billing_date
+            }
         })
 
     } catch (error) {

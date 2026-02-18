@@ -6,7 +6,7 @@ import { EnhancementRequest, ProviderConfig } from '../src/services/common/types
 const originalFetch = global.fetch;
 let fetchCalls: any[] = [];
 
-global.fetch = async (url: any, options: any) => {
+global.fetch = (async (url: any, options: any) => {
   fetchCalls.push({ url, options });
   
   if (url.includes('/task/openapi/create')) {
@@ -42,7 +42,7 @@ global.fetch = async (url: any, options: any) => {
   }
 
   return { ok: true, json: async () => ({}) };
-} as any;
+}) as any;
 
 async function testSmartUpscaleDisabled() {
   console.log('🧪 Testing Smart Upscale Disabled Logic...');

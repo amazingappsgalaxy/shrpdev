@@ -35,42 +35,48 @@ function PaymentSuccessClient() {
     const paymentId = searchParams.get('payment_id')
     const sessionId = searchParams.get('session_id')
     const paymentStatus = searchParams.get('status')
+    const subscriptionId = searchParams.get('subscription_id') || searchParams.get('subscriptionId')
     
     console.log('Payment success page - URL params:', {
       paymentId,
       sessionId, 
+      subscriptionId,
       paymentStatus,
       allParams: Object.fromEntries(searchParams.entries())
     })
     
-    if (paymentId || sessionId || paymentStatus === 'succeeded') {
-      // Simulate processing
-      setTimeout(() => {
-        setStatus('completed')
-        
-        // Start countdown timer
-        const timer = setInterval(() => {
-          setCountdown(prev => {
-            if (prev <= 1) {
-              clearInterval(timer)
-              router.push('/app/dashboard')
-              return 0
-            }
-            return prev - 1
-          })
-        }, 1000)
-        
-        return () => clearInterval(timer)
-      }, 2000)
-    } else {
-      // No payment info, assume success and redirect
-      setTimeout(() => {
-        setStatus('completed')
-        setTimeout(() => {
-          router.push('/app/dashboard')
-        }, 3000)
+    const finish = () => {
+      setStatus('completed')
+      const timer = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(timer)
+            router.push('/app/dashboard')
+            return 0
+          }
+          return prev - 1
+        })
       }, 1000)
+      return () => clearInterval(timer)
     }
+
+    const run = async () => {
+      if (subscriptionId) {
+        try {
+          await fetch('/api/payments/complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ subscriptionId }),
+          })
+        } catch {
+        }
+      }
+
+      setTimeout(finish, 1200)
+    }
+
+    run()
   }, [router, searchParams])
   
   const handleManualRedirect = () => {
