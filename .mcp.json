@@ -7,6 +7,10 @@
     "browsermcp": {
       "command": "npx",
       "args": ["@browsermcp/mcp@latest"]
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp"
     }
   }
 }
