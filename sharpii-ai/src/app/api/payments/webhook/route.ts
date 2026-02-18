@@ -28,6 +28,23 @@ export async function POST(request: NextRequest) {
   const timestamp = new Date().toISOString()
   console.log('🔔 Webhook received at:', timestamp)
 
+  // Log to DB for debugging
+  try {
+    const bodyText = await request.clone().text()
+    const headerObj = Object.fromEntries(request.headers.entries())
+
+    if (admin) {
+      await admin.from('webhook_logs').insert({
+        method: request.method,
+        url: request.url,
+        headers: headerObj,
+        body: bodyText
+      })
+    }
+  } catch (logError) {
+    console.error('Failed to log webhook:', logError)
+  }
+
   try {
     const body = await request.text()
     const signature = request.headers.get('dodo-signature')
@@ -78,15 +95,35 @@ async function handlePaymentSucceeded(payment: any) {
 
   try {
     // Extract user and plan info
-    const userId = payment.metadata?.userId || payment.customer?.metadata?.userId
+    let userId = payment.metadata?.userId || payment.customer?.metadata?.userId
     const plan = payment.metadata?.plan || 'creator'
     const billingPeriod = payment.metadata?.billingPeriod || 'monthly'
     const paymentId = payment.payment_id || payment.id
     const subscriptionId = payment.subscription_id
 
     if (!userId) {
-      console.error('❌ No userId found in payment metadata')
-      return
+      console.log('⚠️ No userId found in payment metadata, attempting lookup by customer_id')
+      if (admin && payment.customer_id) {
+        // @ts-ignore
+        const { data: subData } = await admin
+          .from('subscriptions')
+          .select('user_id')
+          .eq('dodo_customer_id', payment.customer?.customer_id || payment.customer_id)
+          .single()
+
+        // @ts-ignore
+        if (subData?.user_id) {
+          // @ts-ignore
+          userId = subData.user_id
+          console.log('✅ Found userId from customer_id lookup:', userId)
+        } else {
+          console.error('❌ Could not find user for payment:', paymentId)
+          return
+        }
+      } else {
+        console.error('❌ No userId found and admin/customer_id missing')
+        return
+      }
     }
 
     console.log(`👤 User: ${userId}, Plan: ${plan}, Period: ${billingPeriod}`)
@@ -97,7 +134,7 @@ async function handlePaymentSucceeded(payment: any) {
       await admin.from('payments').insert({
         user_id: userId,
         dodo_payment_id: paymentId,
-        dodo_customer_id: payment.customer_id,
+        dodo_customer_id: payment.customer?.customer_id || payment.customer_id,
         amount: payment.amount || payment.total_amount || 0,
         currency: payment.currency || 'INR',
         status: 'succeeded',
@@ -107,7 +144,8 @@ async function handlePaymentSucceeded(payment: any) {
         paid_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        metadata: payment
+        metadata: payment,
+        invoice_url: payment.invoice_url || payment.receipt_url // Save invoice URL
       })
     }
 
@@ -182,7 +220,7 @@ async function handleSubscriptionActive(subscription: any) {
         status: 'active',
         billing_period: billingPeriod,
         dodo_subscription_id: subscriptionId,
-        dodo_customer_id: subscription.customer_id,
+        dodo_customer_id: subscription.customer?.customer_id || subscription.customer_id,
         next_billing_date: subscription.next_billing_date || subscription.current_period_end,
         billing_name: subscription.customer?.name || subscription.metadata?.user_name,
         billing_email: subscription.customer?.email || subscription.metadata?.user_email,

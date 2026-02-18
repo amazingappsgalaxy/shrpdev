@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-simple'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin as supabase } from '@/lib/supabase'
 import { dodoClient as dodo } from '@/lib/dodo-client'
 
 export async function GET(request: NextRequest) {
@@ -48,6 +48,9 @@ export async function GET(request: NextRequest) {
                 invoice_url: payment.receipt_url || payment.invoice_url
             }))
 
+            if (invoices.length === 0) {
+                throw new Error('No invoices found in Dodo, checking local DB')
+            }
             return NextResponse.json({ invoices })
         } catch (dodoError: any) {
             console.error('Dodo fetch error:', dodoError)
@@ -58,7 +61,17 @@ export async function GET(request: NextRequest) {
                 .eq('user_id', session.user.id)
                 .order('created_at', { ascending: false })
 
-            return NextResponse.json({ invoices: localPayments || [] })
+            const invoices = (localPayments || []).map((p: any) => ({
+                id: p.dodo_payment_id || p.id,
+                amount: p.amount,
+                currency: p.currency,
+                status: p.status,
+                date: p.created_at,
+                // Use the new column first, then metadata fallback
+                invoice_url: p.invoice_url || p.metadata?.invoice_url || p.metadata?.receipt_url
+            }))
+
+            return NextResponse.json({ invoices })
         }
     } catch (error) {
         console.error('Invoices error:', error)

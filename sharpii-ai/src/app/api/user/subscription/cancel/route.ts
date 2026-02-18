@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-simple'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin as supabase } from '@/lib/supabase'
 import { dodoClient as dodo } from '@/lib/dodo-client'
 
 export async function POST(request: NextRequest) {
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
         const { data: subscription, error } = await supabase
             .from('subscriptions')
             .select('*')
-            .eq('userId', session.user.id) // Assuming userId is column name; verify if it's user_id
+            .eq('user_id', session.user.id)
             .eq('status', 'active')
             .single()
 
@@ -30,10 +30,12 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'No active subscription found' }, { status: 404 })
         }
 
+        // @ts-ignore
         if (!subscription.dodoSubscriptionId && !subscription.dodo_subscription_id) {
             return NextResponse.json({ error: 'Subscription ID not found' }, { status: 400 })
         }
 
+        // @ts-ignore
         const subId = subscription.dodoSubscriptionId || subscription.dodo_subscription_id
 
         // Cancel in Dodo Payments

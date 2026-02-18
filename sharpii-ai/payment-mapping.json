@@ -161,25 +161,62 @@
       "userName": "dailytest1@gmail.com",
       "paymentId": "pay_0NYi4KUFnLMcBcok4twV5",
       "timestamp": 1771352466322
-    }
-  },
-  "pending": {
-    "2c89c5f5-ca32-4730-88d0-bc73c7aaeb7f:day pass:daily": {
-      "userId": "2c89c5f5-ca32-4730-88d0-bc73c7aaeb7f",
-      "plan": "day pass",
-      "billingPeriod": "daily",
-      "userEmail": "dailytest1@gmail.com",
-      "userName": "dailytest1@gmail.com",
-      "timestamp": 1771352362344
     },
-    "2c89c5f5-ca32-4730-88d0-bc73c7aaeb7f:creator:monthly": {
-      "userId": "2c89c5f5-ca32-4730-88d0-bc73c7aaeb7f",
+    "sub_0NYiUkIeFfV9DD21WimHW": {
+      "userId": "304e4060-b5d3-4688-bede-1e2158c8083e",
       "plan": "creator",
       "billingPeriod": "monthly",
-      "userEmail": "dailytest1@gmail.com",
-      "userName": "dailytest1@gmail.com",
-      "timestamp": 1771352466322
+      "userEmail": "cancel_v3_1740000005@example.com",
+      "userName": "Cancel V3 User",
+      "paymentId": "pay_0NYiUkIaTl2JZQnC3352e",
+      "timestamp": 1771360799824
+    },
+    "pay_0NYiUkIaTl2JZQnC3352e": {
+      "userId": "304e4060-b5d3-4688-bede-1e2158c8083e",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "cancel_v3_1740000005@example.com",
+      "userName": "Cancel V3 User",
+      "paymentId": "pay_0NYiUkIaTl2JZQnC3352e",
+      "timestamp": 1771360799824
+    },
+    "sub_0NYiWIq6ptUQDnKbjQKgE": {
+      "userId": "aecbadbd-3273-4769-8ebd-1de6f851c122",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "cancel_v3_final_safe@example.com",
+      "userName": "Final Test User",
+      "paymentId": "pay_0NYiWIq4aWO9RZo3wHQVE",
+      "timestamp": 1771361291205
+    },
+    "pay_0NYiWIq4aWO9RZo3wHQVE": {
+      "userId": "aecbadbd-3273-4769-8ebd-1de6f851c122",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "cancel_v3_final_safe@example.com",
+      "userName": "Final Test User",
+      "paymentId": "pay_0NYiWIq4aWO9RZo3wHQVE",
+      "timestamp": 1771361291205
+    },
+    "sub_0NYiaUYz0RblOjOzDhZ7H": {
+      "userId": "6c44340b-579f-485f-84ac-accdbafb7770",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "webhook_test_1739818000@example.com",
+      "userName": "Webhook Tester",
+      "paymentId": "pay_0NYiaUYwjpqq0L99lKyTg",
+      "timestamp": 1771362612869
+    },
+    "pay_0NYiaUYwjpqq0L99lKyTg": {
+      "userId": "6c44340b-579f-485f-84ac-accdbafb7770",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "webhook_test_1739818000@example.com",
+      "userName": "Webhook Tester",
+      "paymentId": "pay_0NYiaUYwjpqq0L99lKyTg",
+      "timestamp": 1771362612869
     }
   },
-  "updated": 1771352466322
+  "pending": {},
+  "updated": 1771369774263
 }

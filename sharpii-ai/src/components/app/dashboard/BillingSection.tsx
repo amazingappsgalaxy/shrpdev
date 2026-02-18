@@ -69,12 +69,13 @@ export default function BillingSection() {
     }, [user?.id])
 
     const handleCancelSubscription = async () => {
-        if (!confirm('Are you sure you want to cancel your subscription? You will lose access to premium features at the end of your billing period.')) {
-            return
-        }
+        // if (!confirm('Are you sure you want to cancel your subscription? You will lose access to premium features at the end of your billing period.')) {
+        //     return
+        // }
 
         setCancelling(true)
         try {
+            console.log('Cancelling subscription...')
             const res = await fetch('/api/user/subscription/cancel', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
@@ -91,9 +92,11 @@ export default function BillingSection() {
                     setSubscription(subData.subscription)
                 }
             } else {
+                console.error('Cancellation failed:', data)
                 toast.error(data.error || 'Failed to cancel subscription')
             }
         } catch (error) {
+            console.error('Cancellation error:', error)
             toast.error('An error occurred. Please try again.')
         } finally {
             setCancelling(false)
