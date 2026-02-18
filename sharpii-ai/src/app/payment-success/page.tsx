@@ -46,21 +46,6 @@ function PaymentSuccessClient() {
       allParams: Object.fromEntries(searchParams.entries())
     })
     
-    const finish = () => {
-      setStatus('completed')
-      const timer = setInterval(() => {
-        setCountdown(prev => {
-          if (prev <= 1) {
-            clearInterval(timer)
-            router.push('/app/dashboard')
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-      return () => clearInterval(timer)
-    }
-
     const run = async () => {
       if (subscriptionId || paymentId || sessionId) {
         try {
@@ -72,6 +57,10 @@ function PaymentSuccessClient() {
               subscriptionId ? { subscriptionId } : paymentId ? { paymentId } : { sessionId }
             ),
           })
+          if (res.status === 202) {
+            setTimeout(run, 5000)
+            return
+          }
           if (!res.ok) {
             const data = await res.json().catch(() => ({} as any))
             setErrorMessage(data?.error || data?.details || 'Failed to complete payment')
@@ -85,11 +74,25 @@ function PaymentSuccessClient() {
         }
       }
 
-      setTimeout(finish, 1200)
+      setStatus('completed')
+      setCountdown(5)
     }
 
     run()
   }, [router, searchParams])
+
+  useEffect(() => {
+    if (status !== 'completed') return
+    if (countdown <= 0) return
+    const timer = setInterval(() => setCountdown(prev => Math.max(0, prev - 1)), 1000)
+    return () => clearInterval(timer)
+  }, [status, countdown])
+
+  useEffect(() => {
+    if (status !== 'completed') return
+    if (countdown !== 0) return
+    router.push('/app/dashboard')
+  }, [status, countdown, router])
   
   const handleManualRedirect = () => {
     router.push('/app/dashboard')

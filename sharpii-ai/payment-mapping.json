@@ -259,6 +259,14 @@
       "userEmail": "tesr1@gmail.com",
       "userName": "tesr1@gmail.com",
       "timestamp": 1771429880409
+    },
+    "cks_0NYm3QTnIHk2107Sm2BBJ": {
+      "userId": "a3447600-c341-4bda-963b-1947a3387fb9",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "tesr2@gmail.com",
+      "userName": "tesr2@gmail.com",
+      "timestamp": 1771430417696
     }
   },
   "pending": {
@@ -285,7 +293,15 @@
       "userEmail": "demo_1771427557652@example.com",
       "userName": "demo_1771427557652",
       "timestamp": 1771429800626
+    },
+    "a3447600-c341-4bda-963b-1947a3387fb9:creator:monthly": {
+      "userId": "a3447600-c341-4bda-963b-1947a3387fb9",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "tesr2@gmail.com",
+      "userName": "tesr2@gmail.com",
+      "timestamp": 1771430417696
     }
   },
-  "updated": 1771429880409
+  "updated": 1771430417696
 }

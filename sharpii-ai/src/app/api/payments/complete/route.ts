@@ -82,7 +82,34 @@ export async function POST(request: NextRequest) {
     const periodEnd = providerSubscription?.next_billing_date || providerSubscription?.current_period_end || null
     const nextBillingDate = periodEnd
     const cancelAtNextBilling = !!providerSubscription?.cancel_at_next_billing_date
-    const subscriptionStatus = cancelAtNextBilling ? 'pending_cancellation' : 'active'
+    const providerStatus = String(providerSubscription?.status || '').toLowerCase()
+    const subscriptionStatus =
+      cancelAtNextBilling
+        ? 'pending_cancellation'
+        : providerStatus || 'pending'
+
+    let paymentStatus: string | null = null
+    let isConfirmed = subscriptionStatus === 'active' || subscriptionStatus === 'trialing'
+    try {
+      const latestPaymentId = providerSubscription?.latest_payment_id || providerSubscription?.payment_id || null
+      if (latestPaymentId) {
+        const p: any = await (dodo as any).payments.retrieve(latestPaymentId)
+        paymentStatus = String(p?.status || '').toLowerCase() || null
+      } else {
+        for await (const item of (dodo as any).payments.list({ subscription_id: subscriptionId })) {
+          const p: any = item
+          paymentStatus = String(p?.status || '').toLowerCase() || null
+          break
+        }
+      }
+    } catch {
+    }
+
+    if (paymentStatus) {
+      if (paymentStatus === 'succeeded' || paymentStatus === 'success' || paymentStatus === 'paid') {
+        isConfirmed = true
+      }
+    }
 
     if (admin) {
       await admin.from('subscriptions').upsert(
@@ -104,6 +131,25 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'user_id' }
+      )
+    }
+
+    if (!isConfirmed) {
+      return NextResponse.json(
+        {
+          success: false,
+          pending: true,
+          subscription: {
+            id: subscriptionId,
+            status: subscriptionStatus,
+            plan,
+            billingPeriod,
+            next_billing_date: nextBillingDate,
+            cancel_at_next_billing_date: cancelAtNextBilling,
+          },
+          payment_status: paymentStatus,
+        },
+        { status: 202 }
       )
     }
 
