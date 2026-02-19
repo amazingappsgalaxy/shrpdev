@@ -64,7 +64,8 @@
       "Bash(claude mcp:*)",
       "Bash(pgrep:*)",
       "Bash(claude config-file:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "WebFetch(domain:knowledge.dodopayments.com)"
     ],
     "deny": [],
     "ask": []
