@@ -137,6 +137,7 @@ export function HeroSection() {
                 fill
                 className="object-cover"
                 priority
+                sizes="(max-width: 1024px) 100vw, 40vw"
               />
 
               {/* Floating UI Elements */}

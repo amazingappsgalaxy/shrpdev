@@ -1,5 +1,3 @@
-'use client'
-
 import { NavigationHero4 } from "@/components/ui/navigation-hero4"
 import { HeroSection } from "@/components/ui/hero-section"
 import { GridMotion } from "@/components/ui/grid-motion"

@@ -86,7 +86,7 @@ export async function getSession(): Promise<AuthData> {
   
   try {
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 30000) // Increased to 30 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
     
     const response = await fetch('/api/auth/session', {
       credentials: 'include', // Include cookies for authentication

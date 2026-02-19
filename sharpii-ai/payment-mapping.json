@@ -267,6 +267,14 @@
       "userEmail": "tesr2@gmail.com",
       "userName": "tesr2@gmail.com",
       "timestamp": 1771430417696
+    },
+    "cks_0NYqaLpLghXmnaAP9egHj": {
+      "userId": "50b15ef7-3c9a-4d3a-9590-4d526e070126",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "nizkhanba@proton.me",
+      "userName": "nizkhanba@proton.me",
+      "timestamp": 1771519040938
     }
   },
   "pending": {
@@ -301,7 +309,15 @@
       "userEmail": "tesr2@gmail.com",
       "userName": "tesr2@gmail.com",
       "timestamp": 1771430417696
+    },
+    "50b15ef7-3c9a-4d3a-9590-4d526e070126:creator:monthly": {
+      "userId": "50b15ef7-3c9a-4d3a-9590-4d526e070126",
+      "plan": "creator",
+      "billingPeriod": "monthly",
+      "userEmail": "nizkhanba@proton.me",
+      "userName": "nizkhanba@proton.me",
+      "timestamp": 1771519040938
     }
   },
-  "updated": 1771430417696
+  "updated": 1771519040938
 }
