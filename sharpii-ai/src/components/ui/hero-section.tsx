@@ -45,15 +45,15 @@ export function HeroSection() {
           {/* Left Content: Typography */}
           <motion.div
             className="lg:col-span-7 flex flex-col justify-center"
-            initial={{ opacity: 0, y: 50 }}
+            initial={{ opacity: 1, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           >
             {/* Badge */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
+              initial={{ opacity: 1, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.1 }}
               className="inline-flex items-center gap-2 self-start mb-8 px-4 py-2 rounded-full border border-[#FFFF00]/30 bg-[#FFFF00]/5 backdrop-blur-sm"
             >
               <Zap className="w-4 h-4 text-[#FFFF00] fill-[#FFFF00]" />
@@ -126,9 +126,9 @@ export function HeroSection() {
             {/* Main Image Container */}
             <motion.div
               className="relative w-full max-w-md aspect-[3/4] rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl shadow-[#FFFF00]/10"
-              initial={{ scale: 0.9, opacity: 0, rotate: -5 }}
+              initial={{ scale: 0.97, opacity: 1, rotate: -2 }}
               animate={{ scale: 1, opacity: 1, rotate: 0 }}
-              transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
               whileHover={{ scale: 1.02, rotate: 1, transition: { duration: 0.4 } }}
             >
               <Image
