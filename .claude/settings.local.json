@@ -59,7 +59,9 @@
       "mcp__browsermcp__browser_screenshot",
       "mcp__browsermcp__browser_snapshot",
       "Bash(head:*)",
-      "mcp__browsermcp__browser_click"
+      "mcp__browsermcp__browser_click",
+      "Bash(claude mcp list:*)",
+      "Bash(claude mcp:*)"
     ],
     "deny": [],
     "ask": []
