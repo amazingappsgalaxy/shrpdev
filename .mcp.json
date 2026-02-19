@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-   "streamable-mcp-server": {
+    "streamable-mcp-server": {
       "type": "streamable-http",
       "url": "http://127.0.0.1:12306/mcp"
     },
@@ -8,5 +8,14 @@
       "command": "npx",
       "args": ["@browsermcp/mcp@latest"]
     },
+    "Chrome DevTools MCP": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest"],
+      "env": {}
+    },
+    "dodo-knowledge": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote@latest", "https://knowledge.dodopayments.com/mcp"]
+    }
   }
 }

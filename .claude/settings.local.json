@@ -61,7 +61,10 @@
       "Bash(head:*)",
       "mcp__browsermcp__browser_click",
       "Bash(claude mcp list:*)",
-      "Bash(claude mcp:*)"
+      "Bash(claude mcp:*)",
+      "Bash(pgrep:*)",
+      "Bash(claude config-file:*)",
+      "Bash(xargs:*)"
     ],
     "deny": [],
     "ask": []
