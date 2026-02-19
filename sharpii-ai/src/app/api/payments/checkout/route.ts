@@ -127,7 +127,14 @@ export async function POST(request: NextRequest) {
       console.log('📋 [CHECKOUT API] Request data:', { plan, billingPeriod })
       console.log('💰 [CHECKOUT API] Plan amount:', amount, 'cents:', amount * 100)
 
-      const baseUrlRaw = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin
+      // Always derive the base URL from the incoming request origin so that
+      // cloudflare tunnel URL changes never break the return redirect.
+      // NEXT_PUBLIC_APP_URL is only used as a last-resort localhost fallback.
+      const requestOrigin = new URL(request.url).origin
+      const isLocalhost = requestOrigin.includes('localhost') || requestOrigin.includes('127.0.0.1')
+      const baseUrlRaw = isLocalhost
+        ? (process.env.NEXT_PUBLIC_APP_URL || requestOrigin)
+        : requestOrigin
       const baseUrl = baseUrlRaw.replace(/\/$/, '')
       const successUrl = `${baseUrl}/payment-success`
       const cancelUrl = `${baseUrl}/?payment=cancelled#pricing-section`
@@ -175,7 +182,7 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        PaymentUtils.storeMapping(checkoutSession.session_id || checkoutSession.id, {
+        await PaymentUtils.storeMapping(checkoutSession.session_id || checkoutSession.id, {
           userId: userId,
           plan: plan,
           billingPeriod: billingPeriod,

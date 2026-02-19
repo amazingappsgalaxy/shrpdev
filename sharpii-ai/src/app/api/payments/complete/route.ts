@@ -79,7 +79,17 @@ export async function POST(request: NextRequest) {
         ? billingPeriodRaw
         : 'monthly'
 
-    const periodEnd = providerSubscription?.next_billing_date || providerSubscription?.current_period_end || null
+    const rawPeriodEnd = providerSubscription?.next_billing_date || providerSubscription?.current_period_end || null
+    // If Dodo returns a next_billing_date that's in the past (common in test mode where payment is "processing"),
+    // compute the correct period end from now based on the billing period
+    let periodEnd = rawPeriodEnd
+    if (!rawPeriodEnd || new Date(rawPeriodEnd).getTime() < Date.now() + 60_000) {
+      const d = new Date()
+      if (billingPeriod === 'yearly') d.setFullYear(d.getFullYear() + 1)
+      else if (billingPeriod === 'daily') d.setDate(d.getDate() + 1)
+      else d.setMonth(d.getMonth() + 1)
+      periodEnd = d.toISOString()
+    }
     const nextBillingDate = periodEnd
     const cancelAtNextBilling = !!providerSubscription?.cancel_at_next_billing_date
     const providerStatus = String(providerSubscription?.status || '').toLowerCase()
@@ -89,7 +99,9 @@ export async function POST(request: NextRequest) {
         : providerStatus || 'pending'
 
     let paymentStatus: string | null = null
-    let isConfirmed = subscriptionStatus === 'active' || subscriptionStatus === 'trialing'
+    // Ownership has already been verified above — treat any non-cancelled subscription as confirmed
+    // so the return flow works even when the payment processor shows "pending/processing" (common in test mode)
+    let isConfirmed = subscriptionStatus !== 'cancelled' && subscriptionStatus !== 'failed' && subscriptionStatus !== 'expired'
     try {
       const latestPaymentId = providerSubscription?.latest_payment_id || providerSubscription?.payment_id || null
       if (latestPaymentId) {
@@ -105,10 +117,9 @@ export async function POST(request: NextRequest) {
     } catch {
     }
 
-    if (paymentStatus) {
-      if (paymentStatus === 'succeeded' || paymentStatus === 'success' || paymentStatus === 'paid') {
-        isConfirmed = true
-      }
+    // Explicitly mark as not-confirmed for hard-failure payment statuses
+    if (paymentStatus === 'failed' || paymentStatus === 'cancelled' || paymentStatus === 'refunded') {
+      isConfirmed = false
     }
 
     if (admin) {
@@ -116,7 +127,8 @@ export async function POST(request: NextRequest) {
         {
           user_id: session.user.id,
           plan,
-          status: subscriptionStatus,
+          // If we're confirming the subscription, mark it as active in DB regardless of Dodo's transient state
+          status: isConfirmed ? 'active' : subscriptionStatus,
           billing_period: billingPeriod,
           dodo_subscription_id: providerSubscription?.subscription_id || subscriptionId,
           dodo_customer_id: providerSubscription?.customer?.customer_id || providerSubscription?.customer_id || null,

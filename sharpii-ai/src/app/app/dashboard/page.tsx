@@ -10,7 +10,7 @@ import BillingSection from '@/components/app/dashboard/BillingSection'
 import { ElegantLoading } from '@/components/ui/elegant-loading'
 import { Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LayoutDashboard, CreditCard, Activity, Coins } from 'lucide-react'
+import { Coins, Activity, CreditCard } from 'lucide-react'
 
 function DashboardContent() {
   const router = useRouter()
@@ -18,10 +18,8 @@ function DashboardContent() {
   const { user, isLoading } = useAuth()
   const [activeSection, setActiveSection] = useState('credits')
 
-  // Demo mode check
   const isDemo = searchParams.get('demo') === 'true'
 
-  // Read tab parameter from URL
   useEffect(() => {
     const tab = searchParams.get('tab')
     if (tab && ['credits', 'usage', 'billing'].includes(tab)) {
@@ -33,7 +31,6 @@ function DashboardContent() {
     return <ElegantLoading message="Loading your dashboard..." />
   }
 
-  // Effective user (real or demo)
   const effectiveUser = user || (isDemo ? {
     id: 'demo-user',
     name: 'Demo Creator',
@@ -58,34 +55,26 @@ function DashboardContent() {
     <div className="min-h-screen bg-black text-white selection:bg-[#FFFF00] selection:text-black">
       <UserHeader />
 
-      <main className="pt-28 pb-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto space-y-8">
+      <main className="pt-24 pb-10 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto space-y-5">
 
-          {/* Header Area */}
-          <div className="space-y-4 text-center md:text-left">
+          {/* Compact Header */}
+          <div className="flex items-center justify-between">
             <motion.h1
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-4xl md:text-5xl font-bold tracking-tight text-white"
+              className="text-2xl font-bold tracking-tight text-white"
             >
               Dashboard
             </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-lg text-white/50 max-w-2xl"
-            >
-              Manage your credits, view usage statistics, and handle your billing details all in one place.
-            </motion.p>
           </div>
 
-          {/* Segmented Control Tabs */}
+          {/* Segmented Control */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex flex-wrap gap-2 md:gap-4 border-b border-white/10 pb-1"
+            transition={{ delay: 0.1 }}
+            className="inline-flex items-center bg-white/5 border border-white/10 rounded-xl p-1 gap-0.5"
           >
             {tabs.map((tab) => {
               const isActive = activeSection === tab.id
@@ -94,19 +83,14 @@ function DashboardContent() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveSection(tab.id)}
-                  className={`relative flex items-center gap-2 px-6 py-3 rounded-t-2xl text-sm font-medium transition-all duration-300 ${isActive
-                      ? 'text-[#FFFF00] bg-white/5'
-                      : 'text-white/40 hover:text-white hover:bg-white/5'
-                    }`}
+                  className={`relative flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? 'bg-white/10 text-white shadow-sm'
+                      : 'text-white/40 hover:text-white/70'
+                  }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-[#FFFF00]' : 'text-current'}`} />
+                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#FFFF00]' : 'text-current'}`} />
                   {tab.label}
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeTabBorder"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FFFF00] shadow-[0_0_10px_#FFFF00]"
-                    />
-                  )}
                 </button>
               )
             })}
@@ -116,11 +100,10 @@ function DashboardContent() {
           <AnimatePresence mode="wait">
             <motion.div
               key={activeSection}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-              className="min-h-[500px]"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
             >
               {activeSection === 'credits' && <CreditsSection />}
               {activeSection === 'usage' && <OptimizedUsageSection />}

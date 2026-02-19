@@ -15,8 +15,21 @@ function normalizeBillingPeriod(value: unknown): 'monthly' | 'yearly' | 'daily' 
   return 'monthly'
 }
 
-// Verify Dodo webhook signature
-function verifyDodoSignature(body: string, signature: string): boolean {
+/**
+ * Verify Dodo webhook signature following the Standard Webhooks specification.
+ * https://docs.dodopayments.com/developer-resources/webhooks#verifying-signatures
+ *
+ * Standard Webhooks format:
+ *   message  = "{webhook-id}.{webhook-timestamp}.{raw-body}"
+ *   signature = HMAC-SHA256(message, secret)
+ *   header   = "webhook-signature: v1,<base64-encoded-signature>"
+ */
+function verifyDodoSignature(
+  body: string,
+  webhookId: string,
+  webhookTimestamp: string,
+  webhookSignature: string
+): boolean {
   const webhookSecret = process.env.DODO_WEBHOOK_SECRET || process.env.DODO_PAYMENTS_WEBHOOK_SECRET
   if (!webhookSecret) {
     console.warn('⚠️ Webhook secret not set (DODO_WEBHOOK_SECRET / DODO_PAYMENTS_WEBHOOK_SECRET)')
@@ -24,9 +37,21 @@ function verifyDodoSignature(body: string, signature: string): boolean {
   }
 
   try {
-    const hmac = crypto.createHmac('sha256', webhookSecret)
-    const digest = hmac.update(body).digest('hex')
-    return digest === signature
+    // Strip the "whsec_" prefix if present (Dodo uses base64-encoded secret)
+    const secretBase64 = webhookSecret.startsWith('whsec_')
+      ? webhookSecret.slice('whsec_'.length)
+      : webhookSecret
+    const secretBytes = Buffer.from(secretBase64, 'base64')
+
+    // Build the signed message per Standard Webhooks spec
+    const message = `${webhookId}.${webhookTimestamp}.${body}`
+    const hmac = crypto.createHmac('sha256', secretBytes)
+    const computedB64 = hmac.update(message).digest('base64')
+    const computedSig = `v1,${computedB64}`
+
+    // webhook-signature header may contain multiple signatures separated by spaces
+    const providedSigs = webhookSignature.split(' ')
+    return providedSigs.some(sig => sig === computedSig)
   } catch (error) {
     console.error('Signature verification error:', error)
     return false
@@ -56,15 +81,22 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.text()
-    const signature = request.headers.get('dodo-signature')
 
-    // Verify signature in production
-    if (signature && process.env.NODE_ENV === 'production') {
-      const isValid = verifyDodoSignature(body, signature)
+    // Dodo uses Standard Webhooks headers
+    const webhookId = request.headers.get('webhook-id') || ''
+    const webhookTimestamp = request.headers.get('webhook-timestamp') || ''
+    const webhookSignature = request.headers.get('webhook-signature') || ''
+
+    // Verify signature when all headers are present (skip if missing – dev mode)
+    if (webhookId && webhookTimestamp && webhookSignature) {
+      const isValid = verifyDodoSignature(body, webhookId, webhookTimestamp, webhookSignature)
       if (!isValid) {
         console.error('❌ Invalid webhook signature')
         return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
       }
+      console.log('✅ Webhook signature verified')
+    } else {
+      console.log('ℹ️ Webhook signature headers missing – proceeding without verification (dev mode)')
     }
 
     const event = JSON.parse(body)

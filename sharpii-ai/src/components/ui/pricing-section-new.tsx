@@ -56,16 +56,17 @@ export function PricingSectionDemo({ id }: { id?: string }) {
           return
         }
         
-        // If user is not authenticated, store plan and redirect to login
+        // If user is not authenticated, store plan and redirect to signin
         if (!authData?.user) {
-          console.log('👤 User not authenticated - storing plan and redirecting to login')
+          console.log('👤 User not authenticated - storing plan and redirecting to signin')
+          const isDayPassRedirect = plan.name.toLowerCase().includes('day')
           const planData = {
-            plan: plan.name.toLowerCase().replace(/\s+/g, '_'),
-            billingPeriod: isYearly ? 'yearly' : 'monthly'
+            plan: isDayPassRedirect ? 'day pass' : plan.name.toLowerCase().replace(/\s+/g, '_'),
+            billingPeriod: isDayPassRedirect ? 'daily' : (isYearly ? 'yearly' : 'monthly')
           }
           localStorage.setItem('selectedPlan', JSON.stringify(planData))
           console.log('💾 Stored plan data:', planData)
-          router.push('/app/login')
+          router.push('/app/signin')
           return
         }
       }
@@ -73,9 +74,10 @@ export function PricingSectionDemo({ id }: { id?: string }) {
       console.log('✅ User authenticated - proceeding to checkout API')
       
       // Create the request body
+      const isDayPass = plan.name.toLowerCase().includes('day')
       const requestBody = {
-        plan: plan.name.toLowerCase().replace(/\s+/g, '_'),
-        billingPeriod: isYearly ? 'yearly' : 'monthly'
+        plan: isDayPass ? 'day pass' : plan.name.toLowerCase().replace(/\s+/g, '_'),
+        billingPeriod: isDayPass ? 'daily' : (isYearly ? 'yearly' : 'monthly')
       }
       
       console.log('📦 Checkout request:', requestBody)

@@ -44,17 +44,14 @@ export default function BillingSection() {
 
         const fetchData = async () => {
             try {
-                // Fetch invoices (payments) and subscription in parallel
                 const [invoicesRes, subRes] = await Promise.all([
                     fetch('/api/user/invoices', { credentials: 'include' }),
                     fetch('/api/user/subscription', { credentials: 'include' })
                 ])
-
                 if (invoicesRes.ok) {
                     const data = await invoicesRes.json()
                     setPayments(data.invoices || [])
                 }
-
                 if (subRes.ok) {
                     const data = await subRes.json()
                     setSubscription(data.subscription)
@@ -77,24 +74,19 @@ export default function BillingSection() {
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include'
             })
-
             const data = await res.json()
-
             if (res.ok) {
                 toast.success(data.message || 'Auto-renew turned off. Your plan stays active until period end.')
                 setShowCancelConfirm(false)
-                // Refresh subscription data
                 const subRes = await fetch('/api/user/subscription', { credentials: 'include' })
                 if (subRes.ok) {
                     const subData = await subRes.json()
                     setSubscription(subData.subscription)
                 }
             } else {
-                console.error('Cancellation failed:', data)
                 toast.error(data.error || 'Failed to cancel subscription')
             }
         } catch (error) {
-            console.error('Cancellation error:', error)
             toast.error('An error occurred. Please try again.')
         } finally {
             setCancelling(false)
@@ -103,10 +95,7 @@ export default function BillingSection() {
 
     const handleDownloadInvoice = async (paymentId: string) => {
         try {
-            const res = await fetch(`/api/billing/invoice/${paymentId}/download`, {
-                credentials: 'include'
-            })
-
+            const res = await fetch(`/api/billing/invoice/${paymentId}/download`, { credentials: 'include' })
             if (res.ok) {
                 const contentType = res.headers.get('content-type')
                 if (contentType?.includes('application/pdf')) {
@@ -120,30 +109,21 @@ export default function BillingSection() {
                     window.URL.revokeObjectURL(url)
                     document.body.removeChild(a)
                 } else {
-                    // Fallback: try to get JSON with URL
                     const data = await res.json()
-                    if (data.url) {
-                        window.open(data.url, '_blank')
-                    } else {
-                        toast.error('Invoice download not available for this payment')
-                    }
+                    if (data.url) window.open(data.url, '_blank')
+                    else toast.error('Invoice download not available for this payment')
                 }
             } else {
                 toast.error('Failed to download invoice')
             }
-        } catch (error) {
-            console.error('Invoice download error:', error)
+        } catch {
             toast.error('Failed to download invoice')
         }
     }
 
     const formatAmount = (amount: number, currency: string) => {
-        // Amounts from Dodo are in smallest unit (cents)
         const displayAmount = amount >= 100 ? amount / 100 : amount
-        return displayAmount.toLocaleString('en-US', {
-            style: 'currency',
-            currency: currency || 'USD'
-        })
+        return displayAmount.toLocaleString('en-US', { style: 'currency', currency: currency || 'USD' })
     }
 
     const subscriptionStatus = subscription?.status
@@ -153,121 +133,114 @@ export default function BillingSection() {
 
     if (loading) {
         return (
-            <div className="space-y-6">
-                <div className="h-48 bg-white/5 rounded-2xl animate-pulse" />
-                <div className="h-64 bg-white/5 rounded-2xl animate-pulse" />
+            <div className="space-y-3">
+                <div className="h-28 bg-white/5 rounded-xl animate-pulse" />
+                <div className="h-48 bg-white/5 rounded-xl animate-pulse" />
             </div>
         )
     }
 
     return (
-        <div className="space-y-6">
-            {/* Current Subscription */}
+        <div className="space-y-3">
+            {/* Subscription Card */}
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white/5 rounded-2xl border border-white/10 p-8"
+                className="bg-white/5 border border-white/10 rounded-xl p-5"
             >
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                        <div className="p-3 bg-[#FFFF00]/10 rounded-xl">
-                            <CreditCard className="w-6 h-6 text-[#FFFF00]" />
-                        </div>
-                        <h2 className="text-2xl font-bold text-white">Subscription</h2>
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 text-[#FFFF00]" />
+                        <span className="text-sm font-semibold text-white/70 uppercase tracking-wider">Subscription</span>
                     </div>
+                    {/* Status badge */}
                     {subscriptionStatus === 'active' && (
-                        <div className="px-3 py-1 bg-green-500/20 text-green-400 text-sm font-medium rounded-full flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4" />
-                            Active
-                        </div>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-500/10 text-green-400 rounded-full text-xs font-medium">
+                            <CheckCircle className="w-3 h-3" /> Active
+                        </span>
                     )}
                     {subscriptionStatus === 'trialing' && (
-                        <div className="px-3 py-1 bg-blue-500/20 text-blue-300 text-sm font-medium rounded-full flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4" />
-                            Trialing
-                        </div>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 text-blue-300 rounded-full text-xs font-medium">
+                            <CheckCircle className="w-3 h-3" /> Trial
+                        </span>
                     )}
                     {subscriptionStatus === 'pending' && (
-                        <div className="px-3 py-1 bg-white/10 text-white/80 text-sm font-medium rounded-full flex items-center gap-2">
-                            <Clock className="w-4 h-4" />
-                            Pending
-                        </div>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/10 text-white/70 rounded-full text-xs font-medium">
+                            <Clock className="w-3 h-3" /> Pending
+                        </span>
                     )}
                     {isPendingCancellation && (
-                        <div className="px-3 py-1 bg-yellow-500/20 text-yellow-400 text-sm font-medium rounded-full flex items-center gap-2">
-                            <Clock className="w-4 h-4" />
-                            Cancels at period end
-                        </div>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-500/10 text-yellow-400 rounded-full text-xs font-medium">
+                            <Clock className="w-3 h-3" /> Cancels at period end
+                        </span>
                     )}
-                    {subscription?.status === 'cancelled' && (
-                        <div className="px-3 py-1 bg-red-500/20 text-red-400 text-sm font-medium rounded-full flex items-center gap-2">
-                            <XCircle className="w-4 h-4" />
-                            Cancelled
-                        </div>
+                    {subscriptionStatus === 'cancelled' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-500/10 text-red-400 rounded-full text-xs font-medium">
+                            <XCircle className="w-3 h-3" /> Cancelled
+                        </span>
                     )}
                 </div>
 
                 {subscription ? (
-                    <div className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="space-y-4">
+                        {/* Plan details row */}
+                        <div className="grid grid-cols-3 gap-3">
                             <div>
-                                <div className="text-sm text-white/60 mb-1">Plan</div>
-                                <div className="text-xl font-bold text-white capitalize">
+                                <div className="text-xs text-white/40 mb-0.5">Plan</div>
+                                <div className="text-sm font-bold text-white capitalize">
                                     {subscription.plan.includes('day') ? 'Day Pass' : subscription.plan}
                                 </div>
                             </div>
                             <div>
-                                <div className="text-sm text-white/60 mb-1">Billing Period</div>
-                                <div className="text-xl font-bold text-white capitalize">
-                                    {subscription.billing_period}
-                                </div>
+                                <div className="text-xs text-white/40 mb-0.5">Billing</div>
+                                <div className="text-sm font-bold text-white capitalize">{subscription.billing_period}</div>
                             </div>
                             <div>
-                                <div className="text-sm text-white/60 mb-1">
+                                <div className="text-xs text-white/40 mb-0.5">
                                     {isPendingCancellation ? 'Expires On' : 'Next Billing'}
                                 </div>
-                                <div className="text-xl font-bold text-white">
+                                <div className="text-sm font-bold text-white">
                                     {subscription.next_billing_date
-                                        ? new Date(subscription.next_billing_date).toLocaleString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                                        ? new Date(subscription.next_billing_date).toLocaleString(undefined, {
+                                            month: 'long', day: 'numeric', year: 'numeric',
+                                            hour: '2-digit', minute: '2-digit'
+                                        })
                                         : '-'}
                                 </div>
                             </div>
                         </div>
 
-                        {/* Cancellation notice */}
+                        {/* Pending cancellation notice */}
                         {isPendingCancellation && (
-                            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
-                                <div className="flex items-start gap-3">
-                                    <AlertTriangle className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
-                                    <div>
-                                        <p className="text-yellow-200 font-medium">Auto-renew is off</p>
-                                        <p className="text-yellow-200/70 text-sm mt-1">
-                                            Your plan will remain active and won&apos;t renew. You can continue using your credits and features until{' '}
-                                            {subscription.next_billing_date
-                                                ? new Date(subscription.next_billing_date).toLocaleString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-                                                : 'the end of your billing period'}.
-                                        </p>
-                                    </div>
-                                </div>
+                            <div className="flex items-start gap-2 bg-yellow-500/8 border border-yellow-500/15 rounded-lg p-3">
+                                <AlertTriangle className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
+                                <p className="text-xs text-yellow-200/70">
+                                    Auto-renew is off. Your plan stays active until{' '}
+                                    {subscription.next_billing_date
+                                        ? new Date(subscription.next_billing_date).toLocaleString(undefined, {
+                                            month: 'long', day: 'numeric', year: 'numeric'
+                                        })
+                                        : 'the end of your billing period'}.
+                                </p>
                             </div>
                         )}
 
-                        {/* Billing Details */}
+                        {/* Billing details */}
                         {(subscription.billing_name || subscription.billing_email) && (
-                            <div className="mt-6 pt-6 border-t border-white/10">
-                                <h3 className="text-sm font-semibold text-white/80 mb-3 uppercase tracking-wider">Billing Details</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="pt-3 border-t border-white/8">
+                                <div className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">Billing Details</div>
+                                <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <div className="text-xs text-white/50 mb-1">Billed To</div>
-                                        <div className="text-white font-medium">{subscription.billing_name}</div>
-                                        <div className="text-white/70 text-sm">{subscription.billing_email}</div>
+                                        <div className="text-xs text-white/30 mb-0.5">Billed To</div>
+                                        <div className="text-sm text-white font-medium">{subscription.billing_name}</div>
+                                        <div className="text-xs text-white/50">{subscription.billing_email}</div>
                                     </div>
                                     {subscription.billing_address && (
                                         <div>
-                                            <div className="text-xs text-white/50 mb-1">Address</div>
-                                            <div className="text-white/70 text-sm">
-                                                {subscription.billing_address.line1}<br />
-                                                {subscription.billing_address.city}, {subscription.billing_address.state} {subscription.billing_address.postal_code}<br />
+                                            <div className="text-xs text-white/30 mb-0.5">Address</div>
+                                            <div className="text-xs text-white/50 leading-relaxed">
+                                                {subscription.billing_address.line1 || subscription.billing_address.street}<br />
+                                                {subscription.billing_address.city}, {subscription.billing_address.state}<br />
                                                 {subscription.billing_address.country}
                                             </div>
                                         </div>
@@ -276,38 +249,38 @@ export default function BillingSection() {
                             </div>
                         )}
 
-                        <div className="flex flex-wrap gap-4 pt-4 border-t border-white/10 mt-6">
+                        {/* Action buttons */}
+                        <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-white/8">
                             {canCancel && (
                                 <>
                                     <Link href="/plans">
-                                        <button className="px-6 py-3 bg-[#FFFF00] hover:bg-[#baba00] text-black font-bold rounded-lg transition-colors">
+                                        <button className="px-4 py-2 bg-[#FFFF00] hover:bg-[#baba00] text-black text-sm font-bold rounded-lg transition-colors">
                                             Upgrade Plan
                                         </button>
                                     </Link>
                                     {!showCancelConfirm ? (
                                         <button
                                             onClick={() => setShowCancelConfirm(true)}
-                                            className="px-6 py-3 bg-white/5 hover:bg-red-500/10 text-white hover:text-red-400 font-bold rounded-lg border border-white/10 transition-colors flex items-center gap-2"
+                                            className="px-4 py-2 bg-white/5 hover:bg-red-500/10 text-white/60 hover:text-red-400 text-sm font-medium rounded-lg border border-white/10 transition-colors"
                                         >
-                                            <XCircle className="w-4 h-4" />
-                            Turn off auto-renew
+                                            Turn off auto-renew
                                         </button>
                                     ) : (
-                                        <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3">
-                                            <span className="text-red-300 text-sm">
-                                Are you sure? Your plan will stay active until the end of the billing period.
+                                        <div className="flex items-center gap-2 bg-red-500/8 border border-red-500/15 rounded-lg px-3 py-2">
+                                            <span className="text-xs text-red-300/80">
+                                                Are you sure? Your plan will stay active until the end of the billing period.
                                             </span>
                                             <button
                                                 onClick={handleCancelSubscription}
                                                 disabled={cancelling}
-                                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-colors flex items-center gap-2"
+                                                className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
                                             >
-                                                {cancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                                Yes, turn off
+                                                {cancelling && <Loader2 className="w-3 h-3 animate-spin" />}
+                                                Yes, turn off
                                             </button>
                                             <button
                                                 onClick={() => setShowCancelConfirm(false)}
-                                                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg transition-colors"
+                                                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded-lg transition-colors"
                                             >
                                                 Keep Plan
                                             </button>
@@ -315,9 +288,9 @@ export default function BillingSection() {
                                     )}
                                 </>
                             )}
-                            {(isPendingCancellation || subscription.status === 'cancelled') && (
+                            {(isPendingCancellation || subscriptionStatus === 'cancelled') && (
                                 <Link href="/plans">
-                                    <button className="px-6 py-3 bg-[#FFFF00] hover:bg-[#baba00] text-black font-bold rounded-lg transition-colors">
+                                    <button className="px-4 py-2 bg-[#FFFF00] hover:bg-[#baba00] text-black text-sm font-bold rounded-lg transition-colors">
                                         Turn auto-renew back on
                                     </button>
                                 </Link>
@@ -325,10 +298,10 @@ export default function BillingSection() {
                         </div>
                     </div>
                 ) : (
-                    <div className="text-center py-8">
-                        <div className="text-white/60 mb-4">No active subscription</div>
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm text-white/40">No active subscription</span>
                         <Link href="/plans">
-                            <button className="px-6 py-3 bg-[#FFFF00] hover:bg-[#c9c900] text-black font-bold rounded-lg transition-colors">
+                            <button className="px-4 py-2 bg-[#FFFF00] hover:bg-[#c9c900] text-black text-sm font-bold rounded-lg transition-colors">
                                 View Plans
                             </button>
                         </Link>
@@ -336,37 +309,36 @@ export default function BillingSection() {
                 )}
             </motion.div>
 
-            {/* Payment History & Invoices */}
+            {/* Payment History */}
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden"
+                transition={{ delay: 0.05 }}
+                className="bg-white/5 border border-white/10 rounded-xl overflow-hidden"
             >
-                <div className="p-8 border-b border-white/10 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <FileText className="w-6 h-6 text-[#FFFF00]" />
-                        <h2 className="text-2xl font-bold text-white">Payment History</h2>
+                <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
+                    <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-[#FFFF00]" />
+                        <span className="text-sm font-semibold text-white/70 uppercase tracking-wider">Payment History</span>
                     </div>
-                    <span className="text-white/40 text-sm">{payments.length} payment{payments.length !== 1 ? 's' : ''}</span>
+                    <span className="text-xs text-white/30">{payments.length} payment{payments.length !== 1 ? 's' : ''}</span>
                 </div>
 
                 {payments.length === 0 ? (
-                    <div className="text-center py-16 text-white/60">
-                        <FileText className="w-12 h-12 mx-auto mb-4 text-white/20" />
-                        <p>No payments found</p>
-                        <p className="text-sm text-white/40 mt-2">Your payment history will appear here after your first purchase.</p>
+                    <div className="text-center py-10 text-white/40">
+                        <FileText className="w-8 h-8 mx-auto mb-2 text-white/15" />
+                        <p className="text-sm">No payments yet</p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-white/5 border-b border-white/10">
+                        <table className="w-full text-sm">
+                            <thead className="bg-white/3 border-b border-white/8">
                                 <tr>
-                                    <th className="px-6 py-4 text-left text-sm font-semibold text-white/60">Date</th>
-                                    <th className="px-6 py-4 text-left text-sm font-semibold text-white/60">Plan</th>
-                                    <th className="px-6 py-4 text-left text-sm font-semibold text-white/60">Amount</th>
-                                    <th className="px-6 py-4 text-center text-sm font-semibold text-white/60">Status</th>
-                                    <th className="px-6 py-4 text-right text-sm font-semibold text-white/60">Invoice</th>
+                                    <th className="px-5 py-3 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Date</th>
+                                    <th className="px-5 py-3 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Plan</th>
+                                    <th className="px-5 py-3 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Amount</th>
+                                    <th className="px-5 py-3 text-center text-xs font-semibold text-white/40 uppercase tracking-wider">Status</th>
+                                    <th className="px-5 py-3 text-right text-xs font-semibold text-white/40 uppercase tracking-wider">Invoice</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
@@ -374,77 +346,53 @@ export default function BillingSection() {
                                     const normalizedStatus = (payment.status || '').toLowerCase()
                                     const isPaid = normalizedStatus === 'succeeded' || normalizedStatus === 'paid'
                                     const isProcessing = normalizedStatus === 'processing' || normalizedStatus === 'pending'
-                                    const canDownloadInvoice =
-                                        normalizedStatus !== 'failed' &&
-                                        normalizedStatus !== 'cancelled' &&
-                                        normalizedStatus !== 'canceled'
+                                    const canDownloadInvoice = !['failed', 'cancelled', 'canceled'].includes(normalizedStatus)
 
                                     return (
-                                        <motion.tr
-                                            key={payment.id + '-' + index}
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: index * 0.05 }}
-                                            className="hover:bg-white/5 transition-colors"
-                                        >
-                                            <td className="px-6 py-4 text-sm text-white/80">
-                                                <div className="flex items-center gap-2">
-                                                    <Calendar className="w-4 h-4 text-white/40" />
-                                                    {new Date(payment.date || payment.created_at).toLocaleDateString('en-US', {
-                                                        month: 'short',
-                                                        day: 'numeric',
-                                                        year: 'numeric'
-                                                    })}
-                                                </div>
+                                        <tr key={payment.id + '-' + index} className="hover:bg-white/3 transition-colors">
+                                            <td className="px-5 py-3 text-white/70">
+                                                {new Date(payment.date || payment.created_at).toLocaleDateString('en-US', {
+                                                    month: 'short', day: 'numeric', year: 'numeric'
+                                                })}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-white/80 capitalize">
+                                            <td className="px-5 py-3 text-white/70 capitalize">
                                                 {payment.plan || '-'}
                                                 {payment.billing_period && (
-                                                    <span className="text-white/40 ml-1">({payment.billing_period})</span>
+                                                    <span className="text-white/30 ml-1">({payment.billing_period})</span>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 text-sm font-bold text-white">
+                                            <td className="px-5 py-3 font-semibold text-white">
                                                 {formatAmount(payment.amount, payment.currency)}
                                             </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <div
-                                                    className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${isPaid
-                                                        ? 'bg-green-500/10 text-green-400'
-                                                        : isProcessing
-                                                            ? 'bg-yellow-500/10 text-yellow-300'
-                                                            : 'bg-red-500/10 text-red-400'
-                                                        }`}
-                                                >
-                                                    {isPaid ? (
-                                                        <CheckCircle className="w-3 h-3" />
-                                                    ) : isProcessing ? (
-                                                        <Clock className="w-3 h-3" />
-                                                    ) : (
-                                                        <AlertTriangle className="w-3 h-3" />
-                                                    )}
+                                            <td className="px-5 py-3 text-center">
+                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                    isPaid ? 'bg-green-500/10 text-green-400'
+                                                    : isProcessing ? 'bg-yellow-500/10 text-yellow-300'
+                                                    : 'bg-red-500/10 text-red-400'
+                                                }`}>
+                                                    {isPaid ? <CheckCircle className="w-2.5 h-2.5" />
+                                                        : isProcessing ? <Clock className="w-2.5 h-2.5" />
+                                                        : <AlertTriangle className="w-2.5 h-2.5" />}
                                                     {isPaid ? 'Paid' : isProcessing ? 'Processing' : (payment.status || 'Failed')}
-                                                </div>
+                                                </span>
                                             </td>
-                                            <td className="px-6 py-4 text-right">
+                                            <td className="px-5 py-3 text-right">
                                                 {canDownloadInvoice ? (
                                                     <button
                                                         onClick={() => {
-                                                            if (payment.invoice_url) {
-                                                                window.open(payment.invoice_url, '_blank')
-                                                            } else {
-                                                                handleDownloadInvoice(payment.id)
-                                                            }
+                                                            if (payment.invoice_url) window.open(payment.invoice_url, '_blank')
+                                                            else handleDownloadInvoice(payment.id)
                                                         }}
-                                                        className="inline-flex items-center gap-2 px-3 py-1 text-sm text-[#FFFF00] hover:text-[#c9c900] transition-colors"
+                                                        className="inline-flex items-center gap-1 text-xs text-[#FFFF00] hover:text-[#c9c900] transition-colors"
                                                     >
-                                                        <Download className="w-4 h-4" />
+                                                        <Download className="w-3 h-3" />
                                                         Download
                                                     </button>
                                                 ) : (
-                                                    <span className="text-white/20 text-sm">-</span>
+                                                    <span className="text-white/20 text-xs">—</span>
                                                 )}
                                             </td>
-                                        </motion.tr>
+                                        </tr>
                                     )
                                 })}
                             </tbody>

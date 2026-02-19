@@ -67,11 +67,17 @@ export async function POST(request: NextRequest) {
 
         // Update DB: mark as pending_cancellation so UI knows it's cancelled but still active
         // The subscription remains usable until the current billing period ends
+        // Guard: Dodo test mode often returns a stale next_billing_date (past). Keep the DB value if it's better.
+        const providerDate = providerSubscription?.next_billing_date
+        const existingDate = subscription.next_billing_date
+        const providerDateValid = providerDate && new Date(providerDate).getTime() > Date.now() + 60_000
+        const preservedNextBillingDate = providerDateValid ? providerDate : (existingDate || providerDate)
+
         const { error: updateError } = await supabase
             .from('subscriptions')
             .update({
                 status: 'pending_cancellation',
-                next_billing_date: providerSubscription?.next_billing_date || subscription.next_billing_date,
+                next_billing_date: preservedNextBillingDate,
                 updated_at: new Date().toISOString()
             })
             .eq('id', subscription.id)

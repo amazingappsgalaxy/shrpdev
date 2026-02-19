@@ -25,14 +25,17 @@ export function PricingTableNew() {
                 setTimeout(() => { setIsLoading(null); handlePlanSelect(plan) }, 300)
                 return
             }
+            const isDayPass = plan.name.toLowerCase().includes('day')
+            const planKey = isDayPass ? 'day pass' : plan.name.toLowerCase().replace(/\s+/g, '_')
+            const billingPeriod = isDayPass ? 'daily' : frequency
             if (!authData?.user) {
-                const planData = { plan: plan.name.toLowerCase().replace(/\s+/g, '_'), billingPeriod: frequency }
+                const planData = { plan: planKey, billingPeriod }
                 localStorage.setItem('selectedPlan', JSON.stringify(planData))
-                router.push('/app/login')
+                router.push('/app/signin')
                 return
             }
 
-            const requestBody = { plan: plan.name.toLowerCase().replace(/\s+/g, '_'), billingPeriod: frequency }
+            const requestBody = { plan: planKey, billingPeriod }
             const controller = new AbortController()
             const timeoutId = setTimeout(() => controller.abort(), 20000)
 
@@ -49,9 +52,9 @@ export function PricingTableNew() {
             try { data = await response.json() } catch (e) { toast.error('Invalid response'); return }
 
             if (response.status === 401) {
-                const planData = { plan: plan.name.toLowerCase().replace(/\s+/g, '_'), billingPeriod: frequency }
+                const planData = { plan: planKey, billingPeriod }
                 localStorage.setItem('selectedPlan', JSON.stringify(planData))
-                router.push('/app/login')
+                router.push('/app/signin')
                 return
             }
             if (!response.ok) { toast.error(data?.error || 'Failed'); return }
