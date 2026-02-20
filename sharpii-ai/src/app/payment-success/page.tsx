@@ -35,8 +35,14 @@ function PaymentSuccessClient() {
   const [countdown, setCountdown] = useState(5)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const retryCount = useRef(0)
+  const hasRun = useRef(false)
 
   useEffect(() => {
+    // Guard against React StrictMode double-invoking this effect in development,
+    // which would call /complete twice simultaneously and bypass idempotency.
+    if (hasRun.current) return
+    hasRun.current = true
+
     const paymentId = searchParams.get('payment_id')
     const sessionId = searchParams.get('session_id') || searchParams.get('session')
     const subscriptionId = searchParams.get('subscription_id') || searchParams.get('subscriptionId')

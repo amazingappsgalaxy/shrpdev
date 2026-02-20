@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { CreditsService } from '@/lib/credits-service'
 import { supabaseAdmin } from '@/lib/supabase'
 import { dodoClient as dodo } from '@/lib/dodo-client'
+import { computePeriodEnd } from '@/lib/pricing-config'
 import crypto from 'crypto'
 
 const admin = supabaseAdmin as any
@@ -317,17 +318,15 @@ async function handlePaymentSucceeded(payment: any) {
 
         if (!resolvedUserId) return
 
-        // Compute period end — if Dodo returns a past date (common in test mode),
-        // compute from now based on billing period
+        // For daily plans: always recompute — Dodo returns next_billing_date as ~1 month for daily subscriptions.
+        // For other plans: trust Dodo's date if it's in the future, else compute from now.
         const rawPeriodEnd = providerSubscription?.next_billing_date || providerSubscription?.current_period_end || null
-        let periodEnd = rawPeriodEnd
-        if (!rawPeriodEnd || new Date(rawPeriodEnd).getTime() < Date.now() + 60_000) {
-          const d = new Date()
-          if (resolvedBillingPeriod === 'yearly') d.setFullYear(d.getFullYear() + 1)
-          else if (resolvedBillingPeriod === 'daily') d.setDate(d.getDate() + 1)
-          else d.setMonth(d.getMonth() + 1)
-          periodEnd = d.toISOString()
-        }
+        const periodEnd =
+          resolvedBillingPeriod === 'daily' ||
+          !rawPeriodEnd ||
+          new Date(rawPeriodEnd).getTime() < Date.now() + 60_000
+            ? computePeriodEnd(resolvedBillingPeriod).toISOString()
+            : rawPeriodEnd
 
         const dateStr = new Date(periodEnd).toISOString().split('T')[0]
         const transactionId = `sub_period_${subscriptionId}_${dateStr}`

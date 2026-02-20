@@ -1,5 +1,5 @@
 import { supabase, supabaseAdmin } from './supabase'
-import { PRICING_PLANS } from './pricing-config'
+import { PRICING_PLANS, computePeriodEnd } from './pricing-config'
 
 export interface CreditBalance {
   total: number
@@ -86,18 +86,9 @@ export class CreditsService {
 
     const creditsToAllocate = typeof options?.credits === 'number' ? options.credits : planConfig.credits.monthly
 
-    const expiryDate = (() => {
-      if (options?.expiresAt) return new Date(options.expiresAt)
-      const d = new Date()
-      if (billingPeriod === 'monthly') {
-        d.setDate(d.getDate() + 30)
-      } else if (billingPeriod === 'daily') {
-        d.setDate(d.getDate() + 1)
-      } else {
-        d.setDate(d.getDate() + 30)
-      }
-      return d
-    })()
+    const expiryDate = options?.expiresAt
+      ? new Date(options.expiresAt)
+      : computePeriodEnd(billingPeriod)
 
     const admin = (supabaseAdmin ?? supabase) as any
 

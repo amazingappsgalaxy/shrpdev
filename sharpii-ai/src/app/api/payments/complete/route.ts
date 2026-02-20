@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth-simple'
 import { supabaseAdmin } from '@/lib/supabase'
 import { dodoClient as dodo } from '@/lib/dodo-client'
 import { CreditsService } from '@/lib/credits-service'
+import { computePeriodEnd } from '@/lib/pricing-config'
 
 const admin = supabaseAdmin
 
@@ -90,16 +91,14 @@ export async function POST(request: NextRequest) {
         : 'monthly'
 
     const rawPeriodEnd = providerSubscription?.next_billing_date || providerSubscription?.current_period_end || null
-    // If Dodo returns a next_billing_date that's in the past (common in test mode where payment is "processing"),
-    // compute the correct period end from now based on the billing period
-    let periodEnd = rawPeriodEnd
-    if (!rawPeriodEnd || new Date(rawPeriodEnd).getTime() < Date.now() + 60_000) {
-      const d = new Date()
-      if (billingPeriod === 'yearly') d.setFullYear(d.getFullYear() + 1)
-      else if (billingPeriod === 'daily') d.setDate(d.getDate() + 1)
-      else d.setMonth(d.getMonth() + 1)
-      periodEnd = d.toISOString()
-    }
+    // For daily plans: always recompute — Dodo returns next_billing_date as ~1 month for daily subscriptions.
+    // For other plans: trust Dodo's date if it's in the future, else compute from now.
+    const periodEnd =
+      billingPeriod === 'daily' ||
+      !rawPeriodEnd ||
+      new Date(rawPeriodEnd).getTime() < Date.now() + 60_000
+        ? computePeriodEnd(billingPeriod).toISOString()
+        : rawPeriodEnd
     const nextBillingDate = periodEnd
     const cancelAtNextBilling = !!providerSubscription?.cancel_at_next_billing_date
     const providerStatus = String(providerSubscription?.status || '').toLowerCase()

@@ -226,5 +226,29 @@ export function getYearlySavings(monthlyPrice: number): number {
   return monthlyTotal - yearlyTotal
 }
 
+/**
+ * How many days subscription credits last per billing period.
+ * All credits expire on a monthly cycle regardless of whether the user
+ * subscribed monthly or yearly. Daily (Day Pass) expires after 1 day.
+ * Change these values here to adjust expiry for all plans at once.
+ */
+export const BILLING_PERIOD_EXPIRY_DAYS: Record<string, number> = {
+  daily: 1,
+  monthly: 30,
+  yearly: 30, // yearly subscribers still get monthly credit cycles
+}
+
+/**
+ * Compute the expiry date for subscription credits.
+ * @param billingPeriod - 'daily' | 'monthly' | 'yearly'
+ * @param fromDate - start of the period (defaults to now)
+ */
+export function computePeriodEnd(billingPeriod: string, fromDate?: Date): Date {
+  const d = fromDate ? new Date(fromDate) : new Date()
+  const days = BILLING_PERIOD_EXPIRY_DAYS[billingPeriod] ?? 30
+  d.setDate(d.getDate() + days)
+  return d
+}
+
 // Export default plans for backward compatibility
 export default PRICING_PLANS
