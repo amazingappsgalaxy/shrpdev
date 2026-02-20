@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/lib/auth-client-simple'
 import { Coins, Crown, Calendar, Lock, Zap, ArrowRight, RefreshCw } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -21,27 +21,99 @@ export default function CreditsSection() {
         subscription: null as any
     })
     const [loading, setLoading] = useState(true)
+    const [activating, setActivating] = useState(false)
+    const [activatingSlowMode, setActivatingSlowMode] = useState(false)
+    const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const pollAttemptsRef = useRef(0)
+    const MAX_POLL_ATTEMPTS = 12 // fast phase: 12 × 5s = 60s
+
+    const fetchCredits = async () => {
+        const res = await fetch('/api/credits/balance', { credentials: 'include' })
+        if (!res.ok) return null
+        const data = await res.json()
+        return data.balance
+    }
+
+    const fetchSubscription = async () => {
+        const res = await fetch('/api/user/subscription', { credentials: 'include' })
+        if (!res.ok) return null
+        const data = await res.json()
+        return data
+    }
+
+    const stopPolling = () => {
+        if (pollRef.current) clearTimeout(pollRef.current)
+        pollRef.current = null
+        setActivating(false)
+        setActivatingSlowMode(false)
+    }
+
+    const handleCreditsFound = async (balance: { total: number; subscription_credits: number; permanent_credits: number; subscription_expire_at: Date | null }) => {
+        setCredits(balance)
+        window.dispatchEvent(new CustomEvent('sharpii:credits-updated', { detail: balance }))
+        const subData = await fetchSubscription()
+        if (subData) {
+            setSubscription({
+                has_active_subscription: subData.has_active_subscription,
+                current_plan: subData.current_plan,
+                subscription: subData.subscription
+            })
+        }
+        stopPolling()
+    }
+
+    const scheduleSlowPoll = () => {
+        // Slow phase: poll every 30s indefinitely until credits appear or page unmounts
+        pollRef.current = setTimeout(async () => {
+            const balance = await fetchCredits()
+            if (balance && balance.total > 0) {
+                await handleCreditsFound(balance)
+            } else {
+                scheduleSlowPoll()
+            }
+        }, 30000)
+    }
+
+    const schedulePoll = () => {
+        if (pollAttemptsRef.current >= MAX_POLL_ATTEMPTS) {
+            // Fast phase exhausted — switch to slow background polling
+            setActivating(false)
+            setActivatingSlowMode(true)
+            scheduleSlowPoll()
+            return
+        }
+        pollRef.current = setTimeout(async () => {
+            pollAttemptsRef.current += 1
+            const balance = await fetchCredits()
+            if (balance && balance.total > 0) {
+                await handleCreditsFound(balance)
+            } else {
+                schedulePoll()
+            }
+        }, 5000)
+    }
 
     useEffect(() => {
         if (!user?.id) return
 
         const fetchData = async () => {
             try {
-                const [creditsRes, subRes] = await Promise.all([
-                    fetch('/api/credits/balance', { credentials: 'include' }),
-                    fetch('/api/user/subscription', { credentials: 'include' })
-                ])
-                if (creditsRes.ok) {
-                    const data = await creditsRes.json()
-                    setCredits(data.balance)
-                }
-                if (subRes.ok) {
-                    const data = await subRes.json()
+                const [balance, subData] = await Promise.all([fetchCredits(), fetchSubscription()])
+                if (balance) setCredits(balance)
+                if (subData) {
                     setSubscription({
-                        has_active_subscription: data.has_active_subscription,
-                        current_plan: data.current_plan,
-                        subscription: data.subscription
+                        has_active_subscription: subData.has_active_subscription,
+                        current_plan: subData.current_plan,
+                        subscription: subData.subscription
                     })
+                    // If there's a pending subscription with 0 credits, the webhook hasn't fired yet.
+                    // Start polling until credits appear (webhook processes the payment).
+                    const subStatus = subData.subscription?.status
+                    if (balance?.total === 0 && subStatus === 'pending') {
+                        setActivating(true)
+                        pollAttemptsRef.current = 0
+                        schedulePoll()
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching dashboard data:', error)
@@ -51,6 +123,9 @@ export default function CreditsSection() {
         }
 
         fetchData()
+
+        return () => stopPolling()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.id])
 
     if (loading) {
@@ -136,7 +211,22 @@ export default function CreditsSection() {
                     </div>
                 )}
 
-                {credits.total === 0 && (
+                {credits.total === 0 && activating && (
+                    <div className="mt-4 flex items-center gap-2">
+                        <div className="w-3 h-3 border border-white/20 border-t-white/60 rounded-full animate-spin" />
+                        <p className="text-sm text-white/40">Activating your credits…</p>
+                    </div>
+                )}
+                {credits.total === 0 && activatingSlowMode && (
+                    <div className="mt-4 space-y-1">
+                        <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 border border-amber-400/40 border-t-amber-400 rounded-full animate-spin" />
+                            <p className="text-sm text-amber-400/80">Payment received — credits are being processed.</p>
+                        </div>
+                        <p className="text-xs text-white/30 pl-5">This can take a few minutes. This page will update automatically.</p>
+                    </div>
+                )}
+                {credits.total === 0 && !activating && !activatingSlowMode && (
                     <p className="mt-4 text-sm text-white/30">No credits yet. Subscribe to a plan to get started.</p>
                 )}
             </motion.div>

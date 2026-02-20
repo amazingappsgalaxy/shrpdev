@@ -114,6 +114,19 @@ export function UserHeader({ className }: UserHeaderProps) {
         return () => window.removeEventListener('sharpii:open-plans', handleOpenPlans)
     }, [])
 
+    // Sync header credits when CreditsSection polling detects new credits (e.g. after webhook fires)
+    useEffect(() => {
+        const handleCreditsUpdated = (e: Event) => {
+            const balance = (e as CustomEvent).detail
+            if (balance?.total !== undefined) {
+                setCredits(balance.total)
+                setCreditsLoading(false)
+            }
+        }
+        window.addEventListener('sharpii:credits-updated', handleCreditsUpdated)
+        return () => window.removeEventListener('sharpii:credits-updated', handleCreditsUpdated)
+    }, [])
+
     const handleHoverEnter = () => {
         if (hoverTimer.current) clearTimeout(hoverTimer.current)
         setHoverCardOpen(true)

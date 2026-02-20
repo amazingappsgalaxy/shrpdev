@@ -32,18 +32,19 @@ export default function AdminPage() {
     setIsLoading(true)
 
     try {
-      // Validate inputs
       if (!formData.email || !formData.password) {
         setError('Please enter both email and password')
         setIsLoading(false)
         return
       }
 
-      // Simple credential check
-      if (formData.email.toLowerCase().trim() === 'sharpiiaiweb@gmail.com' &&
-          formData.password === '##SHARPpass123') {
+      const res = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, password: formData.password })
+      })
 
-        // Store authentication safely
+      if (res.ok) {
         if (typeof window !== 'undefined' && window.sessionStorage) {
           try {
             window.sessionStorage.setItem('adminAuthenticated', 'true')
@@ -52,11 +53,11 @@ export default function AdminPage() {
             console.warn('Could not save to sessionStorage:', storageErr)
           }
         }
-
         setIsAuthenticated(true)
         setError('')
       } else {
-        setError('Invalid admin credentials')
+        const data = await res.json()
+        setError(data.error || 'Invalid admin credentials')
       }
     } catch (err) {
       console.error('Login error:', err)

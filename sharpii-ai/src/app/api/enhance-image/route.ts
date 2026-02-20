@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { EnhancementService } from '../../../services/ai-providers';
 import type { EnhancementRequest } from '../../../services/ai-providers';
 import { createClient } from '@supabase/supabase-js';
 import { config } from '../../../lib/config';
 import { AIProviderFactory } from '../../../services/ai-providers/provider-factory';
+import { getSession } from '@/lib/auth-simple';
 import { getImageMetadata, calculateCreditsConsumed, getModelDisplayName } from '@/lib/image-metadata'
 import { PricingEngine } from '@/lib/pricing-engine';
 import { ModelPricingEngine } from '@/lib/model-pricing-config';
@@ -55,61 +57,26 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🚀 API: Enhancement request received')
 
-    // TEMPORARY: Skip authentication for testing
-    console.log('⚠️  TESTING MODE: Authentication bypassed')
-
-    // TEMPORARY: Clear provider cache to force reload of RunningHubProvider (hot fix for dev)
+    // Clear provider cache to force reload of RunningHubProvider (hot fix for dev)
     AIProviderFactory.clearCache()
 
-    // Supabase client initialized outside try block
+    // Authenticate via session cookie
+    const cookieStore = await cookies()
+    const token = request.headers.get('authorization')?.replace('Bearer ', '') || cookieStore.get('session')?.value
 
-    const body = await request.json()
-    const { imageUrl, settings, imageId = `img-${Date.now()}`, modelId, userId: requestUserId } = body
-
-    // Ensure we use a valid UUID user id that exists in users table when in testing/bypass mode
-    const isValidUUID = (v: string): boolean => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)
-
-    const ensureTestUser = async (): Promise<string> => {
-      const fixedId = '11111111-1111-1111-1111-111111111111'
-      const testEmail = 'test@local.dev'
-      try {
-        const { data: existing } = await supabase
-          .from('users')
-          .select('id')
-          .eq('email', testEmail)
-          .limit(1)
-          .single()
-
-        if (existing?.id) {
-          return existing.id as string
-        }
-      } catch (e) {
-        // ignore and try insert
-      }
-
-      const { data: inserted, error: insertErr } = await supabase
-        .from('users')
-        .insert({
-          id: fixedId,
-          email: testEmail,
-          name: 'Test User',
-          password_hash: 'dev-test-hash'
-        })
-        .select('id')
-        .single()
-
-      if (insertErr) {
-        console.error('❌ API: Failed to ensure test user:', insertErr)
-        throw new Error(insertErr.message)
-      }
-      return inserted.id as string
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const authenticatedUserId = requestUserId && typeof requestUserId === 'string' && isValidUUID(requestUserId)
-      ? requestUserId
-      : await ensureTestUser()
+    const session = await getSession(token)
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-    const userId = authenticatedUserId // Use the authenticated user ID
+    const userId = session.user.id
+
+    const body = await request.json()
+    const { imageUrl, settings, imageId = `img-${Date.now()}`, modelId } = body
 
     console.log('📋 API: Request details:', {
       imageUrl: imageUrl.substring(0, 50) + '...',
@@ -151,13 +118,75 @@ export async function POST(request: NextRequest) {
 
     const historyPageName = settings.pageName || 'app/editor'
 
-    // Create history item in Supabase with comprehensive validation
+    // Pre-calculate credits needed for this enhancement BEFORE creating any DB record
+    let estimatedCredits = 0
+
+    if (settings?.imageWidth && settings?.imageHeight) {
+      try {
+        const pricingBreakdown = ModelPricingEngine.calculateCredits(
+          settings.imageWidth,
+          settings.imageHeight,
+          modelId,
+          settings
+        )
+        estimatedCredits = pricingBreakdown.totalCredits
+        console.log('💰 API: Credit estimation from request dimensions:', {
+          dimensions: { width: settings.imageWidth, height: settings.imageHeight },
+          estimatedCredits,
+          taskId
+        })
+      } catch (error) {
+        console.warn('⚠️ API: Model pricing engine failed, trying fallback:', error)
+        try {
+          const pricingBreakdown = PricingEngine.calculateCredits(
+            settings.imageWidth,
+            settings.imageHeight,
+            modelId,
+            settings
+          )
+          estimatedCredits = pricingBreakdown.totalCredits
+        } catch {
+          estimatedCredits = calculateCreditsConsumed(settings.imageWidth, settings.imageHeight)
+        }
+      }
+    } else {
+      try {
+        const imageMetadata = await getImageMetadata(imageUrl)
+        estimatedCredits = calculateCreditsConsumed(imageMetadata.width, imageMetadata.height)
+      } catch {
+        estimatedCredits = 150
+        console.warn('⚠️ API: Using default credit estimation - no dimensions available')
+      }
+    }
+
+    // Check user credit balance BEFORE creating history item — no DB record if credits insufficient
+    const creditBalance = await UnifiedCreditsService.getUserCredits(userId)
+    const userCreditBalance = creditBalance.total
+
+    if (userCreditBalance < estimatedCredits && estimatedCredits > 0) {
+      console.log('❌ API: Insufficient credits — rejecting without creating history record:', {
+        userId,
+        required: estimatedCredits,
+        available: userCreditBalance,
+        taskId
+      })
+      return NextResponse.json(
+        {
+          error: 'Insufficient credits',
+          required: estimatedCredits,
+          available: userCreditBalance,
+          taskId
+        },
+        { status: 402 }
+      )
+    }
+
+    // Create history item in Supabase — only reached when credits are sufficient
     try {
       console.log('📝 API: Creating history item in database...', {
         taskId,
         userId,
         imageId,
-        provider: 'replicate',
         timestamp: now
       })
 
@@ -233,23 +262,13 @@ export async function POST(request: NextRequest) {
       try {
         const updateTime = Date.now()
 
-        // Validate progress and status values
         if (typeof progress !== 'number' || progress < 0 || progress > 100) {
-          console.warn('⚠️ API: Invalid progress value:', progress)
           progress = Math.max(0, Math.min(100, progress || 0))
         }
 
         if (!status || typeof status !== 'string') {
-          console.warn('⚠️ API: Invalid status value:', status)
           status = 'processing'
         }
-
-        console.log(`📊 API: Updating task progress...`, {
-          taskId,
-          progress,
-          status,
-          timestamp: new Date(updateTime).toISOString()
-        })
 
         const safeStatus = status === 'failed' ? 'failed' : 'processing'
         const { error } = await supabase
@@ -264,16 +283,13 @@ export async function POST(request: NextRequest) {
           throw error
         }
 
-        console.log(`✅ API: History status updated successfully - ${progress}% (${status})`, { taskId })
+        console.log(`✅ API: History status updated - ${progress}% (${status})`, { taskId })
 
       } catch (error) {
         console.error('❌ API: Failed to update progress:', {
           taskId,
-          progress,
-          status,
           error: error instanceof Error ? error.message : String(error)
         })
-        // Don't throw here to avoid breaking the enhancement process
       }
     }
 
@@ -284,117 +300,6 @@ export async function POST(request: NextRequest) {
       userId,
       imageId
     }
-
-    // Pre-calculate credits needed for this enhancement
-    let estimatedCredits = 0
-
-    // Prioritize request dimensions for consistency with frontend display
-    if (settings?.imageWidth && settings?.imageHeight) {
-      try {
-        // Use the new model-specific pricing engine with granular control
-        const pricingBreakdown = ModelPricingEngine.calculateCredits(
-          settings.imageWidth,
-          settings.imageHeight,
-          modelId,
-          settings
-        )
-        estimatedCredits = pricingBreakdown.totalCredits
-        console.log('💰 API: Enhanced credit estimation from request dimensions:', {
-          dimensions: { width: settings.imageWidth, height: settings.imageHeight },
-          megapixels: (settings.imageWidth * settings.imageHeight) / 1000000,
-          estimatedCredits,
-          breakdown: pricingBreakdown.breakdown,
-          resolutionTier: pricingBreakdown.resolutionTier.description,
-          appliedIncrements: pricingBreakdown.appliedIncrements.map(inc =>
-            `${inc.settingName}: ${inc.addedCredits > 0 ? '+' : ''}${inc.addedCredits} credits (${inc.description})`
-          ),
-          taskId
-        })
-      } catch (error) {
-        // Fallback to old pricing engine if model pricing engine fails
-        console.warn('⚠️ API: Model pricing engine failed, trying old pricing engine:', error)
-        try {
-          const pricingBreakdown = PricingEngine.calculateCredits(
-            settings.imageWidth,
-            settings.imageHeight,
-            modelId,
-            settings
-          )
-          estimatedCredits = pricingBreakdown.totalCredits
-          console.log('💰 API: Using fallback pricing engine:', { estimatedCredits })
-        } catch (fallbackError) {
-          // Final fallback to old calculation
-          console.warn('⚠️ API: All pricing engines failed, using legacy calculation:', fallbackError)
-          estimatedCredits = calculateCreditsConsumed(settings.imageWidth, settings.imageHeight)
-          console.log('💰 API: Fallback credit estimation from request dimensions:', {
-            dimensions: { width: settings.imageWidth, height: settings.imageHeight },
-            megapixels: (settings.imageWidth * settings.imageHeight) / 1000000,
-            estimatedCredits,
-            taskId
-          })
-        }
-      }
-    } else {
-      // Fallback to metadata extraction if request doesn't have dimensions
-      try {
-        const imageMetadata = await getImageMetadata(imageUrl)
-        estimatedCredits = calculateCreditsConsumed(imageMetadata.width, imageMetadata.height)
-        console.log('💰 API: Fallback credit estimation from metadata:', {
-          dimensions: { width: imageMetadata.width, height: imageMetadata.height },
-          megapixels: (imageMetadata.width * imageMetadata.height) / 1000000,
-          estimatedCredits,
-          taskId
-        })
-      } catch (error) {
-        // Use default credit cost if no dimensions available at all
-        estimatedCredits = 150 // Default base cost
-        console.warn('⚠️ API: Using default credit estimation - no dimensions available:', { estimatedCredits, taskId })
-      }
-    }
-
-    // Check user credit balance before enhancement
-    const creditBalance = await UnifiedCreditsService.getUserCredits(authenticatedUserId)
-    const userCreditBalance = creditBalance.remaining
-
-    if (userCreditBalance < estimatedCredits && estimatedCredits > 0) {
-      console.log('❌ API: Insufficient credits for enhancement:', {
-        userId: authenticatedUserId,
-        required: estimatedCredits,
-        available: userCreditBalance,
-        taskId
-      })
-
-      // Update task status to failed due to insufficient credits
-      await supabase
-        .from('history_items')
-        .update({
-          status: 'failed',
-          updated_at: new Date().toISOString(),
-          generation_time_ms: 0,
-          settings: {
-            ...historySettings,
-            failure_reason: 'Insufficient credits',
-            failure_details: {
-              required: estimatedCredits,
-              available: userCreditBalance
-            }
-          }
-        })
-        .eq('id', taskId)
-
-      return NextResponse.json(
-        {
-          error: 'Insufficient credits',
-          required: estimatedCredits,
-          available: userCreditBalance,
-          taskId
-        },
-        { status: 402 }
-      )
-    }
-
-    // TEMPORARY: Bypass credit check for all users as per request
-    // console.log('⚠️ API: Credit check bypassed temporarily')
 
     // Perform enhancement using the new modular system
     const result = await enhancementService.enhanceImage(enhancementRequest, modelId, progressCallback)
@@ -551,7 +456,7 @@ export async function POST(request: NextRequest) {
         try {
           const description = `Image enhancement - ${originalMetadata?.width || 'unknown'}x${originalMetadata?.height || 'unknown'} pixels`
           const success = await UnifiedCreditsService.deductCredits(
-            authenticatedUserId,
+            userId,
             creditsConsumed,
             taskId,
             description
@@ -561,7 +466,7 @@ export async function POST(request: NextRequest) {
             console.log('💳 API: Credits deducted successfully:', {
               taskId,
               creditsDeducted: creditsConsumed,
-              newBalance: (await UnifiedCreditsService.getUserCredits(authenticatedUserId)).remaining
+              newBalance: (await UnifiedCreditsService.getUserCredits(userId)).total
             })
           } else {
             throw new Error('Credit deduction returned false')
@@ -572,7 +477,7 @@ export async function POST(request: NextRequest) {
             taskId,
             error: creditError instanceof Error ? creditError.message : String(creditError),
             creditsToDeduct: creditsConsumed,
-            userId: authenticatedUserId
+            userId: userId
           })
           // Don't fail the enhancement if credit deduction fails
         }

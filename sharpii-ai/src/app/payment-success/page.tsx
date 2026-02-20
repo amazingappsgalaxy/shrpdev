@@ -2,24 +2,31 @@
 
 import { useEffect, useState, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { CheckCircle, Loader2, AlertCircle, Clock, ArrowRight, Sparkles } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
 
 export default function PaymentSuccessPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-black flex items-center justify-center">
-          <Loader2 className="h-8 w-8 text-[#FFFF00] animate-spin" />
-        </div>
-      }
-    >
+    <Suspense fallback={<LoadingScreen text="Loading..." />}>
       <PaymentSuccessClient />
     </Suspense>
   )
 }
 
-const MAX_RETRIES = 12
+function LoadingScreen({ text }: { text: string }) {
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center gap-4">
+      <Spinner />
+      <p className="text-white/50 text-sm">{text}</p>
+    </div>
+  )
+}
+
+function Spinner() {
+  return (
+    <div className="w-8 h-8 border-2 border-white/10 border-t-white/60 rounded-full animate-spin" />
+  )
+}
+
+const MAX_RETRIES = 5
 
 function PaymentSuccessClient() {
   const router = useRouter()
@@ -62,7 +69,7 @@ function PaymentSuccessClient() {
 
         if (res.status === 202) {
           retryCount.current += 1
-          setTimeout(run, 5000)
+          setTimeout(run, 3000)
           return
         }
 
@@ -82,7 +89,7 @@ function PaymentSuccessClient() {
       } catch {
         retryCount.current += 1
         if (retryCount.current < MAX_RETRIES) {
-          setTimeout(run, 5000)
+          setTimeout(run, 3000)
         } else {
           setStatus('async')
           setCountdown(5)
@@ -107,163 +114,81 @@ function PaymentSuccessClient() {
     }
   }, [status, countdown, router])
 
-  const handleManualRedirect = () => router.push('/app/dashboard')
-
-  return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center p-6">
-      {/* Subtle background glow */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-[#FFFF00]/5 rounded-full blur-[120px]" />
+  if (status === 'processing') {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center gap-4">
+        <Spinner />
+        <p className="text-white/50 text-sm">Confirming your payment…</p>
       </div>
+    )
+  }
 
-      <div className="relative w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-10">
-          <span className="text-2xl font-bold tracking-tight text-white">Sharpii<span className="text-[#FFFF00]">.ai</span></span>
+  if (status === 'async') {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center gap-4 text-center px-6">
+        <div className="w-10 h-10 rounded-full border border-amber-400/40 flex items-center justify-center">
+          <span className="text-amber-400 text-lg">⏳</span>
         </div>
-
-        <AnimatePresence mode="wait">
-          {status === 'processing' && (
-            <motion.div
-              key="processing"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center"
-            >
-              <div className="relative mx-auto w-20 h-20 mb-6">
-                <div className="absolute inset-0 rounded-full border-2 border-[#FFFF00]/20 animate-ping" />
-                <div className="relative flex items-center justify-center w-20 h-20 rounded-full bg-[#FFFF00]/10 border border-[#FFFF00]/30">
-                  <Loader2 className="w-8 h-8 text-[#FFFF00] animate-spin" />
-                </div>
-              </div>
-              <h1 className="text-xl font-bold text-white mb-2">Confirming Payment</h1>
-              <p className="text-white/50 text-sm">Verifying your payment with Dodo Payments...</p>
-
-              {/* Retry indicator */}
-              <div className="mt-6 flex items-center justify-center gap-1.5">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <motion.div
-                    key={i}
-                    className="w-1.5 h-1.5 rounded-full bg-[#FFFF00]/60"
-                    animate={{ opacity: [0.3, 1, 0.3] }}
-                    transition={{ duration: 1.2, delay: i * 0.2, repeat: Infinity }}
-                  />
-                ))}
-              </div>
-              {retryCount.current > 0 && (
-                <p className="text-white/30 text-xs mt-3">Checking... ({retryCount.current}/{MAX_RETRIES})</p>
-              )}
-            </motion.div>
-          )}
-
-          {status === 'async' && (
-            <motion.div
-              key="async"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center"
-            >
-              <div className="flex items-center justify-center w-20 h-20 rounded-full bg-amber-500/10 border border-amber-500/30 mx-auto mb-6">
-                <Clock className="w-8 h-8 text-amber-400" />
-              </div>
-              <h1 className="text-xl font-bold text-white mb-2">Payment Received</h1>
-              <p className="text-white/50 text-sm mb-6">
-                Your payment is being processed. Credits will appear in your account within a minute — no action needed.
-              </p>
-
-              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-4">
-                <p className="text-amber-400/80 text-sm">
-                  Redirecting to dashboard in <span className="font-bold text-amber-400">{countdown}s</span>
-                </p>
-              </div>
-
-              <button
-                onClick={handleManualRedirect}
-                className="w-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 border border-white/10 text-white rounded-xl py-3 text-sm font-medium transition-all"
-              >
-                Go to Dashboard
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </motion.div>
-          )}
-
-          {status === 'error' && (
-            <motion.div
-              key="error"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center"
-            >
-              <div className="flex items-center justify-center w-20 h-20 rounded-full bg-red-500/10 border border-red-500/30 mx-auto mb-6">
-                <AlertCircle className="w-8 h-8 text-red-400" />
-              </div>
-              <h1 className="text-xl font-bold text-white mb-2">Verification Failed</h1>
-              <p className="text-white/50 text-sm mb-6">
-                {errorMessage || 'We could not confirm your payment. If your card was charged, please contact support.'}
-              </p>
-
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => window.location.reload()}
-                  className="w-full bg-[#FFFF00] hover:bg-[#c9c900] text-black font-bold rounded-xl py-3 text-sm transition-all"
-                >
-                  Retry
-                </button>
-                <button
-                  onClick={handleManualRedirect}
-                  className="w-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 border border-white/10 text-white rounded-xl py-3 text-sm font-medium transition-all"
-                >
-                  Go to Dashboard
-                </button>
-              </div>
-            </motion.div>
-          )}
-
-          {status === 'completed' && (
-            <motion.div
-              key="completed"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center"
-            >
-              {/* Success icon with glow */}
-              <div className="relative mx-auto w-20 h-20 mb-6">
-                <div className="absolute inset-0 rounded-full bg-[#FFFF00]/20 blur-xl" />
-                <div className="relative flex items-center justify-center w-20 h-20 rounded-full bg-[#FFFF00]/15 border border-[#FFFF00]/40">
-                  <CheckCircle className="w-8 h-8 text-[#FFFF00]" />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-[#FFFF00]" />
-                <h1 className="text-xl font-bold text-white">Payment Successful!</h1>
-                <Sparkles className="w-4 h-4 text-[#FFFF00]" />
-              </div>
-              <p className="text-white/50 text-sm mb-6">
-                Your credits have been added to your account. Welcome aboard!
-              </p>
-
-              <div className="bg-[#FFFF00]/10 border border-[#FFFF00]/20 rounded-xl p-4 mb-4">
-                <p className="text-[#FFFF00]/80 text-sm">
-                  Redirecting to dashboard in <span className="font-bold text-[#FFFF00]">{countdown}s</span>
-                </p>
-              </div>
-
-              <button
-                onClick={handleManualRedirect}
-                className="w-full flex items-center justify-center gap-2 bg-[#FFFF00] hover:bg-[#c9c900] text-black font-bold rounded-xl py-3 text-sm transition-all"
-              >
-                Go to Dashboard
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <div>
+          <p className="text-white font-medium mb-1">Payment received</p>
+          <p className="text-white/40 text-sm">Credits will appear in your account shortly.</p>
+        </div>
+        <p className="text-white/30 text-xs">Redirecting in {countdown}s</p>
+        <button
+          onClick={() => router.push('/app/dashboard')}
+          className="mt-2 text-white/60 text-sm underline underline-offset-2"
+        >
+          Go to dashboard
+        </button>
       </div>
+    )
+  }
+
+  if (status === 'error') {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center gap-4 text-center px-6">
+        <div className="w-10 h-10 rounded-full border border-red-400/40 flex items-center justify-center">
+          <span className="text-red-400 text-lg">✕</span>
+        </div>
+        <div>
+          <p className="text-white font-medium mb-1">Verification failed</p>
+          <p className="text-white/40 text-sm">{errorMessage || 'Could not confirm your payment. If charged, please contact support.'}</p>
+        </div>
+        <div className="flex gap-3 mt-2">
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-white text-black text-sm font-medium rounded-lg"
+          >
+            Retry
+          </button>
+          <button
+            onClick={() => router.push('/app/dashboard')}
+            className="px-4 py-2 text-white/60 text-sm border border-white/10 rounded-lg"
+          >
+            Dashboard
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // completed
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center gap-4 text-center px-6">
+      <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center">
+        <span className="text-white text-lg">✓</span>
+      </div>
+      <div>
+        <p className="text-white font-medium mb-1">Payment successful</p>
+        <p className="text-white/40 text-sm">Credits have been added to your account.</p>
+      </div>
+      <p className="text-white/30 text-xs">Redirecting in {countdown}s</p>
+      <button
+        onClick={() => router.push('/app/dashboard')}
+        className="mt-2 text-white/60 text-sm underline underline-offset-2"
+      >
+        Go to dashboard
+      </button>
     </div>
   )
 }

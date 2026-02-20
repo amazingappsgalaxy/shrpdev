@@ -279,6 +279,15 @@ function EditorContent() {
   // Smart Upscale Settings
   const [upscaleResolution, setUpscaleResolution] = useState<'4k' | '8k'>('4k')
 
+  // Credit balance
+  const [creditBalance, setCreditBalance] = useState<number | null>(null)
+  useEffect(() => {
+    fetch('/api/credits/balance')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.balance !== undefined) setCreditBalance(d.balance) })
+      .catch(() => {})
+  }, [])
+
   // UI State
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isExpandViewOpen, setIsExpandViewOpen] = useState(false)
@@ -389,8 +398,23 @@ function EditorContent() {
     setImageMetadata({ width: 1024, height: 1024 })
   }
 
+  const openPlansPopup = () => window.dispatchEvent(new CustomEvent('sharpii:open-plans'))
+
   const handleEnhance = async () => {
     if (!uploadedImage) return
+
+    // No credits at all → show pricing plans popup
+    if (creditBalance === null || creditBalance <= 0) {
+      openPlansPopup()
+      return
+    }
+    // Has some credits but not enough for this task → small top-up notice
+    if (creditCost !== null && creditCost !== undefined && creditBalance < creditCost) {
+      const toastId = `${Date.now()}-topup`
+      setToasts(prev => [...prev, { id: toastId, message: 'Not enough credits. Top up your account from the dashboard.', type: 'error' }])
+      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 5000)
+      return
+    }
 
     setIsSubmitting(true)
     const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -443,7 +467,6 @@ function EditorContent() {
         body: JSON.stringify({
           imageUrl: inputImage,
           modelId: 'skin-editor',
-          userId: user?.id,
           settings: settingsSnapshot
         })
       })
@@ -454,11 +477,19 @@ function EditorContent() {
         taskIntervalsRef.current.delete(taskId)
       }
 
-      if (!response.ok) {
-        throw new Error('Enhancement failed')
+      const data = await response.json()
+
+      // Insufficient credits — show plans popup, remove task silently (no error toast)
+      if (response.status === 402) {
+        openPlansPopup()
+        setActiveTasks(prev => { const m = new Map(prev); m.delete(taskId); return m })
+        return
       }
 
-      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data?.error || 'Enhancement failed')
+      }
+
       if (data.success && (data.outputs || data.enhancedUrl)) {
         const outputs = normalizeOutputs(data.outputs ?? data.enhancedUrl)
         if (latestTaskIdRef.current === taskId && latestImageRef.current === inputImage) {
@@ -469,23 +500,17 @@ function EditorContent() {
         setActiveTasks(prev => {
           const newMap = new Map(prev)
           const task = newMap.get(taskId)
-          if (task) {
-            newMap.set(taskId, { ...task, progress: 100, status: 'success', message: 'Done!' })
-          }
+          if (task) newMap.set(taskId, { ...task, progress: 100, status: 'success', message: 'Done!' })
           return newMap
         })
       } else {
         console.error('Enhancement failed:', data.error)
-
         setActiveTasks(prev => {
           const newMap = new Map(prev)
           const task = newMap.get(taskId)
-          if (task) {
-            newMap.set(taskId, { ...task, progress: 100, status: 'error', message: 'Failed' })
-          }
+          if (task) newMap.set(taskId, { ...task, progress: 100, status: 'error', message: 'Failed' })
           return newMap
         })
-
         const errorToastId = `${Date.now()}-error`
         setToasts(prev => [...prev, { id: errorToastId, message: data.error || 'Enhancement failed', type: 'error' }])
         setTimeout(() => setToasts(prev => prev.filter(t => t.id !== errorToastId)), 5000)
@@ -494,16 +519,12 @@ function EditorContent() {
     } catch (error) {
       console.error('Enhancement error:', error)
       const errorMsg = error instanceof Error ? error.message : 'Connection error'
-
       setActiveTasks(prev => {
         const newMap = new Map(prev)
         const task = newMap.get(taskId)
-        if (task) {
-          newMap.set(taskId, { ...task, progress: 100, status: 'error', message: 'Error' })
-        }
+        if (task) newMap.set(taskId, { ...task, progress: 100, status: 'error', message: 'Error' })
         return newMap
       })
-
       const errorToastId = `${Date.now()}-error-catch`
       setToasts(prev => [...prev, { id: errorToastId, message: errorMsg, type: 'error' }])
       setTimeout(() => setToasts(prev => prev.filter(t => t.id !== errorToastId)), 5000)

@@ -135,9 +135,12 @@ export async function POST(request: NextRequest) {
       isAlreadyActiveInDb = existingSub?.status === 'active'
     }
 
-    // Only confirm if payment has actually succeeded OR webhook already activated subscription in DB
-    // Do NOT grant credits for 'processing', 'pending', or any other non-succeeded status
-    const isConfirmed = isAlreadyActiveInDb || paymentStatus === 'succeeded'
+    // Confirm if: webhook already activated it in DB, payment actually succeeded,
+    // or the subscription itself is active in Dodo.
+    const isConfirmed =
+      isAlreadyActiveInDb ||
+      paymentStatus === 'succeeded' ||
+      providerStatus === 'active'
 
     if (admin) {
       await admin.from('subscriptions').upsert(

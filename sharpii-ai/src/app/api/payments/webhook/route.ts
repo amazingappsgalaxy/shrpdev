@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
       case 'subscription.renewed':
         await handleSubscriptionRenewed(event.data)
         break
-      
+
       case 'subscription.updated':
         await handleSubscriptionUpdated(event.data)
         break
@@ -218,9 +218,6 @@ async function handlePaymentSucceeded(payment: any) {
             : undefined
 
         const providerSubscription: any = await (dodo as any).subscriptions.retrieve(subscriptionId)
-        const periodEnd = providerSubscription?.next_billing_date || providerSubscription?.current_period_end || null
-        const dateStr = periodEnd ? new Date(periodEnd).toISOString().split('T')[0] : null
-        const transactionId = dateStr ? `sub_period_${subscriptionId}_${dateStr}` : `sub-${subscriptionId}`
         const resolvedUserId =
           providerSubscription?.metadata?.userId ||
           providerSubscription?.metadata?.user_id ||
@@ -237,6 +234,31 @@ async function handlePaymentSucceeded(payment: any) {
 
         if (!resolvedUserId) return
 
+        // Compute period end — if Dodo returns a past date (common in test mode),
+        // compute from now based on billing period
+        const rawPeriodEnd = providerSubscription?.next_billing_date || providerSubscription?.current_period_end || null
+        let periodEnd = rawPeriodEnd
+        if (!rawPeriodEnd || new Date(rawPeriodEnd).getTime() < Date.now() + 60_000) {
+          const d = new Date()
+          if (resolvedBillingPeriod === 'yearly') d.setFullYear(d.getFullYear() + 1)
+          else if (resolvedBillingPeriod === 'daily') d.setDate(d.getDate() + 1)
+          else d.setMonth(d.getMonth() + 1)
+          periodEnd = d.toISOString()
+        }
+
+        const dateStr = new Date(periodEnd).toISOString().split('T')[0]
+        const transactionId = `sub_period_${subscriptionId}_${dateStr}`
+
+        // Update subscription to active in DB (important for test mode where subscription.active never fires)
+        if (admin) {
+          await admin.from('subscriptions').update({
+            status: 'active',
+            next_billing_date: periodEnd,
+            updated_at: new Date().toISOString()
+          }).eq('dodo_subscription_id', subscriptionId)
+          console.log('✅ Subscription status updated to active via payment webhook')
+        }
+
         await CreditsService.allocateSubscriptionCredits(
           resolvedUserId,
           resolvedPlan,
@@ -244,12 +266,13 @@ async function handlePaymentSucceeded(payment: any) {
           subscriptionId,
           transactionId,
           {
-            expiresAt: periodEnd ? new Date(periodEnd) : undefined,
+            expiresAt: new Date(periodEnd),
             credits: creditsOverride,
             metadata: { source: 'webhook.payment_succeeded' }
           }
         )
       } catch (e) {
+        console.error('❌ Error processing subscription payment webhook:', e)
       }
       return
     }
