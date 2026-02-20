@@ -109,6 +109,14 @@ export async function POST(request: NextRequest) {
         await handlePaymentSucceeded(event.data)
         break
 
+      case 'payment.processing':
+        await handlePaymentProcessing(event.data)
+        break
+
+      case 'payment.failed':
+        await handlePaymentFailed(event.data)
+        break
+
       case 'subscription.active':
         await handleSubscriptionActive(event.data)
         break
@@ -119,6 +127,10 @@ export async function POST(request: NextRequest) {
 
       case 'subscription.updated':
         await handleSubscriptionUpdated(event.data)
+        break
+
+      case 'subscription.plan_changed':
+        await handleSubscriptionPlanChanged(event.data)
         break
 
       default:
@@ -233,38 +245,50 @@ async function handlePaymentSucceeded(payment: any) {
       }
     }
 
-    // Record payment in database
+    // Record payment in database — if a 'processing' record already exists, upgrade it to 'succeeded'
     if (admin) {
       const { data: existingPayment } = await admin
         .from('payments')
-        .select('id')
+        .select('id, status')
         .eq('dodo_payment_id', paymentId)
         .limit(1)
         .maybeSingle()
 
       if (existingPayment?.id) {
-        console.log('ℹ️ Payment already recorded:', paymentId)
+        if (existingPayment.status !== 'succeeded') {
+          // Upgrade processing → succeeded
+          await admin.from('payments').update({
+            status: 'succeeded',
+            plan: recordPlan,
+            billing_period: recordBillingPeriod,
+            paid_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            metadata: payment
+          }).eq('id', existingPayment.id)
+          console.log('✅ Payment upgraded from processing → succeeded:', paymentId)
+        } else {
+          console.log('ℹ️ Payment already recorded as succeeded:', paymentId)
+        }
       } else {
-      // @ts-ignore - Supabase type definitions are camelCase but DB is snake_case
-      const { error: insertError } = await admin.from('payments').insert({
-        user_id: userId,
-        dodo_payment_id: paymentId,
-        dodo_customer_id: payment.customer?.customer_id || payment.customer_id,
-        amount: payment.amount || payment.total_amount || 0,
-        currency: payment.currency || 'INR',
-        status: 'succeeded',
-        payment_method: payment.payment_method || 'card',
-        plan: recordPlan,
-        billing_period: recordBillingPeriod,
-        paid_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        metadata: payment
-      })
-
-      if (insertError) {
-        console.error('❌ Failed to insert payment:', insertError)
-      }
+        // @ts-ignore - Supabase type definitions are camelCase but DB is snake_case
+        const { error: insertError } = await admin.from('payments').insert({
+          user_id: userId,
+          dodo_payment_id: paymentId,
+          dodo_customer_id: payment.customer?.customer_id || payment.customer_id,
+          amount: payment.amount || payment.total_amount || 0,
+          currency: payment.currency || 'INR',
+          status: 'succeeded',
+          payment_method: payment.payment_method || 'card',
+          plan: recordPlan,
+          billing_period: recordBillingPeriod,
+          paid_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          metadata: payment
+        })
+        if (insertError) {
+          console.error('❌ Failed to insert payment:', insertError)
+        }
       }
     }
 
@@ -583,5 +607,132 @@ async function handleSubscriptionUpdated(subscription: any) {
       { onConflict: 'user_id' }
     )
   } catch {
+  }
+}
+
+/**
+ * Handle payment.processing event
+ * Records the payment with status 'processing'. Does NOT activate subscription or allocate credits.
+ * If payment.succeeded fires later for the same ID, that handler will upgrade the record.
+ */
+async function handlePaymentProcessing(payment: any) {
+  const paymentId = payment.payment_id || payment.id
+  console.log('⏳ Processing payment.processing:', paymentId)
+
+  if (!admin || !paymentId) return
+
+  try {
+    let userId = payment.metadata?.userId || payment.customer?.metadata?.userId
+
+    if (!userId && payment.customer_id) {
+      const { data: subRow } = await admin
+        .from('subscriptions')
+        .select('user_id')
+        .eq('dodo_customer_id', payment.customer?.customer_id || payment.customer_id)
+        .limit(1)
+        .maybeSingle()
+      if (subRow?.user_id) userId = subRow.user_id
+    }
+
+    if (!userId) {
+      console.log('⚠️ payment.processing: no userId found, skipping record')
+      return
+    }
+
+    const plan = payment.metadata?.plan || 'unknown'
+    const billingPeriod = normalizeBillingPeriod(payment.metadata?.billingPeriod || 'monthly')
+
+    // Only insert if not already recorded
+    const { data: existing } = await admin
+      .from('payments')
+      .select('id')
+      .eq('dodo_payment_id', paymentId)
+      .limit(1)
+      .maybeSingle()
+
+    if (!existing?.id) {
+      await admin.from('payments').insert({
+        user_id: userId,
+        dodo_payment_id: paymentId,
+        dodo_customer_id: payment.customer?.customer_id || payment.customer_id,
+        amount: payment.amount || payment.total_amount || 0,
+        currency: payment.currency || 'INR',
+        status: 'processing',
+        payment_method: payment.payment_method || 'card',
+        plan,
+        billing_period: billingPeriod,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        metadata: payment
+      })
+      console.log('✅ Recorded payment as processing:', paymentId)
+    }
+  } catch (error) {
+    console.error('❌ Error handling payment.processing:', error)
+  }
+}
+
+/**
+ * Handle payment.failed event
+ * Records or updates the payment with status 'failed'.
+ */
+async function handlePaymentFailed(payment: any) {
+  const paymentId = payment.payment_id || payment.id
+  console.log('❌ Processing payment.failed:', paymentId)
+
+  if (!admin || !paymentId) return
+
+  try {
+    const { data: existing } = await admin
+      .from('payments')
+      .select('id')
+      .eq('dodo_payment_id', paymentId)
+      .limit(1)
+      .maybeSingle()
+
+    if (existing?.id) {
+      await admin.from('payments').update({
+        status: 'failed',
+        updated_at: new Date().toISOString(),
+        metadata: payment
+      }).eq('id', existing.id)
+      console.log('✅ Payment marked as failed:', paymentId)
+    }
+  } catch (error) {
+    console.error('❌ Error handling payment.failed:', error)
+  }
+}
+
+/**
+ * Handle subscription.plan_changed event
+ * Updates the subscription plan in DB. The change-plan route already does this,
+ * but this acts as a safety net if Dodo fires the event after our DB update.
+ */
+async function handleSubscriptionPlanChanged(subscription: any) {
+  const subscriptionId = subscription.subscription_id || subscription.id
+  console.log('🔄 Processing subscription.plan_changed:', subscriptionId)
+
+  if (!admin || !subscriptionId) return
+
+  try {
+    // Only update plan/billing_period if the subscription exists in our DB
+    // We trust the change-plan route as source of truth; this is just a safety net
+    const newPlan = subscription.metadata?.plan || subscription.plan
+    const newBillingPeriod = normalizeBillingPeriod(subscription.metadata?.billingPeriod || subscription.billing_period || 'monthly')
+
+    if (!newPlan) {
+      console.log('ℹ️ subscription.plan_changed: no plan in event, skipping')
+      return
+    }
+
+    await admin.from('subscriptions').update({
+      plan: newPlan,
+      billing_period: newBillingPeriod,
+      updated_at: new Date().toISOString()
+    }).eq('dodo_subscription_id', subscriptionId)
+
+    console.log(`✅ Subscription plan updated to ${newPlan} (${newBillingPeriod}) via plan_changed event`)
+  } catch (error) {
+    console.error('❌ Error handling subscription.plan_changed:', error)
   }
 }
