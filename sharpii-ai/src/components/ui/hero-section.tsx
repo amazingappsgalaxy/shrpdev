@@ -90,7 +90,7 @@ export function HeroSection() {
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-5">
-              <Link href="/app/signup">
+              <Link href="/app/signin?tab=signup">
                 <Button className="w-full sm:w-auto h-14 px-10 rounded-full bg-[#FFFF00] text-black hover:bg-[#D4D400] hover:scale-105 transition-all text-lg font-bold">
                   Start Creating
                   <ArrowRight className="ml-2 w-5 h-5" />

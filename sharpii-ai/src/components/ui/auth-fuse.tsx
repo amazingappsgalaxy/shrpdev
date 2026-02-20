@@ -16,16 +16,15 @@ import { cn } from '@/lib/utils'
 
 const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'outline' | 'ghost' | 'google' }>(
   ({ className, variant = 'primary', ...props }, ref) => {
-    // Rounded Rectangular = rounded-xl
-    const baseStyles = "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-bold transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 font-sans";
+    const baseStyles = "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-bold transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 font-sans";
 
     let variantStyles = "";
     if (variant === 'primary') {
-      variantStyles = "bg-[#FFFF00] text-black hover:bg-[#D4D400] hover:scale-[1.02] shadow-[0_0_15px_rgba(255,255,0,0.2)] hover:shadow-[0_0_30px_rgba(255,255,0,0.4)]";
+      variantStyles = "bg-[#FFFF00] text-black hover:bg-[#D4D400] hover:scale-[1.01] shadow-[0_0_15px_rgba(255,255,0,0.15)] hover:shadow-[0_0_25px_rgba(255,255,0,0.35)]";
     } else if (variant === 'outline') {
       variantStyles = "border border-white/20 bg-white/5 hover:bg-white/10 text-white hover:border-white/40 backdrop-blur-sm";
     } else if (variant === 'google') {
-      variantStyles = "bg-white text-black hover:bg-gray-100 border border-gray-300 hover:scale-[1.02] transition-transform";
+      variantStyles = "bg-white text-black hover:bg-gray-100 border border-gray-200 hover:scale-[1.01] transition-transform";
     } else if (variant === 'ghost') {
       variantStyles = "hover:bg-white/10 text-zinc-400 hover:text-white";
     }
@@ -33,7 +32,7 @@ const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HT
     return (
       <button
         ref={ref}
-        className={cn(baseStyles, variantStyles, "h-12 px-6", className)}
+        className={cn(baseStyles, variantStyles, "h-11 px-6", className)}
         {...props}
       />
     );
@@ -47,7 +46,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
       <input
         type={type}
         className={cn(
-          "flex h-11 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white shadow-sm transition-all duration-300 file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FFFF00] focus-visible:border-[#FFFF00]/50 focus-visible:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 font-sans",
+          "flex h-11 w-full rounded-md border border-white/15 bg-white/8 px-4 py-3 text-sm text-white shadow-sm transition-all duration-300 file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FFFF00] focus-visible:border-[#FFFF00]/50 focus-visible:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 font-sans",
           className
         )}
         ref={ref}
@@ -239,8 +238,8 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
   if (isSent) {
     return (
       <div className="grid gap-4 mt-6">
-        <div className="text-center space-y-2 p-4 bg-white/5 rounded-xl border border-white/10">
-          <div className="mx-auto w-12 h-12 bg-[#FFFF00]/10 rounded-full flex items-center justify-center mb-4">
+        <div className="text-center space-y-2 p-4 bg-white/5 rounded-md border border-white/10">
+          <div className="mx-auto w-12 h-12 bg-[#FFFF00]/10 rounded-md flex items-center justify-center mb-4">
             <Zap className="size-6 text-[#FFFF00]" />
           </div>
           <h3 className="text-white font-bold">Check your email</h3>
@@ -334,17 +333,17 @@ export function AuthUI() {
       <div className="relative z-10 w-full max-w-[400px] flex flex-col items-center gap-6">
 
         {/* Main Card */}
-        <div className="w-full glass-premium bg-black/40 backdrop-blur-3xl border border-white/10 rounded-2xl p-6 shadow-2xl ring-1 ring-white/5">
+        <div className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-6 shadow-2xl">
 
           {/* Segmented Control - Only show for signin/signup users */}
           {view !== 'forgot_password' && (
-            <div className="grid grid-cols-2 p-1 bg-white/5 rounded-xl mb-2">
+            <div className="grid grid-cols-2 p-1 bg-white/5 rounded-md mb-2 gap-0.5">
               <button
                 onClick={() => setView('signin')}
                 className={cn(
-                  "py-2 text-sm font-bold rounded-lg transition-all duration-300",
+                  "py-2 text-sm font-bold rounded transition-all duration-200",
                   view === 'signin'
-                    ? "bg-white text-black shadow-lg"
+                    ? "bg-white text-black shadow"
                     : "text-zinc-500 hover:text-zinc-300"
                 )}
               >
@@ -353,9 +352,9 @@ export function AuthUI() {
               <button
                 onClick={() => setView('signup')}
                 className={cn(
-                  "py-2 text-sm font-bold rounded-lg transition-all duration-300",
+                  "py-2 text-sm font-bold rounded transition-all duration-200",
                   view === 'signup'
-                    ? "bg-white text-black shadow-lg"
+                    ? "bg-white text-black shadow"
                     : "text-zinc-500 hover:text-zinc-300"
                 )}
               >
@@ -380,7 +379,7 @@ export function AuthUI() {
                 </div>
               </div>
 
-              <Button variant="google" type="button" onClick={handleGoogleSignIn} className="w-full h-11 rounded-xl text-sm font-medium">
+              <Button variant="google" type="button" onClick={handleGoogleSignIn} className="w-full h-11 text-sm font-medium">
                 <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -396,16 +395,19 @@ export function AuthUI() {
 
         {/* Demo Button - Outside, minimal, high contrast but integrated */}
         <button
-          onClick={() => router.push('/app/dashboard?demo=true')}
-          className="group flex items-center gap-3 px-6 py-3 rounded-full bg-zinc-900 border border-white/10 hover:border-[#FFFF00]/50 transition-all duration-300 hover:bg-black"
+          onClick={() => {
+            document.cookie = 'demo=true; path=/; max-age=7200; SameSite=Lax'
+            router.push('/app/editor')
+          }}
+          className="group flex items-center gap-2.5 px-5 py-2.5 rounded-md bg-white/4 border border-white/8 hover:border-[#FFFF00]/30 transition-all duration-200 hover:bg-white/6"
         >
-          <div className="w-8 h-8 rounded-full bg-[#FFFF00] flex items-center justify-center text-black group-hover:scale-110 transition-transform">
-            <Zap className="size-4 fill-black" />
+          <div className="w-6 h-6 rounded bg-[#FFFF00] flex items-center justify-center text-black">
+            <Zap className="size-3.5 fill-black" />
           </div>
-          <span className="text-sm font-bold text-zinc-300 group-hover:text-white transition-colors">
+          <span className="text-sm font-semibold text-zinc-400 group-hover:text-white transition-colors">
             Enter Demo App
           </span>
-          <ArrowRight className="size-4 text-zinc-500 group-hover:text-[#FFFF00] transition-colors" />
+          <ArrowRight className="size-3.5 text-zinc-600 group-hover:text-[#FFFF00] transition-colors" />
         </button>
 
       </div>

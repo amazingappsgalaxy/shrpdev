@@ -4,6 +4,11 @@ import useSWR from 'swr'
 
 export const APP_DATA_KEY = '/api/user/me'
 
+function hasDemoCookie(): boolean {
+  if (typeof document === 'undefined') return false
+  return document.cookie.split(';').some(c => c.trim().startsWith('demo=true'))
+}
+
 interface AppUser {
   id: string
   email: string
@@ -41,6 +46,8 @@ interface AppData {
 export function useAppData() {
   const { data, error, isLoading, mutate } = useSWR<AppData>(APP_DATA_KEY)
 
+  const isDemo = !isLoading && !data?.user && hasDemoCookie()
+
   return {
     user: data?.user ?? null,
     credits: data?.credits ?? null,
@@ -48,6 +55,7 @@ export function useAppData() {
     profile: data?.profile ?? null,
     isLoading,
     isAuthenticated: !!data?.user,
+    isDemo,
     error,
     mutate,
   }

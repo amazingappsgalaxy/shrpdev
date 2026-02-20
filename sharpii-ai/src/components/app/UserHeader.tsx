@@ -40,7 +40,7 @@ const PLAN_LABELS: Record<string, string> = {
     professional: 'Pro',
     enterprise: 'Enterprise',
     'day pass': 'Day Pass',
-    free: 'Free',
+    free: 'No Active Plan',
 }
 
 const UPSELL_MAP: Record<string, { label: string; plan: string; billingPeriod: string; tagline: string } | null> = {
@@ -63,7 +63,7 @@ export function UserHeader({ className }: UserHeaderProps) {
     const [isPlansPopupOpen, setIsPlansPopupOpen] = useState(false)
 
     // Single SWR call — no duplicate fetches
-    const { user: currentUser, credits: creditsData, subscription: subData, isLoading } = useAppData()
+    const { user: currentUser, credits: creditsData, subscription: subData, isLoading, isDemo } = useAppData()
 
     const credits = creditsData?.total ?? 0
     const creditsLoading = isLoading
@@ -177,16 +177,37 @@ export function UserHeader({ className }: UserHeaderProps) {
                     {/* Right side */}
                     <div className="flex items-center justify-end gap-3 flex-shrink-0 min-w-[140px]">
 
-                        {/* Credits */}
+                        {/* Demo mode: show Sign In / Sign Up instead of user controls */}
+                        {isDemo && !currentUser ? (
+                            <>
+                                <Link
+                                    href="/app/signin"
+                                    className="hidden sm:inline-flex items-center text-sm font-medium text-white/60 hover:text-white transition-colors px-3 py-1.5"
+                                >
+                                    Sign In
+                                </Link>
+                                <button
+                                    onClick={() => setIsPlansPopupOpen(true)}
+                                    className="hidden sm:inline-flex items-center gap-1.5 bg-[#FFFF00] hover:bg-yellow-300 text-black px-4 py-1.5 rounded-md text-sm font-bold shadow-sm transition-all"
+                                >
+                                    <Zap className="w-3.5 h-3.5 fill-black" />
+                                    Get Started
+                                </button>
+                            </>
+                        ) : null}
+
+                        {/* Credits (only when authenticated) */}
+                        {!isDemo && (
                         <div className="hidden md:flex items-center gap-2 select-none">
                             <CreditIcon className="w-5 h-5 text-[#FFFF00]" iconClassName="w-4 h-4" />
                             <span className="text-sm font-bold text-white tabular-nums">
                                 {creditsLoading ? '...' : credits.toLocaleString()}
                             </span>
                         </div>
+                        )}
 
-                        {/* Plan-aware button with custom hover card */}
-                        <div className="hidden sm:block">
+                        {/* Plan-aware button with custom hover card (authenticated only) */}
+                        {!(isDemo && !currentUser) && <div className="hidden sm:block">
                             {!subLoading && hasActivePlan ? (
                                 <div
                                     className="relative"
@@ -260,10 +281,10 @@ export function UserHeader({ className }: UserHeaderProps) {
                                     <span>Upgrade</span>
                                 </button>
                             ) : null}
-                        </div>
+                        </div>}
 
-                        {/* User dropdown */}
-                        <DropdownMenu.Root modal={false}>
+                        {/* User dropdown (authenticated only) */}
+                        {!isDemo && <DropdownMenu.Root modal={false}>
                             <DropdownMenu.Trigger className="flex items-center gap-2 pl-1 pr-1 py-1 rounded-md transition-all duration-200 hover:bg-white/5 outline-none focus:ring-0 data-[state=open]:bg-white/5">
                                 <div className="w-8 h-8 rounded-md bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center border border-white/10 shadow-inner overflow-hidden">
                                     <span className="text-xs font-bold text-white">{username.charAt(0).toUpperCase()}</span>
@@ -324,7 +345,7 @@ export function UserHeader({ className }: UserHeaderProps) {
                                     </DropdownMenu.Item>
                                 </DropdownMenu.Content>
                             </DropdownMenu.Portal>
-                        </DropdownMenu.Root>
+                        </DropdownMenu.Root>}
 
                         {/* Mobile toggle */}
                         <button
@@ -361,26 +382,47 @@ export function UserHeader({ className }: UserHeaderProps) {
 
                                 <div className="h-px bg-white/10 my-3" />
 
-                                <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
-                                    <div>
-                                        <span className="text-white/60 text-sm">Credits</span>
-                                        {hasActivePlan && (
-                                            <span className={`ml-2 text-xs px-1.5 py-0.5 rounded border ${planBadgeClass}`}>{planLabel}</span>
-                                        )}
+                                {isDemo && !currentUser ? (
+                                    <div className="space-y-2">
+                                        <button
+                                            onClick={() => { setIsPlansPopupOpen(true); setIsMobileMenuOpen(false) }}
+                                            className="w-full bg-[#FFFF00] text-black font-bold py-3 rounded-lg flex items-center justify-center gap-2"
+                                        >
+                                            <Zap className="w-4 h-4 fill-black" />
+                                            Get Started
+                                        </button>
+                                        <Link
+                                            href="/app/signin"
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                            className="w-full border border-white/20 text-white/70 font-medium py-3 rounded-lg flex items-center justify-center"
+                                        >
+                                            Sign In
+                                        </Link>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <CreditIcon className="w-5 h-5 text-[#FFFF00]" iconClassName="w-4 h-4" />
-                                        <span className="font-bold text-white">{creditsLoading ? '...' : credits.toLocaleString()}</span>
-                                    </div>
-                                </div>
+                                ) : (
+                                    <>
+                                        <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
+                                            <div>
+                                                <span className="text-white/60 text-sm">Credits</span>
+                                                {hasActivePlan && (
+                                                    <span className={`ml-2 text-xs px-1.5 py-0.5 rounded border ${planBadgeClass}`}>{planLabel}</span>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <CreditIcon className="w-5 h-5 text-[#FFFF00]" iconClassName="w-4 h-4" />
+                                                <span className="font-bold text-white">{creditsLoading ? '...' : credits.toLocaleString()}</span>
+                                            </div>
+                                        </div>
 
-                                <button
-                                    onClick={() => { setIsPlansPopupOpen(true); setIsMobileMenuOpen(false) }}
-                                    className="w-full bg-[#FFFF00] text-black font-bold py-3 rounded-lg flex items-center justify-center gap-2 mt-2"
-                                >
-                                    <Crown className="w-4 h-4 fill-black" />
-                                    {hasActivePlan ? 'Manage / Upgrade Plan' : 'Upgrade Plan'}
-                                </button>
+                                        <button
+                                            onClick={() => { setIsPlansPopupOpen(true); setIsMobileMenuOpen(false) }}
+                                            className="w-full bg-[#FFFF00] text-black font-bold py-3 rounded-lg flex items-center justify-center gap-2 mt-2"
+                                        >
+                                            <Crown className="w-4 h-4 fill-black" />
+                                            {hasActivePlan ? 'Manage / Upgrade Plan' : 'Upgrade Plan'}
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>

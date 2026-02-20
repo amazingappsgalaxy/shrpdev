@@ -164,15 +164,6 @@ export default function CreditsSection() {
                             </div>
                         </div>
                     </div>
-                    {!subscription.has_active_subscription && (
-                        <button
-                            onClick={openPlansPopup}
-                            className="flex items-center gap-1.5 bg-[#FFFF00] text-black text-xs font-bold px-3 py-1.5 rounded-md transition-colors hover:bg-[#c9c900] mt-1"
-                        >
-                            <Zap className="w-3 h-3" />
-                            Get Plan
-                        </button>
-                    )}
                 </div>
 
                 {/* Subscription expiry row */}
@@ -213,16 +204,13 @@ export default function CreditsSection() {
             <div className="bg-white/5 border border-white/10 rounded-md px-4 py-3 flex items-center justify-between">
                 <div>
                     <p className="text-sm font-semibold text-white">
-                        {subscription.has_active_subscription ? `${planLabel} Plan` : 'Free Tier'}
+                        {subscription.has_active_subscription ? `${planLabel} Plan` : 'No Active Plan'}
                     </p>
                     {sub?.next_billing_date && (
                         <p className="text-xs text-white/40 mt-0.5">
                             {isPendingCancel ? 'Expires' : 'Renews'}{' '}
                             {new Date(sub.next_billing_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                         </p>
-                    )}
-                    {!subscription.has_active_subscription && (
-                        <p className="text-xs text-white/40 mt-0.5">Subscribe to unlock premium features</p>
                     )}
                 </div>
                 <button
@@ -268,13 +256,7 @@ export default function CreditsSection() {
                 ) : (
                     <div className="flex items-center gap-3">
                         <Lock className="w-4 h-4 text-white/25 flex-shrink-0" />
-                        <span className="text-xs text-white/40 flex-1">Requires an active subscription</span>
-                        <button
-                            onClick={openPlansPopup}
-                            className="px-3 py-1.5 bg-white/10 hover:bg-white/15 text-white text-xs font-semibold rounded-md transition-colors whitespace-nowrap"
-                        >
-                            View Plans
-                        </button>
+                        <span className="text-xs text-white/40">Requires an active subscription</span>
                     </div>
                 )}
             </div>

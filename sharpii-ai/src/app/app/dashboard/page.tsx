@@ -9,11 +9,12 @@ import BillingSection from '@/components/app/dashboard/BillingSection'
 import UserSettingsSection from '@/components/app/dashboard/UserSettingsSection'
 import { ElegantLoading } from '@/components/ui/elegant-loading'
 import { Suspense } from 'react'
+import Link from 'next/link'
 
 function DashboardContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { user, isLoading } = useAppData()
+  const { user, isLoading, isDemo } = useAppData()
   const [activeSection, setActiveSection] = useState('credits')
 
   useEffect(() => {
@@ -23,13 +24,40 @@ function DashboardContent() {
     }
   }, [searchParams])
 
+  useEffect(() => {
+    if (!isLoading && !user && !isDemo) {
+      router.push('/app/signin')
+    }
+  }, [isLoading, user, isDemo, router])
+
   if (isLoading) {
     return <ElegantLoading message="Loading your dashboard..." />
   }
 
-  if (!user) {
-    router.push('/app/signin')
+  if (!user && !isDemo) {
     return null
+  }
+
+  if (!user && isDemo) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center p-6">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 rounded-md bg-[#FFFF00]/10 border border-[#FFFF00]/20 flex items-center justify-center mx-auto mb-6">
+            <svg className="w-8 h-8 text-[#FFFF00]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-3">Create your account</h2>
+          <p className="text-white/50 text-sm mb-8">Sign up to access your dashboard — track credits, view billing history, and manage your subscription.</p>
+          <div className="flex gap-3 justify-center">
+            <Link href="/app/signin?tab=signup" className="bg-[#FFFF00] text-black font-bold px-6 py-2.5 rounded-md hover:bg-yellow-300 transition text-sm">
+              Get Started
+            </Link>
+            <Link href="/app/signin" className="border border-white/20 text-white/70 hover:text-white font-medium px-6 py-2.5 rounded-md transition text-sm">
+              Sign In
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const tabs = [

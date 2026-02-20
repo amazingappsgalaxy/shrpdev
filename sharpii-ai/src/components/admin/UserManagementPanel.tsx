@@ -358,7 +358,7 @@ export function UserManagementPanel() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="free">Free</SelectItem>
+                    <SelectItem value="free">No Active Plan</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="premium">Premium</SelectItem>
                     <SelectItem value="enterprise">Enterprise</SelectItem>

@@ -34,7 +34,7 @@ type HistoryDetail = {
 }
 
 export default function HistoryPage() {
-  const { user, isLoading } = useAuth()
+  const { user, isLoading, isDemo } = useAuth()
   const [items, setItems] = useState<HistoryListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -143,7 +143,7 @@ export default function HistoryPage() {
     return <ElegantLoading message="Loading history..." />
   }
 
-  if (!user) {
+  if (!user && !isDemo) {
     if (typeof window !== 'undefined') {
       window.location.href = '/app/signin'
     }

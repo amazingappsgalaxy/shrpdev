@@ -147,7 +147,7 @@ export function Navigation() {
               className="btn-premium relative overflow-hidden"
               asChild
             >
-              <Link href="/app/signup">
+              <Link href="/app/signin?tab=signup">
                 <span className="relative z-10">Get Started</span>
               </Link>
             </Button>
@@ -211,7 +211,7 @@ export function Navigation() {
                   className="w-full justify-start btn-premium" 
                   asChild
                 >
-                  <Link href="/app/signup" onClick={() => setIsOpen(false)}>
+                  <Link href="/app/signin?tab=signup" onClick={() => setIsOpen(false)}>
                     <span className="relative z-10">Get Started</span>
                   </Link>
                 </Button>

@@ -217,7 +217,7 @@ const DEMO_INPUT_URL = 'https://i.postimg.cc/vTtwPDVt/90s-Futuristic-Portrait-3.
 const DEMO_OUTPUT_URL = 'https://i.postimg.cc/NjJBqyPS/Comfy-UI-00022-psmsy-1770811094.png'
 
 function EditorContent() {
-  const { user, isLoading } = useAuth()
+  const { user, isLoading, isDemo } = useAuth()
   const searchParams = useSearchParams()
 
   type EnhancedOutput = { type: 'image' | 'video'; url: string }
@@ -574,8 +574,7 @@ function EditorContent() {
 
   if (isLoading) return <ElegantLoading message="Initializing Editor..." />
 
-  if (!user) {
-    // Redirect to login or show message
+  if (!user && !isDemo) {
     if (typeof window !== 'undefined') {
       window.location.href = '/app/signin'
     }

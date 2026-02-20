@@ -71,10 +71,10 @@ export default function Navigation({ showAuthButtons = false, showUserMenu = fal
           <div className="flex items-center space-x-4">
             {showAuthButtons ? (
               <>
-                <Link href="/app/login">
+                <Link href="/app/signin">
                   <Button variant="ghost" size="sm">Sign In</Button>
                 </Link>
-                <Link href="/app/signup">
+                <Link href="/app/signin?tab=signup">
                   <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
                     Get Started
                   </Button>

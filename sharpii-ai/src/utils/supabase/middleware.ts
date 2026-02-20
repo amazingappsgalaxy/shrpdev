@@ -7,6 +7,7 @@ export async function updateSession(request: NextRequest) {
   // Only check for presence of session cookie in middleware (Edge)
   // Do NOT validate against server-side store here, as Edge and Node runtimes don't share memory
   const hasSessionCookie = !!request.cookies.get('session')?.value
+  const hasDemoCookie = !!request.cookies.get('demo')?.value
 
   // If user is already authenticated and visits the signin page, redirect to dashboard
   if (hasSessionCookie && request.nextUrl.pathname.startsWith('/app/signin')) {
@@ -15,9 +16,10 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Redirect unauthenticated users to signin (except for signin and auth pages, or demo mode)
+  // Redirect unauthenticated users to signin (except for signin/auth pages, or demo mode)
   if (
     !hasSessionCookie &&
+    !hasDemoCookie &&
     !request.nextUrl.pathname.startsWith('/app/signin') &&
     !request.nextUrl.pathname.startsWith('/app/auth') &&
     request.nextUrl.searchParams.get('demo') !== 'true'
