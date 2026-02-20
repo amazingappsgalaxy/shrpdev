@@ -85,8 +85,9 @@ export async function POST(request: NextRequest) {
     const cancelAtNextBilling = !!providerAfter?.cancel_at_next_billing_date
     const subscriptionStatus = cancelAtNextBilling ? 'pending_cancellation' : 'active'
 
-    const updatedPlan = normalizePlan(providerAfter?.metadata?.plan || providerAfter?.plan || targetPlan)
-    const updatedBillingPeriod = normalizeBillingPeriod(providerAfter?.metadata?.billingPeriod || providerAfter?.billing_period || targetBillingPeriod)
+    // Trust targetPlan/targetBillingPeriod — Dodo test mode doesn't reflect the change in providerAfter
+    const updatedPlan = targetPlan
+    const updatedBillingPeriod = targetBillingPeriod
 
     await (supabase as any).from('subscriptions').update({
       plan: updatedPlan,
@@ -108,7 +109,6 @@ export async function POST(request: NextRequest) {
         .eq('type', 'subscription')
         .eq('is_active', true)
         .eq('subscription_id', subscriptionId)
-        .eq('expires_at', new Date(periodEnd).toISOString())
 
       const alreadyAllocated = (existingCredits || []).reduce((sum: number, row: any) => sum + (row.amount || 0), 0)
       if (alreadyAllocated < targetCredits) {

@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-client-simple'
 import { CreditCard, Download, CheckCircle, XCircle, FileText, AlertTriangle, Loader2, Clock } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
+import UpgradeModal from './UpgradeModal'
 
 const openPlansPopup = () => window.dispatchEvent(new CustomEvent('sharpii:open-plans'))
 
@@ -41,6 +42,8 @@ export default function BillingSection() {
     const [loading, setLoading] = useState(true)
     const [cancelling, setCancelling] = useState(false)
     const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+    const [reactivating, setReactivating] = useState(false)
 
     useEffect(() => {
         if (!user?.id) return
@@ -93,6 +96,27 @@ export default function BillingSection() {
             toast.error('An error occurred. Please try again.')
         } finally {
             setCancelling(false)
+        }
+    }
+
+    const handleReactivate = async () => {
+        setReactivating(true)
+        try {
+            const res = await fetch('/api/user/subscription/reactivate', {
+                method: 'POST',
+                credentials: 'include'
+            })
+            const data = await res.json()
+            if (res.ok) {
+                toast.success('Auto-renew re-enabled. Your plan will renew normally.')
+                setSubscription(data.subscription)
+            } else {
+                toast.error(data.error || 'Failed to reactivate subscription')
+            }
+        } catch {
+            toast.error('An error occurred. Please try again.')
+        } finally {
+            setReactivating(false)
         }
     }
 
@@ -257,7 +281,7 @@ export default function BillingSection() {
                             {canCancel && (
                                 <>
                                     <button
-                                        onClick={openPlansPopup}
+                                        onClick={() => setShowUpgradeModal(true)}
                                         className="px-4 py-2 bg-[#FFFF00] hover:bg-[#c9c900] text-black text-sm font-bold rounded-md transition-colors"
                                     >
                                         Upgrade Plan
@@ -292,12 +316,22 @@ export default function BillingSection() {
                                     )}
                                 </>
                             )}
-                            {(isPendingCancellation || subscriptionStatus === 'cancelled') && (
+                            {isPendingCancellation && (
+                                <button
+                                    onClick={handleReactivate}
+                                    disabled={reactivating}
+                                    className="px-4 py-2 bg-[#FFFF00] hover:bg-[#c9c900] text-black text-sm font-bold rounded-md transition-colors flex items-center gap-2 disabled:opacity-70"
+                                >
+                                    {reactivating && <Loader2 className="w-3 h-3 animate-spin" />}
+                                    Turn auto-renew back on
+                                </button>
+                            )}
+                            {subscriptionStatus === 'cancelled' && (
                                 <button
                                     onClick={openPlansPopup}
                                     className="px-4 py-2 bg-[#FFFF00] hover:bg-[#c9c900] text-black text-sm font-bold rounded-md transition-colors"
                                 >
-                                    Turn auto-renew back on
+                                    Subscribe Again
                                 </button>
                             )}
                         </div>
@@ -314,6 +348,20 @@ export default function BillingSection() {
                     </div>
                 )}
             </motion.div>
+
+            {/* Upgrade Modal */}
+            {showUpgradeModal && subscription && (
+                <UpgradeModal
+                    currentPlan={subscription.plan}
+                    currentBillingPeriod={subscription.billing_period}
+                    onClose={() => setShowUpgradeModal(false)}
+                    onSuccess={(updatedSub, _delta) => {
+                        setSubscription(updatedSub)
+                        setShowUpgradeModal(false)
+                        window.dispatchEvent(new CustomEvent('sharpii:subscription-updated', { detail: updatedSub }))
+                    }}
+                />
+            )}
 
             {/* Payment History */}
             <motion.div

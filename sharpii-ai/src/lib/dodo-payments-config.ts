@@ -28,8 +28,22 @@ export const DODO_PRODUCT_IDS = {
   },
   'day pass': {
     daily: 'pdt_0NYhE3lLB1AVBQ1IF1NzS',
+  },
+  topup: {
+    500:  process.env.DODO_TOPUP_500_PRODUCT_ID  || '',
+    1000: process.env.DODO_TOPUP_1000_PRODUCT_ID || '',
+    2500: process.env.DODO_TOPUP_2500_PRODUCT_ID || '',
+    5000: process.env.DODO_TOPUP_5000_PRODUCT_ID || '',
   }
 } as const
+
+// One-time top-up credit packages
+export const TOPUP_PACKAGES = [
+  { credits: 500,  price: 5  },
+  { credits: 1000, price: 9  },
+  { credits: 2500, price: 20 },
+  { credits: 5000, price: 35 },
+] as const
 
 // Plan configuration mapping (Legacy support, PRICING_PLANS is main source)
 export const PLAN_CONFIG = {

@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/lib/auth-client-simple'
-import { Coins, Crown, Calendar, Lock, Zap, ArrowRight, RefreshCw } from 'lucide-react'
+import { Coins, Crown, Calendar, Lock, Zap, ArrowRight, RefreshCw, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { toast } from 'sonner'
 
 const openPlansPopup = () => window.dispatchEvent(new CustomEvent('sharpii:open-plans'))
 
@@ -23,6 +24,7 @@ export default function CreditsSection() {
     const [loading, setLoading] = useState(true)
     const [activating, setActivating] = useState(false)
     const [activatingSlowMode, setActivatingSlowMode] = useState(false)
+    const [loadingTopup, setLoadingTopup] = useState<number | null>(null)
     const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const pollAttemptsRef = useRef(0)
     const MAX_POLL_ATTEMPTS = 12 // fast phase: 12 × 5s = 60s
@@ -91,6 +93,28 @@ export default function CreditsSection() {
                 schedulePoll()
             }
         }, 5000)
+    }
+
+    const handleTopup = async (creditAmount: number) => {
+        setLoadingTopup(creditAmount)
+        try {
+            const res = await fetch('/api/payments/topup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ credits: creditAmount })
+            })
+            const data = await res.json()
+            if (res.ok && data.checkoutUrl) {
+                window.location.href = data.checkoutUrl
+            } else {
+                toast.error(data.error || data.message || 'Failed to start checkout')
+            }
+        } catch {
+            toast.error('An error occurred. Please try again.')
+        } finally {
+            setLoadingTopup(null)
+        }
     }
 
     useEffect(() => {
@@ -286,9 +310,15 @@ export default function CreditsSection() {
                         ].map((pkg) => (
                             <button
                                 key={pkg.credits}
-                                className="flex flex-col items-center py-3 border border-white/10 hover:border-[#FFFF00]/50 hover:bg-[#FFFF00]/5 rounded-md transition-all group"
+                                onClick={() => handleTopup(pkg.credits)}
+                                disabled={loadingTopup !== null}
+                                className="flex flex-col items-center py-3 border border-white/10 hover:border-[#FFFF00]/50 hover:bg-[#FFFF00]/5 rounded-md transition-all group disabled:opacity-60 disabled:cursor-not-allowed"
                             >
-                                <span className="text-sm font-bold text-white group-hover:text-[#FFFF00] transition-colors">{pkg.credits.toLocaleString()}</span>
+                                {loadingTopup === pkg.credits ? (
+                                    <Loader2 className="w-4 h-4 animate-spin text-[#FFFF00] mb-1" />
+                                ) : (
+                                    <span className="text-sm font-bold text-white group-hover:text-[#FFFF00] transition-colors">{pkg.credits.toLocaleString()}</span>
+                                )}
                                 <span className="text-xs text-white/35 mt-0.5">credits</span>
                                 <span className="text-xs font-bold text-[#FFFF00] mt-1.5">${pkg.price}</span>
                             </button>

@@ -127,6 +127,16 @@ export function UserHeader({ className }: UserHeaderProps) {
         return () => window.removeEventListener('sharpii:credits-updated', handleCreditsUpdated)
     }, [])
 
+    // Sync header plan badge when upgrade/reactivation changes the plan
+    useEffect(() => {
+        const handleSubUpdated = (e: Event) => {
+            const sub = (e as CustomEvent).detail
+            if (sub?.plan) setCurrentPlan(sub.plan)
+        }
+        window.addEventListener('sharpii:subscription-updated', handleSubUpdated)
+        return () => window.removeEventListener('sharpii:subscription-updated', handleSubUpdated)
+    }, [])
+
     const handleHoverEnter = () => {
         if (hoverTimer.current) clearTimeout(hoverTimer.current)
         setHoverCardOpen(true)

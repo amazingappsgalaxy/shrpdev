@@ -174,6 +174,47 @@ async function handlePaymentSucceeded(payment: any) {
 
     console.log(`👤 User: ${userId}, Plan: ${plan}, Period: ${billingPeriod}`)
 
+    // Handle top-up payments — allocate permanent credits and return early
+    if (payment.metadata?.type === 'topup') {
+      const creditsAmount = parseInt(payment.metadata?.credits || '0', 10)
+      if (creditsAmount > 0 && userId) {
+        console.log(`🎁 Top-up: allocating ${creditsAmount} permanent credits to user ${userId}`)
+        await CreditsService.allocatePermanentCredits(
+          userId,
+          creditsAmount,
+          paymentId,
+          `Top-up: ${creditsAmount} credits`
+        )
+        // Record payment in DB
+        if (admin) {
+          const { data: existingPayment } = await admin
+            .from('payments')
+            .select('id')
+            .eq('dodo_payment_id', paymentId)
+            .limit(1)
+            .maybeSingle()
+          if (!existingPayment?.id) {
+            await admin.from('payments').insert({
+              user_id: userId,
+              dodo_payment_id: paymentId,
+              dodo_customer_id: payment.customer?.customer_id || payment.customer_id,
+              amount: payment.amount || payment.total_amount || 0,
+              currency: payment.currency || 'USD',
+              status: 'succeeded',
+              payment_method: payment.payment_method || 'card',
+              plan: 'topup',
+              billing_period: 'monthly',
+              paid_at: new Date().toISOString(),
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              metadata: payment
+            })
+          }
+        }
+      }
+      return
+    }
+
     // Record payment in database
     if (admin) {
       const { data: existingPayment } = await admin
