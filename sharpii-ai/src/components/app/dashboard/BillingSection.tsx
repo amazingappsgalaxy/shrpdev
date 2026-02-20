@@ -1,9 +1,12 @@
+'use client'
+
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-client-simple'
-import { CreditCard, Download, Calendar, CheckCircle, XCircle, FileText, AlertTriangle, Loader2, Clock } from 'lucide-react'
+import { CreditCard, Download, CheckCircle, XCircle, FileText, AlertTriangle, Loader2, Clock } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
-import Link from 'next/link'
+
+const openPlansPopup = () => window.dispatchEvent(new CustomEvent('sharpii:open-plans'))
 
 interface Payment {
     id: string
@@ -146,7 +149,7 @@ export default function BillingSection() {
             <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white/5 border border-white/10 rounded-xl p-5"
+                className="bg-white/5 border border-white/10 rounded-lg p-5"
             >
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
@@ -253,34 +256,35 @@ export default function BillingSection() {
                         <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-white/8">
                             {canCancel && (
                                 <>
-                                    <Link href="/plans">
-                                        <button className="px-4 py-2 bg-[#FFFF00] hover:bg-[#baba00] text-black text-sm font-bold rounded-lg transition-colors">
-                                            Upgrade Plan
-                                        </button>
-                                    </Link>
+                                    <button
+                                        onClick={openPlansPopup}
+                                        className="px-4 py-2 bg-[#FFFF00] hover:bg-[#c9c900] text-black text-sm font-bold rounded-md transition-colors"
+                                    >
+                                        Upgrade Plan
+                                    </button>
                                     {!showCancelConfirm ? (
                                         <button
                                             onClick={() => setShowCancelConfirm(true)}
-                                            className="px-4 py-2 bg-white/5 hover:bg-red-500/10 text-white/60 hover:text-red-400 text-sm font-medium rounded-lg border border-white/10 transition-colors"
+                                            className="px-4 py-2 bg-white/5 hover:bg-red-500/10 text-white/60 hover:text-red-400 text-sm font-medium rounded-md border border-white/10 transition-colors"
                                         >
                                             Turn off auto-renew
                                         </button>
                                     ) : (
-                                        <div className="flex items-center gap-2 bg-red-500/8 border border-red-500/15 rounded-lg px-3 py-2">
+                                        <div className="flex items-center gap-2 bg-red-500/8 border border-red-500/15 rounded-md px-3 py-2">
                                             <span className="text-xs text-red-300/80">
-                                                Are you sure? Your plan will stay active until the end of the billing period.
+                                                Are you sure? Your plan stays active until the end of the billing period.
                                             </span>
                                             <button
                                                 onClick={handleCancelSubscription}
                                                 disabled={cancelling}
-                                                className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
+                                                className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-md transition-colors flex items-center gap-1"
                                             >
                                                 {cancelling && <Loader2 className="w-3 h-3 animate-spin" />}
                                                 Yes, turn off
                                             </button>
                                             <button
                                                 onClick={() => setShowCancelConfirm(false)}
-                                                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded-lg transition-colors"
+                                                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded-md transition-colors"
                                             >
                                                 Keep Plan
                                             </button>
@@ -289,22 +293,24 @@ export default function BillingSection() {
                                 </>
                             )}
                             {(isPendingCancellation || subscriptionStatus === 'cancelled') && (
-                                <Link href="/plans">
-                                    <button className="px-4 py-2 bg-[#FFFF00] hover:bg-[#baba00] text-black text-sm font-bold rounded-lg transition-colors">
-                                        Turn auto-renew back on
-                                    </button>
-                                </Link>
+                                <button
+                                    onClick={openPlansPopup}
+                                    className="px-4 py-2 bg-[#FFFF00] hover:bg-[#c9c900] text-black text-sm font-bold rounded-md transition-colors"
+                                >
+                                    Turn auto-renew back on
+                                </button>
                             )}
                         </div>
                     </div>
                 ) : (
                     <div className="flex items-center justify-between">
                         <span className="text-sm text-white/40">No active subscription</span>
-                        <Link href="/plans">
-                            <button className="px-4 py-2 bg-[#FFFF00] hover:bg-[#c9c900] text-black text-sm font-bold rounded-lg transition-colors">
-                                View Plans
-                            </button>
-                        </Link>
+                        <button
+                            onClick={openPlansPopup}
+                            className="px-4 py-2 bg-[#FFFF00] hover:bg-[#c9c900] text-black text-sm font-bold rounded-md transition-colors"
+                        >
+                            View Plans
+                        </button>
                     </div>
                 )}
             </motion.div>
@@ -314,7 +320,7 @@ export default function BillingSection() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05 }}
-                className="bg-white/5 border border-white/10 rounded-xl overflow-hidden"
+                className="bg-white/5 border border-white/10 rounded-lg overflow-hidden"
             >
                 <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
                     <div className="flex items-center gap-2">

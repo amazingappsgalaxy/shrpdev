@@ -66,7 +66,25 @@ export default function RootLayout({
       >
         {/* Removed SupabaseProvider wrapper */}
         {children}
-        <Toaster richColors position="top-right" />
+        <Toaster
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: '#111111',
+              border: '1px solid rgba(255,255,255,0.1)',
+              color: '#ffffff',
+              borderRadius: '12px',
+              fontSize: '14px',
+              fontWeight: '500',
+            },
+            classNames: {
+              success: 'border-[#FFFF00]/30',
+              error: 'border-red-500/30',
+              warning: 'border-amber-500/30',
+              info: 'border-blue-500/30',
+            },
+          }}
+        />
       </body>
     </html>
   );

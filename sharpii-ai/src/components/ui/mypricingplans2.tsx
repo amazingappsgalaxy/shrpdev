@@ -308,7 +308,7 @@ export function MyPricingPlans2({
           billingPeriod: frequency
         }
         localStorage.setItem('selectedPlan', JSON.stringify(planData))
-        router.push('/app/login')
+        router.push('/app/signin')
         return
       }
 
@@ -349,7 +349,7 @@ export function MyPricingPlans2({
           billingPeriod: actualBillingPeriod
         }
         localStorage.setItem('selectedPlan', JSON.stringify(planData))
-        router.push('/app/login')
+        router.push('/app/signin')
         return
       }
 

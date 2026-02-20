@@ -7,10 +7,10 @@ import UserHeader from '@/components/app/UserHeader'
 import CreditsSection from '@/components/app/dashboard/CreditsSection'
 import OptimizedUsageSection from '@/components/app/dashboard/OptimizedUsageSection'
 import BillingSection from '@/components/app/dashboard/BillingSection'
+import UserSettingsSection from '@/components/app/dashboard/UserSettingsSection'
 import { ElegantLoading } from '@/components/ui/elegant-loading'
 import { Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Coins, Activity, CreditCard } from 'lucide-react'
 
 function DashboardContent() {
   const router = useRouter()
@@ -22,7 +22,7 @@ function DashboardContent() {
 
   useEffect(() => {
     const tab = searchParams.get('tab')
-    if (tab && ['credits', 'usage', 'billing'].includes(tab)) {
+    if (tab && ['credits', 'usage', 'billing', 'settings'].includes(tab)) {
       setActiveSection(tab)
     }
   }, [searchParams])
@@ -41,14 +41,15 @@ function DashboardContent() {
   } : null) as typeof user
 
   if (!effectiveUser) {
-    router.push('/app/login')
+    router.push('/app/signin')
     return null
   }
 
   const tabs = [
-    { id: 'credits', label: 'Credits & Plans', icon: Coins },
-    { id: 'usage', label: 'Usage History', icon: Activity },
-    { id: 'billing', label: 'Billing Settings', icon: CreditCard },
+    { id: 'credits', label: 'Credits' },
+    { id: 'usage', label: 'Transactions' },
+    { id: 'billing', label: 'Billing' },
+    { id: 'settings', label: 'Account' },
   ]
 
   return (
@@ -74,22 +75,20 @@ function DashboardContent() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="inline-flex items-center bg-white/5 border border-white/10 rounded-xl p-1 gap-0.5"
+            className="inline-flex items-center bg-white/5 border border-white/10 rounded-md p-1 gap-0.5"
           >
             {tabs.map((tab) => {
               const isActive = activeSection === tab.id
-              const Icon = tab.icon
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveSection(tab.id)}
-                  className={`relative flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  className={`px-4 py-1.5 rounded text-sm font-medium transition-all duration-200 ${
                     isActive
-                      ? 'bg-white/10 text-white shadow-sm'
-                      : 'text-white/40 hover:text-white/70'
+                      ? 'bg-white text-black shadow-sm'
+                      : 'text-white/50 hover:text-white/80'
                   }`}
                 >
-                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#FFFF00]' : 'text-current'}`} />
                   {tab.label}
                 </button>
               )
@@ -108,6 +107,7 @@ function DashboardContent() {
               {activeSection === 'credits' && <CreditsSection />}
               {activeSection === 'usage' && <OptimizedUsageSection />}
               {activeSection === 'billing' && <BillingSection />}
+              {activeSection === 'settings' && <UserSettingsSection />}
             </motion.div>
           </AnimatePresence>
         </div>

@@ -46,7 +46,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'subscriptionId, paymentId, or sessionId is required' }, { status: 400 })
     }
 
-    const providerSubscription: any = await (dodo as any).subscriptions.retrieve(subscriptionId)
+    let providerSubscription: any
+    try {
+      providerSubscription = await (dodo as any).subscriptions.retrieve(subscriptionId)
+    } catch (retrieveError: any) {
+      const msg = retrieveError?.message || String(retrieveError)
+      const isNotFound = retrieveError?.status === 404 || retrieveError?.statusCode === 404 || /not.?found|invalid|does not exist/i.test(msg)
+      return NextResponse.json(
+        { error: isNotFound ? 'Subscription not found' : 'Failed to retrieve subscription', details: msg },
+        { status: isNotFound ? 404 : 502 }
+      )
+    }
 
     const providerUserId =
       providerSubscription?.metadata?.userId ||
@@ -99,9 +109,6 @@ export async function POST(request: NextRequest) {
         : providerStatus || 'pending'
 
     let paymentStatus: string | null = null
-    // Ownership has already been verified above — treat any non-cancelled subscription as confirmed
-    // so the return flow works even when the payment processor shows "pending/processing" (common in test mode)
-    let isConfirmed = subscriptionStatus !== 'cancelled' && subscriptionStatus !== 'failed' && subscriptionStatus !== 'expired'
     try {
       const latestPaymentId = providerSubscription?.latest_payment_id || providerSubscription?.payment_id || null
       if (latestPaymentId) {
@@ -117,10 +124,20 @@ export async function POST(request: NextRequest) {
     } catch {
     }
 
-    // Explicitly mark as not-confirmed for hard-failure payment statuses
-    if (paymentStatus === 'failed' || paymentStatus === 'cancelled' || paymentStatus === 'refunded') {
-      isConfirmed = false
+    // Check if subscription is already active in our DB (webhook already processed the payment)
+    let isAlreadyActiveInDb = false
+    if (admin) {
+      const { data: existingSub } = await admin
+        .from('subscriptions')
+        .select('status')
+        .eq('dodo_subscription_id', subscriptionId)
+        .maybeSingle() as any
+      isAlreadyActiveInDb = existingSub?.status === 'active'
     }
+
+    // Only confirm if payment has actually succeeded OR webhook already activated subscription in DB
+    // Do NOT grant credits for 'processing', 'pending', or any other non-succeeded status
+    const isConfirmed = isAlreadyActiveInDb || paymentStatus === 'succeeded'
 
     if (admin) {
       await admin.from('subscriptions').upsert(

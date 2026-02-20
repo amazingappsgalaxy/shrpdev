@@ -87,17 +87,18 @@ export async function POST(request: NextRequest) {
     const webhookTimestamp = request.headers.get('webhook-timestamp') || ''
     const webhookSignature = request.headers.get('webhook-signature') || ''
 
-    // Verify signature when all headers are present (skip if missing – dev mode)
-    if (webhookId && webhookTimestamp && webhookSignature) {
-      const isValid = verifyDodoSignature(body, webhookId, webhookTimestamp, webhookSignature)
-      if (!isValid) {
-        console.error('❌ Invalid webhook signature')
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-      }
-      console.log('✅ Webhook signature verified')
-    } else {
-      console.log('ℹ️ Webhook signature headers missing – proceeding without verification (dev mode)')
+    // Always require valid webhook signature – no unauthenticated webhooks allowed
+    if (!webhookId || !webhookTimestamp || !webhookSignature) {
+      console.error('❌ Webhook signature headers missing')
+      return NextResponse.json({ error: 'Webhook signature required' }, { status: 401 })
     }
+
+    const isValid = verifyDodoSignature(body, webhookId, webhookTimestamp, webhookSignature)
+    if (!isValid) {
+      console.error('❌ Invalid webhook signature')
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    }
+    console.log('✅ Webhook signature verified')
 
     const event = JSON.parse(body)
     console.log('📋 Event type:', event.type)
