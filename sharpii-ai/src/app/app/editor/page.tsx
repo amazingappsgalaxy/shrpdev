@@ -507,12 +507,9 @@ function EditorContent() {
         setActiveTasks(prev => {
           const newMap = new Map(prev)
           const task = newMap.get(taskId)
-          if (task) newMap.set(taskId, { ...task, progress: 100, status: 'error', message: 'Failed' })
+          if (task) newMap.set(taskId, { ...task, progress: 100, status: 'error', message: data.error || 'Enhancement failed' })
           return newMap
         })
-        const errorToastId = `${Date.now()}-error`
-        setToasts(prev => [...prev, { id: errorToastId, message: data.error || 'Enhancement failed', type: 'error' }])
-        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== errorToastId)), 5000)
       }
 
     } catch (error) {
@@ -521,12 +518,9 @@ function EditorContent() {
       setActiveTasks(prev => {
         const newMap = new Map(prev)
         const task = newMap.get(taskId)
-        if (task) newMap.set(taskId, { ...task, progress: 100, status: 'error', message: 'Error' })
+        if (task) newMap.set(taskId, { ...task, progress: 100, status: 'error', message: errorMsg })
         return newMap
       })
-      const errorToastId = `${Date.now()}-error-catch`
-      setToasts(prev => [...prev, { id: errorToastId, message: errorMsg, type: 'error' }])
-      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== errorToastId)), 5000)
     } finally {
       const interval = taskIntervalsRef.current.get(taskId)
       if (interval) {
@@ -593,7 +587,7 @@ function EditorContent() {
       />
 
       {/* Main Layout - Grid with Wider Sidebar & Sticky Canvas */}
-      <div className="flex-1 pt-20 w-full grid grid-cols-1 lg:grid-cols-[420px_1fr] items-start">
+      <div className="flex-1 pt-16 w-full grid grid-cols-1 lg:grid-cols-[420px_1fr] items-start">
 
         {/* LEFT SIDEBAR - CONTROLS (Scrolls with page) */}
         <div className="flex flex-col border-r border-white/5 bg-[#0c0c0e] z-20 relative min-h-[calc(100vh-6rem)] lg:pb-32 order-2 lg:order-1">
@@ -679,7 +673,7 @@ function EditorContent() {
             <div className="space-y-2 px-1">
 
               {/* Smart Upscale Special Setting */}
-              <div className="rounded-xl overflow-hidden">
+              <div className="rounded-xl overflow-hidden border border-white/5">
                 <div className="flex items-center justify-between p-3 border-b border-white/5 bg-white/[0.02]">
                   <div className="flex items-center gap-2">
                     <div className="p-1.5 rounded bg-black/20 text-[#FFFF00]">
@@ -852,7 +846,7 @@ function EditorContent() {
         </div>
 
         {/* RIGHT MAIN CANVAS */}
-        <div className="relative flex flex-col p-4 lg:sticky lg:top-24 lg:h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar order-1 lg:order-2">
+        <div className="relative flex flex-col px-4 pt-2 pb-4 lg:sticky lg:top-[4.5rem] lg:h-[calc(100vh-4.5rem)] overflow-y-auto custom-scrollbar order-1 lg:order-2">
           <div className="w-full relative flex items-center justify-center bg-[#050505] custom-checkerboard rounded-2xl border border-white/5 overflow-hidden h-[400px] lg:flex-1 lg:min-h-[400px] flex-shrink-0">
             {!uploadedImage ? (
               <div
@@ -1004,7 +998,7 @@ function EditorContent() {
                     value={customPrompt}
                     onChange={(e) => setCustomPrompt(e.target.value)}
                     placeholder="Enter additional prompt details..."
-                    className="w-full bg-white/[0.03] rounded-lg p-3 text-xs text-white placeholder:text-white/20 focus:outline-none focus:bg-white/[0.05] min-h-[80px] resize-none"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-white/25 transition-all min-h-[80px] resize-none"
                   />
                 </div>
               </div>
