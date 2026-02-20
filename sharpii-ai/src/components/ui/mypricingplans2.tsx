@@ -8,6 +8,7 @@ import { PRICING_PLANS, PRICING_CONFIG } from "@/lib/pricing-config"
 import { useSession } from "@/lib/auth-client-simple"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import UpgradeModal from "@/components/app/dashboard/UpgradeModal"
 
 interface MyPricingPlans2Props {
   showHeader?: boolean
@@ -288,6 +289,27 @@ export function MyPricingPlans2({
   const { data: authData, isLoading: sessionLoading } = useSession()
   const router = useRouter()
 
+  // Check if user has an active subscription — if so, show upgrade flow instead of checkout
+  const [activeSub, setActiveSub] = React.useState<{ plan: string; billing_period: string } | null>(null)
+  const [subChecked, setSubChecked] = React.useState(false)
+
+  React.useEffect(() => {
+    if (sessionLoading || !authData?.user) {
+      if (!sessionLoading) setSubChecked(true)
+      return
+    }
+    fetch('/api/user/subscription', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        const sub = data?.subscription
+        if (sub && ['active', 'trialing', 'pending_cancellation'].includes(sub.status)) {
+          setActiveSub({ plan: sub.plan, billing_period: sub.billing_period })
+        }
+        setSubChecked(true)
+      })
+      .catch(() => setSubChecked(true))
+  }, [authData?.user, sessionLoading])
+
   const handlePlanSelect = async (plan: any) => {
     console.log('🎯 Plan selected:', plan.name, 'Billing:', frequency)
 
@@ -375,6 +397,24 @@ export function MyPricingPlans2({
     } finally {
       setIsLoading(null)
     }
+  }
+
+  // Subscribed user → show upgrade flow inline (no checkout)
+  if (subChecked && activeSub) {
+    return (
+      <div className={cn('flex items-center justify-center py-16', className)}>
+        <UpgradeModal
+          inline
+          currentPlan={activeSub.plan}
+          currentBillingPeriod={activeSub.billing_period}
+          onClose={() => {}}
+          onSuccess={(updatedSub, delta) => {
+            window.dispatchEvent(new CustomEvent('sharpii:subscription-updated', { detail: updatedSub }))
+            window.dispatchEvent(new Event('sharpii:close-plans'))
+          }}
+        />
+      </div>
+    )
   }
 
   return (

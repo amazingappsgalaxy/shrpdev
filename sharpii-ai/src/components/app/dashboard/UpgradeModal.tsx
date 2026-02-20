@@ -10,9 +10,11 @@ interface Props {
     currentBillingPeriod: string
     onClose: () => void
     onSuccess: (subscription: any, creditsDelta: number) => void
+    /** When true, renders as an inline card (no fixed overlay). Used inside the pricing popup. */
+    inline?: boolean
 }
 
-export default function UpgradeModal({ currentPlan, currentBillingPeriod, onClose, onSuccess }: Props) {
+export default function UpgradeModal({ currentPlan, currentBillingPeriod, onClose, onSuccess, inline = false }: Props) {
     const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
     const [step, setStep] = useState<'select' | 'confirm'>('select')
     const [loading, setLoading] = useState(false)
@@ -64,18 +66,19 @@ export default function UpgradeModal({ currentPlan, currentBillingPeriod, onClos
         }
     }
 
-    return (
-        <div className="fixed inset-0 z-[10001] bg-black/80 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-            <div className="bg-[#0a0a0a] border border-white/10 rounded-xl w-full max-w-md">
+    const innerContent = (
+        <>
                 {/* Header */}
-                <div className="flex items-center justify-between p-5 border-b border-white/8">
-                    <h2 className="text-base font-bold text-white">
-                        {step === 'select' ? 'Upgrade Plan' : 'Confirm Upgrade'}
-                    </h2>
-                    <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
-                        <X className="w-4 h-4" />
-                    </button>
-                </div>
+                {!inline && (
+                    <div className="flex items-center justify-between p-5 border-b border-white/8">
+                        <h2 className="text-base font-bold text-white">
+                            {step === 'select' ? 'Upgrade Plan' : 'Confirm Upgrade'}
+                        </h2>
+                        <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
 
                 {step === 'select' && (
                     <div className="p-5 space-y-2">
@@ -169,6 +172,21 @@ export default function UpgradeModal({ currentPlan, currentBillingPeriod, onClos
                         </div>
                     </div>
                 )}
+        </>
+    )
+
+    if (inline) {
+        return (
+            <div className="w-full max-w-md mx-auto">
+                {innerContent}
+            </div>
+        )
+    }
+
+    return (
+        <div className="fixed inset-0 z-[10001] bg-black/80 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+            <div className="bg-[#0a0a0a] border border-white/10 rounded-xl w-full max-w-md">
+                {innerContent}
             </div>
         </div>
     )

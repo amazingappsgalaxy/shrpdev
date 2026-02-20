@@ -107,11 +107,16 @@ export function UserHeader({ className }: UserHeaderProps) {
         return () => clearInterval(interval)
     }, [currentUser?.id])
 
-    // Listen for cross-component "open plans popup" events
+    // Listen for cross-component "open/close plans popup" events
     useEffect(() => {
         const handleOpenPlans = () => setIsPlansPopupOpen(true)
+        const handleClosePlans = () => setIsPlansPopupOpen(false)
         window.addEventListener('sharpii:open-plans', handleOpenPlans)
-        return () => window.removeEventListener('sharpii:open-plans', handleOpenPlans)
+        window.addEventListener('sharpii:close-plans', handleClosePlans)
+        return () => {
+            window.removeEventListener('sharpii:open-plans', handleOpenPlans)
+            window.removeEventListener('sharpii:close-plans', handleClosePlans)
+        }
     }, [])
 
     // Sync header credits when CreditsSection polling detects new credits (e.g. after webhook fires)
