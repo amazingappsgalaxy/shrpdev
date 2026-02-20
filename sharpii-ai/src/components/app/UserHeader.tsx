@@ -432,11 +432,21 @@ export function UserHeader({ className }: UserHeaderProps) {
             {/* Plans Popup — full-screen overlay with close button */}
             {isPlansPopupOpen && (
                 <div
-                    className="fixed inset-0 z-[10000] bg-black/98 backdrop-blur-2xl flex flex-col"
+                    className="fixed inset-0 z-[10000] flex flex-col"
                     onClick={(e) => { if (e.target === e.currentTarget) setIsPlansPopupOpen(false) }}
                 >
+                    {/* Dark backdrop */}
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-2xl" />
+                    {/* Noise texture overlay */}
+                    <div
+                        className="absolute inset-0 opacity-[0.04] pointer-events-none"
+                        style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+                            backgroundSize: '180px 180px',
+                        }}
+                    />
                     {/* Header bar */}
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 flex-shrink-0">
+                    <div className="relative z-10 flex items-center justify-between px-6 py-4 border-b border-white/5 flex-shrink-0">
                         <div>
                             <h2 className="text-base font-bold text-white">
                                 {hasActivePlan ? 'Manage Your Plan' : 'Choose a Plan'}
@@ -457,7 +467,7 @@ export function UserHeader({ className }: UserHeaderProps) {
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 overflow-y-auto">
+                    <div className="relative z-10 flex-1 overflow-y-auto">
                         <div className="max-w-7xl mx-auto px-4 py-8">
                             <MyPricingPlans2
                                 showHeader={false}

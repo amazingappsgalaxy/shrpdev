@@ -1,13 +1,15 @@
 "use client"
 
 import * as React from "react"
-import { motion, Transition, HTMLMotionProps } from "framer-motion"
-import { Check, ArrowRight, Star, CheckCircle, Sparkles } from "lucide-react"
+import { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Check, ArrowRight, Loader2, Sparkles, Zap, Star, Crown } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { PRICING_PLANS, PRICING_CONFIG } from "@/lib/pricing-config"
+import { PRICING_PLANS } from "@/lib/pricing-config"
 import { useAppData } from "@/lib/hooks/use-app-data"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { Button } from '@/components/ui/button'
 import UpgradeModal from "@/components/app/dashboard/UpgradeModal"
 
 interface MyPricingPlans2Props {
@@ -22,276 +24,15 @@ interface MyPricingPlans2Props {
 }
 
 type FREQUENCY = 'monthly' | 'yearly'
-const frequencies: FREQUENCY[] = ['monthly', 'yearly']
-
-// Enhanced animation variants for premium feel
-const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as any } },
-}
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2
-    }
-  },
-}
-
-const cardHover = {
-  y: -10,
-  transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as any }
-}
-
-type PricingFrequencyToggleProps = React.ComponentProps<'div'> & {
-  frequency: FREQUENCY
-  setFrequency: React.Dispatch<React.SetStateAction<FREQUENCY>>
-}
-
-function PricingFrequencyToggle({
-  frequency,
-  setFrequency,
-  ...props
-}: PricingFrequencyToggleProps) {
-  const discountPercent = Math.round((PRICING_CONFIG.yearlyDiscount ?? 0) * 100)
-
-  return (
-    <div
-      className={cn(
-        'glass-elevated mx-auto flex w-fit rounded-full border border-white/10 p-1.5',
-        props.className,
-      )}
-      {...props}
-    >
-      {frequencies.map((freq) => (
-        <button
-          key={freq}
-          onClick={() => setFrequency(freq)}
-          className={cn(
-            "relative px-8 py-3 text-sm font-bold capitalize transition-all duration-300 rounded-full",
-            frequency === freq
-              ? "text-black"
-              : "text-white/60 hover:text-white"
-          )}
-        >
-          {frequency === freq && (
-            <motion.div
-              layoutId="activeFrequency"
-              className="absolute inset-0 bg-white rounded-full shadow-[0_0_20px_-5px_rgba(255,255,255,0.5)]"
-              transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-            />
-          )}
-          <span className="relative z-10 flex items-center gap-2">
-            {freq}
-            {freq === 'yearly' && (
-              <span className={cn(
-                "text-[10px] px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider",
-                frequency === freq ? "bg-[#FFFF00]/20 text-[#FFFF00]" : "bg-[#FFFF00] text-black"
-              )}>
-                -{discountPercent}%
-              </span>
-            )}
-          </span>
-        </button>
-      ))}
-    </div>
-  )
-}
-
-type BorderTrailProps = {
-  className?: string
-  size?: number
-  transition?: Transition
-  delay?: number
-  onAnimationComplete?: () => void
-  style?: React.CSSProperties
-}
-
-function BorderTrail({
-  className,
-  size = 60,
-  transition,
-  delay,
-  onAnimationComplete,
-  style,
-}: BorderTrailProps) {
-  const BASE_TRANSITION = {
-    repeat: Infinity,
-    duration: 4,
-    ease: 'linear',
-  }
-
-  return (
-    <div className='pointer-events-none absolute inset-0 rounded-[inherit] border border-transparent [mask-clip:padding-box,border-box] [mask-composite:intersect] [mask-image:linear-gradient(transparent,transparent),linear-gradient(#000,#000)]'>
-      <motion.div
-        className={cn('absolute aspect-square bg-gradient-to-r from-[#FFFF00] via-white to-[#FFFF00] rounded-full opacity-80', className)}
-        style={{
-          width: size * 1.5,
-          height: size,
-          offsetPath: `rect(0 auto auto 0 round ${size}px)`,
-          filter: 'blur(8px)',
-          ...style,
-        }}
-        animate={{
-          offsetDistance: ['0%', '100%'],
-        }}
-        transition={{
-          ...(transition ?? BASE_TRANSITION),
-          delay: delay,
-        }}
-        onAnimationComplete={onAnimationComplete}
-      />
-    </div>
-  )
-}
-
-type PricingCardProps = HTMLMotionProps<'div'> & {
-  plan: any
-  frequency?: FREQUENCY
-  onPlanSelect: (plan: any) => void
-  isLoading?: boolean
-}
-
-function PricingCard({
-  plan,
-  className,
-  frequency = frequencies[0],
-  onPlanSelect,
-  isLoading,
-  ...props
-}: PricingCardProps) {
-  const Icon = plan.icon || Star
-  const monthlyPrice = plan.price.monthly
-  const yearlyPrice = plan.price.yearly
-  const displayPrice = frequency === 'yearly' ? Math.round(yearlyPrice / 12) : monthlyPrice
-  const isCreator = plan.name.toLowerCase().includes("creator")
-  const isProfessional = plan.name.toLowerCase().includes("professional")
-  const isSpecial = isCreator || isProfessional
-
-  // Professional plan is the most sought-out
-  const isPopular = isProfessional
-
-  return (
-    <motion.div
-      key={plan.name}
-      className={cn(
-        'relative flex w-full flex-col rounded-3xl border border-white/5 bg-black/40 backdrop-blur-xl shadow-2xl overflow-hidden group',
-        // isSpecial ? "border-transparent" : "border-white/5",
-        className,
-      )}
-      whileHover={cardHover}
-      {...props}
-    >
-      {/* BorderTrail for Special Plans */}
-      {isSpecial && (
-        <BorderTrail
-          style={{
-            boxShadow: isProfessional
-              ? '0px 0px 60px 30px rgba(255, 255, 0, 0.15)'
-              : '0px 0px 60px 30px rgba(255, 255, 255, 0.15)',
-          }}
-          size={120}
-        />
-      )}
-
-      {/* Background Glow */}
-      <div className="absolute inset-0 transition-opacity duration-500 opacity-0 group-hover:opacity-100 pointer-events-none">
-        <div className={cn(
-          "absolute inset-0 bg-gradient-to-br opacity-20",
-          isProfessional ? "from-[#FFFF00]/10 to-transparent" :
-            isCreator ? "from-white/10 to-transparent" :
-              "from-white/5 to-transparent"
-        )} />
-      </div>
-
-      {/* Header Section */}
-      <div className="p-8 relative z-10">
-        {/* Badges */}
-        <div className="absolute top-6 right-6 flex flex-col items-end gap-2">
-          {isPopular && (
-            <div className="bg-[#FFFF00] text-black flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider shadow-[0_0_20px_rgba(255,255,0,0.3)]">
-              <Sparkles className="h-3 w-3 fill-current" />
-              Popular
-            </div>
-          )}
-        </div>
-
-        {/* Title */}
-        <h3 className={cn("text-2xl font-bold font-heading mb-2", isSpecial ? "text-white" : "text-white/80")}>
-          {plan.name}
-        </h3>
-        <p className="text-white/50 text-sm font-medium leading-relaxed mb-6 h-10">{plan.subtitle}</p>
-
-        {/* Price */}
-        <div className="flex items-baseline gap-1 mb-1">
-          <span className="text-4xl font-bold text-white font-heading">${displayPrice}</span>
-          <span className="text-white/40 font-medium">/month</span>
-        </div>
-
-        {frequency === 'yearly' && (
-          <p className="text-xs text-accent-green font-bold mb-6">
-            Billed ${yearlyPrice} yearly
-          </p>
-        )}
-
-        <div className="w-full h-px bg-white/10 my-6" />
-
-        {/* Features */}
-        <ul className="space-y-4 mb-8 flex-1">
-          {plan.features.map((feature: string, index: number) => (
-            <li key={index} className="flex items-start gap-3 text-sm text-white/70 group/feature">
-              <CheckCircle className={cn(
-                "h-5 w-5 flex-shrink-0 transition-colors duration-300",
-                isProfessional ? "text-[#FFFF00]" :
-                  isCreator ? "text-white" : "text-white/40 group-hover:text-white"
-              )} />
-              <span className="group-hover/feature:text-white transition-colors duration-300">{feature}</span>
-            </li>
-          ))}
-        </ul>
-
-        {/* CTA Button */}
-        <button
-          className={cn(
-            "w-full rounded-2xl py-4 text-sm font-bold transition-all duration-300 relative overflow-hidden group/btn shadow-lg hover:shadow-xl hover:scale-[1.02]",
-            isProfessional
-              ? "bg-[#FFFF00] text-black shadow-[0_0_20px_rgba(255,255,0,0.4)] hover:shadow-[0_0_30px_rgba(255,255,0,0.6)]"
-              : isCreator
-                ? "bg-white text-black hover:bg-white/90"
-                : "bg-white/5 text-white border border-white/10 hover:bg-white/10"
-          )}
-          onClick={() => onPlanSelect(plan)}
-          disabled={isLoading}
-        >
-          <span className="relative z-10 flex items-center justify-center gap-2">
-            {isLoading ? (
-              <span>Processing...</span>
-            ) : (
-              <>
-                Get Started
-                <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
-              </>
-            )}
-          </span>
-        </button>
-      </div>
-    </motion.div>
-  )
-}
 
 export function MyPricingPlans2({
   showHeader = true,
-  title = "Plans that Scale with You",
-  subtitle = "Whether you're just starting out or growing fast, our flexible pricing has you covered — with no hidden costs.",
   className = "",
   preloadedActiveSub,
   preloadedSubChecked = false,
 }: MyPricingPlans2Props) {
-  const [frequency, setFrequency] = React.useState<FREQUENCY>('monthly')
-  const [isLoading, setIsLoading] = React.useState<string | null>(null)
+  const [frequency, setFrequency] = useState<FREQUENCY>('monthly')
+  const [isLoading, setIsLoading] = useState<string | null>(null)
   const { user, subscription: subData, isLoading: appLoading } = useAppData()
   const router = useRouter()
 
@@ -307,87 +48,52 @@ export function MyPricingPlans2({
   const subChecked = preloadedSubChecked || !appLoading
 
   const handlePlanSelect = async (plan: any) => {
-    console.log('🎯 Plan selected:', plan.name, 'Billing:', frequency)
-
     setIsLoading(plan.name)
-
     try {
       if (appLoading) {
-        setTimeout(() => {
-          setIsLoading(null)
-          handlePlanSelect(plan)
-        }, 300)
+        setTimeout(() => { setIsLoading(null); handlePlanSelect(plan) }, 300)
         return
       }
+      const isDayPass = plan.name.toLowerCase().includes('day')
+      const planKey = isDayPass ? 'day pass' : plan.name.toLowerCase().replace(/\s+/g, '_')
+      const billingPeriod = isDayPass ? 'daily' : frequency
 
       if (!user) {
-        const planData = {
-          plan: plan.name.toLowerCase().replace(/\s+/g, '_'),
-          billingPeriod: frequency
-        }
+        const planData = { plan: planKey, billingPeriod }
         localStorage.setItem('selectedPlan', JSON.stringify(planData))
         router.push('/app/signin')
         return
       }
 
-      const isDayPass = plan.name.toLowerCase().includes('day') // Robust check for "Day Pass"
-      const actualBillingPeriod = isDayPass ? 'daily' : frequency
-
-      const requestBody = {
-        plan: isDayPass ? 'day pass' : plan.name.toLowerCase().replace(/\s+/g, '_'),
-        billingPeriod: actualBillingPeriod
-      }
-
+      const requestBody = { plan: planKey, billingPeriod }
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 20000)
 
       const response = await fetch('/api/payments/checkout', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(requestBody),
         signal: controller.signal
       })
-
       clearTimeout(timeoutId)
 
       let data: any = null
-      try {
-        data = await response.json()
-      } catch (e) {
-        toast.error('Invalid response from server')
-        return
-      }
+      try { data = await response.json() } catch (e) { toast.error('Invalid response from server'); return }
 
       if (response.status === 401) {
-        const planData = {
-          plan: requestBody.plan,
-          billingPeriod: actualBillingPeriod
-        }
+        const planData = { plan: planKey, billingPeriod }
         localStorage.setItem('selectedPlan', JSON.stringify(planData))
         router.push('/app/signin')
         return
       }
-
-      if (!response.ok) {
-        const message = (data && data.error) ? data.error : 'Failed to create checkout session'
-        toast.error(message)
-        return
-      }
-
-      if (data && data.checkoutUrl) {
+      if (!response.ok) { toast.error(data?.error || 'Failed to create checkout session'); return }
+      if (data?.checkoutUrl) {
         toast.success('Redirecting to payment...')
-        try {
-          window.location.href = data.checkoutUrl
-        } catch (redirectError) {
-          window.open(data.checkoutUrl, '_self')
-        }
+        window.location.href = data.checkoutUrl
       } else {
         toast.error('No checkout URL received')
       }
-
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Checkout failed')
     } finally {
@@ -413,83 +119,243 @@ export function MyPricingPlans2({
   }
 
   return (
-    <div
-      className={cn(
-        'relative flex w-full flex-col items-center justify-center space-y-12 py-24',
-        className,
-      )}
-    >
-      {/* Premium background elements */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-7xl h-[500px] bg-gradient-to-r from-[#FFFF00]/5 via-white/5 to-[#FFFF00]/5 blur-[120px] rounded-full opacity-40" />
+    <section className={cn("pb-8 relative overflow-hidden", className)}>
+      {/* Background Ambience */}
+      <div className="absolute inset-0 pointer-events-none opacity-40">
+        <div className="absolute top-[10%] right-[10%] w-[600px] h-[600px] bg-[#FFFF00]/5 rounded-full blur-[120px]" />
       </div>
 
-      <div className="relative z-10 w-full container px-6">
+      <div className="container mx-auto px-4 relative z-10">
+        {/* Header */}
         {showHeader && (
-          <motion.div
-            className="mx-auto max-w-3xl space-y-6 text-center mb-16"
-            initial="hidden"
-            animate="visible"
-            variants={staggerContainer}
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-elevated border border-white/10 mb-2">
-              <Star className="h-4 w-4 text-[#FFFF00] fill-[#FFFF00]" />
-              <span className="text-sm font-bold text-white uppercase tracking-widest">Premium Plans</span>
+          <div className="text-center max-w-4xl mx-auto mb-20">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/5 bg-white/5 mb-8 backdrop-blur-sm">
+              <Sparkles className="w-3 h-3 text-[#FFFF00]" />
+              <span className="text-xs font-bold font-sans text-white/80 uppercase tracking-widest">
+                Official Pricing
+              </span>
             </div>
 
-            <motion.h2
-              className="text-5xl md:text-7xl font-bold font-heading text-white"
-              variants={fadeInUp}
-            >
-              {title}
-            </motion.h2>
-            {subtitle && (
-              <motion.p
-                className="text-white/60 text-lg md:text-xl leading-relaxed max-w-2xl mx-auto"
-                variants={fadeInUp}
-              >
-                {subtitle}
-              </motion.p>
-            )}
-          </motion.div>
+            <h2 className="text-4xl md:text-5xl font-bold font-heading mb-6 leading-tight text-white tracking-tight">
+              Start Your <span className="text-[#FFFF00]">Journey.</span>
+            </h2>
+
+            <p className="text-white/50 text-lg max-w-xl mx-auto leading-relaxed font-sans">
+              Transparent pricing for everyone. Upgrade, downgrade, or cancel anytime.
+            </p>
+          </div>
         )}
 
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={fadeInUp}
-          className="flex justify-center mb-16"
-        >
-          <PricingFrequencyToggle
-            frequency={frequency}
-            setFrequency={setFrequency}
-          />
-        </motion.div>
-
-        <motion.div
-          className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 items-start"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={staggerContainer}
-        >
-          {PRICING_PLANS.map((plan) => (
+        {/* Segmented Control Toggle - WHITE style */}
+        <div className="flex justify-center mt-0 mb-10">
+          <div className="flex items-center p-1 bg-white/10 border border-white/10 rounded-full relative">
+            {/* Sliding Background - White */}
             <motion.div
-              key={plan.name}
-              variants={fadeInUp}
-              className="h-full"
+              className="absolute top-1 bottom-1 bg-white rounded-full shadow-lg z-0"
+              initial={false}
+              animate={{
+                x: frequency === 'monthly' ? 0 : '100%',
+                width: '50%'
+              }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            />
+
+            <button
+              onClick={() => setFrequency('monthly')}
+              className={cn(
+                "px-8 py-2.5 rounded-full text-sm font-bold transition-colors relative z-10 w-32",
+                frequency === 'monthly' ? "text-black" : "text-white/60 hover:text-white"
+              )}
             >
-              <PricingCard
-                plan={plan}
-                frequency={frequency}
-                onPlanSelect={handlePlanSelect}
-                isLoading={isLoading === plan.name}
-                className="h-full"
-              />
-            </motion.div>
-          ))}
-        </motion.div>
+              Monthly
+            </button>
+            <button
+              onClick={() => setFrequency('yearly')}
+              className={cn(
+                "px-8 py-2.5 rounded-full text-sm font-bold transition-colors relative z-10 w-32 flex items-center justify-center gap-2",
+                frequency === 'yearly' ? "text-black" : "text-white/60 hover:text-white"
+              )}
+            >
+              Yearly
+              <span className={cn(
+                "text-[10px] px-1.5 py-0.5 rounded-full font-black",
+                frequency === 'yearly'
+                  ? "bg-black/10 text-black border border-black/10"
+                  : "bg-[#FFFF00] text-black border border-[#FFFF00]"
+              )}>
+                -20%
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* Cards Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-7xl mx-auto items-stretch">
+          {PRICING_PLANS.map((plan, i) => {
+            const isDayPass = plan.name.toLowerCase().includes('day pass') || plan.name.toLowerCase().includes('day')
+            const monthlyPrice = plan.price.monthly
+            const yearlyPrice = plan.price.yearly
+            const displayPrice = isDayPass ? plan.price.monthly : (frequency === 'yearly' ? Math.round(yearlyPrice / 12) : monthlyPrice)
+            const isCreator = plan.name === "Creator"
+            const isPro = plan.name === "Professional"
+
+            const isHighlighted = isCreator || isPro
+
+            return (
+              <div
+                key={i}
+                className={cn(
+                  "flex flex-col p-6 lg:p-8 rounded-[2rem] transition-all duration-300 relative group h-full overflow-visible",
+                  "hover:scale-[1.02] hover:-translate-y-1",
+                  isCreator
+                    ? "bg-[#FFFF00] text-black border border-[#FFFF00] shadow-[0_0_50px_rgba(255,255,0,0.15)]"
+                    : isPro
+                      ? "bg-[#FFFF00] text-black shadow-[0_0_80px_rgba(255,255,0,0.3)] z-10 scale-[1.02] ring-2 ring-white/50 ring-offset-4 ring-offset-black"
+                      : "bg-[#0A0A0A] border border-white/5 text-white hover:border-white/10"
+                )}
+              >
+                {/* Content Container to ensure internal clipping if valid */}
+                <div className="absolute inset-0 rounded-[2rem] overflow-hidden pointer-events-none">
+                  {/* Shimmering Overlay for Pro (Subtle) */}
+                  {isPro && (
+                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/40 to-transparent skew-x-12 animate-[shimmer_3.5s_infinite] opacity-30 z-0 pointer-events-none" />
+                  )}
+                </div>
+
+                {/* Popular Badge - Moved Top Right */}
+                {plan.badge && (
+                  <div className="absolute top-4 right-4 z-20">
+                    <div className={cn(
+                      "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-md",
+                      isHighlighted
+                        ? "bg-black text-[#FFFF00]"
+                        : "bg-[#FFFF00] text-black"
+                    )}>
+                      <Star className="w-3 h-3 fill-current" />
+                      {plan.badge}
+                    </div>
+                  </div>
+                )}
+
+                {/* Plan Name */}
+                <div className="mb-6 pt-8 relative z-20">
+                  <h3 className={cn(
+                    "text-lg font-black uppercase tracking-tight font-heading",
+                    isCreator ? "text-black" : isPro ? "text-black" : "text-white"
+                  )}>
+                    {plan.name}
+                  </h3>
+                  <p className={cn(
+                    "text-xs font-medium mt-1 leading-relaxed opacity-70 font-sans",
+                    isCreator ? "text-black" : isPro ? "text-black" : "text-white/60"
+                  )}>
+                    {plan.description}
+                  </p>
+                </div>
+
+                {/* Price */}
+                <div className="mb-8 relative z-20">
+                  <div className="flex items-baseline gap-1">
+                    <span className={cn(
+                      "text-4xl font-black font-heading tracking-tight",
+                      isHighlighted ? "text-black" : "text-white"
+                    )}>${displayPrice}</span>
+                    <span className={cn(
+                      "text-xs font-bold uppercase font-sans mb-1",
+                      isHighlighted ? "text-black/60" : "text-white/40"
+                    )}>{isDayPass ? '/day' : '/mo'}</span>
+                  </div>
+
+                  {frequency === 'yearly' && !isDayPass && (
+                    <div className={cn(
+                      "mt-2 text-[10px] font-bold uppercase tracking-wide font-sans px-2 py-0.5 rounded w-fit",
+                      isHighlighted ? "bg-black/5 text-black/70" : "bg-[#FFFF00]/10 text-[#FFFF00]"
+                    )}>
+                      Billed ${yearlyPrice}/yr
+                    </div>
+                  )}
+                </div>
+
+                {/* Credits Highlight */}
+                <div className={cn(
+                  "mb-8 p-4 rounded-xl border flex items-center gap-3 relative z-20",
+                  isHighlighted
+                    ? "bg-black border-black text-[#FFFF00]"
+                    : "bg-white/5 border-white/5"
+                )}>
+                  <div className={cn(
+                    "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                    isHighlighted ? "bg-[#FFFF00] text-black" : "bg-[#FFFF00]/10 text-[#FFFF00]"
+                  )}>
+                    <Zap className="w-4 h-4 fill-current" />
+                  </div>
+                  <div>
+                    <div className={cn(
+                      "text-base font-bold font-sans",
+                      isHighlighted ? "text-[#FFFF00]" : "text-[#FFFF00]"
+                    )}>
+                      {plan.credits.monthly.toLocaleString()} Credits
+                    </div>
+                    <div className={cn("text-[8px] uppercase font-bold tracking-wider opacity-60 font-sans", isHighlighted ? "text-[#FFFF00]" : "text-white")}>
+                      Per Month
+                    </div>
+                  </div>
+                </div>
+
+                {/* Features List */}
+                <div className="space-y-4 mb-8 flex-1 relative z-20">
+                  <ul className="space-y-2.5">
+                    {plan.features.slice(0, 7).map((feature, idx) => (
+                      <li key={idx} className="flex items-start gap-3">
+                        <div className={cn(
+                          "w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5",
+                          isHighlighted ? "bg-black/10 text-black" : "bg-white/10 text-white/30"
+                        )}>
+                          <Check className="w-2.5 h-2.5" strokeWidth={3} />
+                        </div>
+                        <span className={cn(
+                          "text-xs font-medium font-sans leading-relaxed",
+                          isHighlighted ? "text-black/80" : "text-white/70"
+                        )}>
+                          {feature}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Button */}
+                <div className="mt-auto relative z-20">
+                  <Button
+                    onClick={() => handlePlanSelect(plan)}
+                    disabled={isLoading === plan.name}
+                    className={cn(
+                      "w-full h-12 rounded-xl text-xs font-bold uppercase tracking-widest transition-all duration-300 overflow-hidden relative group/btn",
+                      "shadow-lg hover:translate-y-[-2px]",
+                      isHighlighted
+                        ? "bg-black text-white hover:bg-black/90 hover:shadow-xl"
+                        : "bg-white text-black hover:bg-[#FFFF00]"
+                    )}
+                  >
+                    {/* Shimmer Effect */}
+                    <span className="absolute inset-0 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/40 to-transparent z-10" />
+
+                    <span className="relative z-20 flex items-center justify-center gap-2">
+                      {isLoading === plan.name ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          Get Started
+                        </>
+                      )}
+                    </span>
+                  </Button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
-    </div>
+    </section>
   )
 }
