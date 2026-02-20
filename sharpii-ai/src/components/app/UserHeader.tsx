@@ -154,7 +154,7 @@ export function UserHeader({ className }: UserHeaderProps) {
                     </div>
 
                     {/* Desktop nav */}
-                    <div className="hidden xl:flex items-center flex-1 justify-center">
+                    <div className="hidden lg:flex items-center flex-1 justify-center">
                         <div className="flex items-center p-1 bg-white/5 border border-white/10 rounded-lg backdrop-blur-md relative h-9">
                             {navigationItems.map((item) => {
                                 const active = isActive(item.href)
