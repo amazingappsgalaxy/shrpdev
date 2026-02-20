@@ -5,7 +5,6 @@ import { useAuth } from '@/lib/auth-client-simple'
 import { CreditCard, Download, CheckCircle, XCircle, FileText, AlertTriangle, Loader2, Clock } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
-import UpgradeModal from './UpgradeModal'
 
 const openPlansPopup = () => window.dispatchEvent(new CustomEvent('sharpii:open-plans'))
 
@@ -42,7 +41,6 @@ export default function BillingSection() {
     const [loading, setLoading] = useState(true)
     const [cancelling, setCancelling] = useState(false)
     const [showCancelConfirm, setShowCancelConfirm] = useState(false)
-    const [showUpgradeModal, setShowUpgradeModal] = useState(false)
     const [reactivating, setReactivating] = useState(false)
 
     useEffect(() => {
@@ -71,6 +69,25 @@ export default function BillingSection() {
 
         fetchData()
     }, [user?.id])
+
+    // Refresh subscription state when upgrade completes via the shared popup
+    useEffect(() => {
+        const handleSubUpdated = async (e: Event) => {
+            const updatedSub = (e as CustomEvent).detail
+            if (updatedSub?.id) {
+                setSubscription(updatedSub)
+            } else {
+                // Fallback: re-fetch
+                const subRes = await fetch('/api/user/subscription', { credentials: 'include' })
+                if (subRes.ok) {
+                    const data = await subRes.json()
+                    setSubscription(data.subscription)
+                }
+            }
+        }
+        window.addEventListener('sharpii:subscription-updated', handleSubUpdated)
+        return () => window.removeEventListener('sharpii:subscription-updated', handleSubUpdated)
+    }, [])
 
     const handleCancelSubscription = async () => {
         setCancelling(true)
@@ -161,8 +178,8 @@ export default function BillingSection() {
     if (loading) {
         return (
             <div className="space-y-3">
-                <div className="h-28 bg-white/5 rounded-xl animate-pulse" />
-                <div className="h-48 bg-white/5 rounded-xl animate-pulse" />
+                <div className="h-28 bg-white/5 rounded-md animate-pulse" />
+                <div className="h-48 bg-white/5 rounded-md animate-pulse" />
             </div>
         )
     }
@@ -173,7 +190,7 @@ export default function BillingSection() {
             <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white/5 border border-white/10 rounded-lg p-5"
+                className="bg-white/5 border border-white/10 rounded-md p-5"
             >
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
@@ -281,7 +298,7 @@ export default function BillingSection() {
                             {canCancel && (
                                 <>
                                     <button
-                                        onClick={() => setShowUpgradeModal(true)}
+                                        onClick={openPlansPopup}
                                         className="px-4 py-2 bg-[#FFFF00] hover:bg-[#c9c900] text-black text-sm font-bold rounded-md transition-colors"
                                     >
                                         Upgrade Plan
@@ -349,26 +366,12 @@ export default function BillingSection() {
                 )}
             </motion.div>
 
-            {/* Upgrade Modal */}
-            {showUpgradeModal && subscription && (
-                <UpgradeModal
-                    currentPlan={subscription.plan}
-                    currentBillingPeriod={subscription.billing_period}
-                    onClose={() => setShowUpgradeModal(false)}
-                    onSuccess={(updatedSub, _delta) => {
-                        setSubscription(updatedSub)
-                        setShowUpgradeModal(false)
-                        window.dispatchEvent(new CustomEvent('sharpii:subscription-updated', { detail: updatedSub }))
-                    }}
-                />
-            )}
-
             {/* Payment History */}
             <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05 }}
-                className="bg-white/5 border border-white/10 rounded-lg overflow-hidden"
+                className="bg-white/5 border border-white/10 rounded-md overflow-hidden"
             >
                 <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
                     <div className="flex items-center gap-2">

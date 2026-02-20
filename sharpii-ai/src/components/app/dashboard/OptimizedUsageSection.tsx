@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-client-simple'
-import { Search, TrendingDown, TrendingUp, Activity, ChevronDown, X } from 'lucide-react'
+import { Search, Plus, Minus, Zap, ChevronDown, X } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 interface Transaction {
@@ -79,7 +79,7 @@ export default function OptimizedUsageSection() {
         return (
             <div className="space-y-2">
                 {[1, 2, 3, 4, 5].map((i) => (
-                    <div key={i} className="h-14 bg-white/5 rounded-lg animate-pulse" />
+                    <div key={i} className="h-12 bg-white/5 rounded-md animate-pulse" />
                 ))}
             </div>
         )
@@ -124,8 +124,8 @@ export default function OptimizedUsageSection() {
 
             {/* Transaction feed */}
             {filtered.length === 0 ? (
-                <div className="text-center py-16 bg-white/5 rounded-lg border border-white/10">
-                    <Activity className="w-10 h-10 text-white/15 mx-auto mb-3" />
+                <div className="text-center py-16 bg-white/5 rounded-md border border-white/10">
+                    <Zap className="w-8 h-8 text-white/15 mx-auto mb-3" />
                     <p className="text-sm font-semibold text-white/40">
                         {isFiltered ? 'No matching transactions' : 'No transactions yet'}
                     </p>
@@ -159,10 +159,10 @@ export default function OptimizedUsageSection() {
                                             className="flex items-center gap-3 px-4 py-3 rounded-md hover:bg-white/5 transition-colors group"
                                         >
                                             {/* Icon */}
-                                            <div className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 ${isCredit ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+                                            <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 ${isCredit ? 'bg-green-500/12' : 'bg-red-500/10'}`}>
                                                 {isCredit
-                                                    ? <TrendingUp className="w-3.5 h-3.5 text-green-400" />
-                                                    : <TrendingDown className="w-3.5 h-3.5 text-red-400" />
+                                                    ? <Plus className="w-3 h-3 text-green-400" />
+                                                    : <Minus className="w-3 h-3 text-red-400" />
                                                 }
                                             </div>
 

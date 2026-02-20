@@ -15,6 +15,10 @@ interface MyPricingPlans2Props {
   title?: string
   subtitle?: string
   className?: string
+  /** Pre-loaded sub from parent (UserHeader) — skips internal fetch when provided */
+  preloadedActiveSub?: { plan: string; billing_period: string } | null
+  /** True when parent has already finished checking subscription */
+  preloadedSubChecked?: boolean
 }
 
 type FREQUENCY = 'monthly' | 'yearly'
@@ -282,7 +286,9 @@ export function MyPricingPlans2({
   showHeader = true,
   title = "Plans that Scale with You",
   subtitle = "Whether you're just starting out or growing fast, our flexible pricing has you covered — with no hidden costs.",
-  className = ""
+  className = "",
+  preloadedActiveSub,
+  preloadedSubChecked = false,
 }: MyPricingPlans2Props) {
   const [frequency, setFrequency] = React.useState<FREQUENCY>('monthly')
   const [isLoading, setIsLoading] = React.useState<string | null>(null)
@@ -290,10 +296,19 @@ export function MyPricingPlans2({
   const router = useRouter()
 
   // Check if user has an active subscription — if so, show upgrade flow instead of checkout
-  const [activeSub, setActiveSub] = React.useState<{ plan: string; billing_period: string } | null>(null)
-  const [subChecked, setSubChecked] = React.useState(false)
+  // If parent already passed pre-loaded data, skip internal fetch
+  const [activeSub, setActiveSub] = React.useState<{ plan: string; billing_period: string } | null>(
+    preloadedActiveSub ?? null
+  )
+  const [subChecked, setSubChecked] = React.useState(preloadedSubChecked)
 
   React.useEffect(() => {
+    // If parent already provided the answer, no need to fetch
+    if (preloadedSubChecked) {
+      setActiveSub(preloadedActiveSub ?? null)
+      setSubChecked(true)
+      return
+    }
     if (sessionLoading || !authData?.user) {
       if (!sessionLoading) setSubChecked(true)
       return
@@ -308,7 +323,7 @@ export function MyPricingPlans2({
         setSubChecked(true)
       })
       .catch(() => setSubChecked(true))
-  }, [authData?.user, sessionLoading])
+  }, [authData?.user, sessionLoading, preloadedSubChecked, preloadedActiveSub])
 
   const handlePlanSelect = async (plan: any) => {
     console.log('🎯 Plan selected:', plan.name, 'Billing:', frequency)

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/lib/auth-client-simple'
-import { Coins, Crown, Calendar, Lock, Zap, ArrowRight, RefreshCw, Loader2 } from 'lucide-react'
+import { Calendar, Lock, Zap, ArrowRight, RefreshCw, Loader2, Info } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 
@@ -155,9 +155,9 @@ export default function CreditsSection() {
     if (loading) {
         return (
             <div className="space-y-3">
-                <div className="h-40 bg-white/5 rounded-lg animate-pulse" />
-                <div className="h-16 bg-white/5 rounded-lg animate-pulse" />
-                <div className="h-20 bg-white/5 rounded-lg animate-pulse" />
+                <div className="h-36 bg-white/5 rounded-md animate-pulse" />
+                <div className="h-14 bg-white/5 rounded-md animate-pulse" />
+                <div className="h-20 bg-white/5 rounded-md animate-pulse" />
             </div>
         )
     }
@@ -166,30 +166,59 @@ export default function CreditsSection() {
     const subData = subscription.subscription
     const isPendingCancel = subData?.status === 'pending_cancellation'
 
-    const subPct = credits.total > 0 ? Math.round((credits.subscription_credits / credits.total) * 100) : 0
-    const permPct = credits.total > 0 ? Math.round((credits.permanent_credits / credits.total) * 100) : 0
-
     return (
         <div className="space-y-3">
             {/* Main credits block */}
             <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white/5 border border-white/10 rounded-lg p-6"
+                className="bg-white/5 border border-white/10 rounded-md p-5"
             >
                 <div className="flex items-start justify-between">
                     <div>
                         <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">Available Credits</p>
-                        <span className="text-5xl font-black text-white tabular-nums leading-none">
-                            {credits.total.toLocaleString()}
-                        </span>
-                    </div>
-                    {subscription.has_active_subscription ? (
-                        <div className="flex items-center gap-2 mt-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                            <span className="text-sm font-semibold text-white/70 capitalize">{planLabel}</span>
+                        <div className="flex items-end gap-3">
+                            <span className="text-5xl font-black text-white tabular-nums leading-none">
+                                {credits.total.toLocaleString()}
+                            </span>
+                            {/* Info button — hover shows breakdown */}
+                            <div className="relative group mb-1.5">
+                                <button className="flex items-center justify-center w-5 h-5 rounded text-white/25 hover:text-white/60 transition-colors">
+                                    <Info className="w-3.5 h-3.5" />
+                                </button>
+                                {/* Tooltip */}
+                                <div className="absolute left-0 bottom-full mb-2 w-52 bg-[#111] border border-white/10 rounded-md p-3 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity z-50">
+                                    <p className="text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-2">Credit Breakdown</p>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-[#FFFF00]" />
+                                                <span className="text-xs text-white/60">Subscription</span>
+                                            </div>
+                                            <span className="text-xs font-bold text-white tabular-nums">{credits.subscription_credits.toLocaleString()}</span>
+                                        </div>
+                                        {credits.subscription_expire_at && (
+                                            <p className="text-[10px] text-white/25 pl-3">
+                                                Expires {new Date(credits.subscription_expire_at).toLocaleString('en-US', {
+                                                    month: 'short', day: 'numeric', year: 'numeric',
+                                                    hour: '2-digit', minute: '2-digit'
+                                                })}
+                                            </p>
+                                        )}
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                                                <span className="text-xs text-white/60">Permanent</span>
+                                            </div>
+                                            <span className="text-xs font-bold text-white tabular-nums">{credits.permanent_credits.toLocaleString()}</span>
+                                        </div>
+                                        <p className="text-[10px] text-white/25 pl-3">Never expires</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    ) : (
+                    </div>
+                    {!subscription.has_active_subscription && (
                         <button
                             onClick={openPlansPopup}
                             className="flex items-center gap-1.5 bg-[#FFFF00] text-black text-xs font-bold px-3 py-1.5 rounded-md transition-colors hover:bg-[#c9c900] mt-1"
@@ -200,38 +229,17 @@ export default function CreditsSection() {
                     )}
                 </div>
 
-                {/* Credit type breakdown — shown only when credits exist */}
-                {credits.total > 0 && (
-                    <div className="mt-6 space-y-3">
-                        {credits.subscription_credits > 0 && (
-                            <div>
-                                <div className="flex justify-between text-xs text-white/50 mb-1.5">
-                                    <span>Subscription</span>
-                                    <span className="tabular-nums font-medium text-white/70">{credits.subscription_credits.toLocaleString()}</span>
-                                </div>
-                                <div className="h-1.5 bg-white/8 rounded-full overflow-hidden">
-                                    <div className="h-full bg-[#FFFF00] rounded-full" style={{ width: `${subPct}%` }} />
-                                </div>
-                                {credits.subscription_expire_at && (
-                                    <div className="flex items-center gap-1 mt-1 text-xs text-white/30">
-                                        <Calendar className="w-2.5 h-2.5" />
-                                        Expires {new Date(credits.subscription_expire_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                        {credits.permanent_credits > 0 && (
-                            <div>
-                                <div className="flex justify-between text-xs text-white/50 mb-1.5">
-                                    <span>Permanent</span>
-                                    <span className="tabular-nums font-medium text-white/70">{credits.permanent_credits.toLocaleString()}</span>
-                                </div>
-                                <div className="h-1.5 bg-white/8 rounded-full overflow-hidden">
-                                    <div className="h-full bg-green-400 rounded-full" style={{ width: `${permPct}%` }} />
-                                </div>
-                                <div className="text-xs text-white/30 mt-1">Never expires</div>
-                            </div>
-                        )}
+                {/* Subscription expiry row */}
+                {credits.subscription_credits > 0 && credits.subscription_expire_at && (
+                    <div className="mt-4 flex items-center gap-1.5 text-xs text-white/30">
+                        <Calendar className="w-3 h-3 flex-shrink-0" />
+                        <span>
+                            Subscription credits expire{' '}
+                            {new Date(credits.subscription_expire_at).toLocaleString('en-US', {
+                                month: 'short', day: 'numeric', year: 'numeric',
+                                hour: '2-digit', minute: '2-digit'
+                            })}
+                        </span>
                     </div>
                 )}
 
@@ -260,24 +268,21 @@ export default function CreditsSection() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05 }}
-                className="bg-white/5 border border-white/10 rounded-lg px-4 py-3 flex items-center justify-between"
+                className="bg-white/5 border border-white/10 rounded-md px-4 py-3 flex items-center justify-between"
             >
-                <div className="flex items-center gap-3">
-                    <Crown className="w-4 h-4 text-[#FFFF00]" />
-                    <div>
-                        <p className="text-sm font-semibold text-white">
-                            {subscription.has_active_subscription ? `${planLabel} Plan` : 'Free Tier'}
+                <div>
+                    <p className="text-sm font-semibold text-white">
+                        {subscription.has_active_subscription ? `${planLabel} Plan` : 'Free Tier'}
+                    </p>
+                    {subData?.next_billing_date && (
+                        <p className="text-xs text-white/40 mt-0.5">
+                            {isPendingCancel ? 'Expires' : 'Renews'}{' '}
+                            {new Date(subData.next_billing_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                         </p>
-                        {subData?.next_billing_date && (
-                            <p className="text-xs text-white/40 mt-0.5">
-                                {isPendingCancel ? 'Expires' : 'Renews'}{' '}
-                                {new Date(subData.next_billing_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                            </p>
-                        )}
-                        {!subscription.has_active_subscription && (
-                            <p className="text-xs text-white/40 mt-0.5">Subscribe to unlock premium features</p>
-                        )}
-                    </div>
+                    )}
+                    {!subscription.has_active_subscription && (
+                        <p className="text-xs text-white/40 mt-0.5">Subscribe to unlock premium features</p>
+                    )}
                 </div>
                 <button
                     onClick={openPlansPopup}
@@ -293,7 +298,7 @@ export default function CreditsSection() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="bg-white/5 border border-white/10 rounded-lg p-4"
+                className="bg-white/5 border border-white/10 rounded-md p-4"
             >
                 <div className="flex items-center gap-2 mb-3">
                     <RefreshCw className="w-3.5 h-3.5 text-white/40" />
@@ -312,7 +317,7 @@ export default function CreditsSection() {
                                 key={pkg.credits}
                                 onClick={() => handleTopup(pkg.credits)}
                                 disabled={loadingTopup !== null}
-                                className="flex flex-col items-center py-3 border border-white/10 hover:border-[#FFFF00]/50 hover:bg-[#FFFF00]/5 rounded-md transition-all group disabled:opacity-60 disabled:cursor-not-allowed"
+                                className="flex flex-col items-center py-3 border border-white/10 hover:border-[#FFFF00]/50 hover:bg-[#FFFF00]/5 rounded transition-all group disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                                 {loadingTopup === pkg.credits ? (
                                     <Loader2 className="w-4 h-4 animate-spin text-[#FFFF00] mb-1" />

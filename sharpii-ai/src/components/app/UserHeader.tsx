@@ -65,6 +65,7 @@ export function UserHeader({ className }: UserHeaderProps) {
     // Subscription info
     const [currentPlan, setCurrentPlan] = useState<string>('free')
     const [subscriptionStatus, setSubscriptionStatus] = useState<string>('free')
+    const [subscriptionBillingPeriod, setSubscriptionBillingPeriod] = useState<string>('monthly')
     const [subLoading, setSubLoading] = useState(true)
 
     // Hover card state (JS-based to avoid CSS group-hover gap)
@@ -93,6 +94,7 @@ export function UserHeader({ className }: UserHeaderProps) {
                     const data = await res.json()
                     setCurrentPlan(data.current_plan || 'free')
                     setSubscriptionStatus(data.subscription?.status || 'free')
+                    setSubscriptionBillingPeriod(data.subscription?.billing_period || 'monthly')
                 }
             } catch {
             } finally {
@@ -137,6 +139,8 @@ export function UserHeader({ className }: UserHeaderProps) {
         const handleSubUpdated = (e: Event) => {
             const sub = (e as CustomEvent).detail
             if (sub?.plan) setCurrentPlan(sub.plan)
+            if (sub?.billing_period) setSubscriptionBillingPeriod(sub.billing_period)
+            if (sub?.status) setSubscriptionStatus(sub.status)
         }
         window.addEventListener('sharpii:subscription-updated', handleSubUpdated)
         return () => window.removeEventListener('sharpii:subscription-updated', handleSubUpdated)
@@ -273,55 +277,54 @@ export function UserHeader({ className }: UserHeaderProps) {
 
                                     {/* Hover card — JS-controlled to avoid CSS gap bug */}
                                     <div
-                                        className={`absolute right-0 top-full mt-1 w-64 bg-[#0F0F0F] border border-white/10 rounded-xl shadow-2xl p-4 z-[10001] transition-all duration-200 origin-top-right ${hoverCardOpen ? 'opacity-100 pointer-events-auto scale-100' : 'opacity-0 pointer-events-none scale-95'}`}
+                                        className={`absolute right-0 top-full mt-2 w-64 bg-[#111113] border border-white/8 rounded-md shadow-xl overflow-hidden z-[10001] transition-all duration-150 origin-top-right ${hoverCardOpen ? 'opacity-100 pointer-events-auto scale-100' : 'opacity-0 pointer-events-none scale-98'}`}
                                         onMouseEnter={handleHoverEnter}
                                         onMouseLeave={handleHoverLeave}
                                     >
-                                        {/* Credits summary */}
-                                        <div className="flex items-center justify-between mb-3 pb-3 border-b border-white/10">
-                                            <div>
-                                                <p className="text-xs text-white/40 mb-0.5">Available Credits</p>
-                                                <p className="text-lg font-bold text-white tabular-nums">
-                                                    {creditsLoading ? '...' : credits.toLocaleString()}
-                                                </p>
-                                            </div>
-                                            <div className={`px-2 py-1 rounded-md border text-xs font-semibold ${planBadgeClass}`}>
-                                                {planLabel}
-                                            </div>
-                                        </div>
-
-                                        {/* Status */}
-                                        <div className="flex items-center gap-2 mb-3 text-xs">
-                                            <div className={`w-1.5 h-1.5 rounded-full ${subscriptionStatus === 'active' ? 'bg-green-400' : subscriptionStatus === 'pending_cancellation' ? 'bg-amber-400' : 'bg-white/30'}`} />
-                                            <span className="text-white/50">
-                                                {subscriptionStatus === 'pending_cancellation' ? 'Cancels at period end' : 'Active subscription'}
-                                            </span>
-                                        </div>
-
-                                        {/* Upsell CTA */}
-                                        {upsell && (
-                                            <div className="bg-[#FFFF00]/5 border border-[#FFFF00]/15 rounded-lg p-3 mb-2">
-                                                <div className="flex items-center gap-1.5 mb-1">
-                                                    <Zap className="w-3 h-3 text-[#FFFF00]" />
-                                                    <span className="text-xs font-bold text-[#FFFF00]">Upgrade to {upsell.label}</span>
-                                                </div>
-                                                <p className="text-xs text-white/40 mb-2">{upsell.tagline}</p>
+                                        {/* Offers — no redundant plan/credits header; that's already in the header bar */}
+                                        <div className="p-2 space-y-1">
+                                            {upsell && (
                                                 <button
-                                                    onClick={() => handleCheckout(upsell.plan, upsell.billingPeriod)}
-                                                    className="w-full flex items-center justify-center gap-1.5 bg-[#FFFF00] hover:bg-[#c9c900] text-black text-xs font-bold rounded-lg py-2 transition-all"
+                                                    onClick={() => { setIsPlansPopupOpen(true); setHoverCardOpen(false) }}
+                                                    className="w-full flex items-center justify-between hover:bg-white/5 rounded px-3 py-2.5 transition-colors group text-left"
                                                 >
-                                                    Upgrade Now
-                                                    <ArrowRight className="w-3 h-3" />
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <Zap className="w-3 h-3 text-[#FFFF00]" />
+                                                            <span className="text-xs font-semibold text-white">Upgrade to {upsell.label}</span>
+                                                        </div>
+                                                        <p className="text-[11px] text-white/40 mt-0.5 pl-5">{upsell.tagline}</p>
+                                                    </div>
+                                                    <ArrowRight className="w-3 h-3 text-white/20 group-hover:text-white/50 flex-shrink-0 transition-colors" />
                                                 </button>
-                                            </div>
-                                        )}
+                                            )}
 
-                                        <Link
-                                            href="/app/dashboard?tab=billing"
-                                            className="flex items-center justify-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors"
-                                        >
-                                            Manage subscription
-                                        </Link>
+                                            <Link
+                                                href="/app/dashboard?tab=credits"
+                                                onClick={() => setHoverCardOpen(false)}
+                                                className="flex items-center justify-between hover:bg-white/5 rounded px-3 py-2.5 transition-colors group"
+                                            >
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <CreditIcon className="w-3 h-3" iconClassName="w-2.5 h-2.5" />
+                                                        <span className="text-xs font-semibold text-white">Top-up Credits</span>
+                                                    </div>
+                                                    <p className="text-[11px] text-white/40 mt-0.5 pl-5">Permanent credits from $5</p>
+                                                </div>
+                                                <ArrowRight className="w-3 h-3 text-white/20 group-hover:text-white/50 flex-shrink-0 transition-colors" />
+                                            </Link>
+                                        </div>
+
+                                        {/* Footer */}
+                                        <div className="border-t border-white/6 px-2 py-1.5">
+                                            <Link
+                                                href="/app/dashboard?tab=billing"
+                                                onClick={() => setHoverCardOpen(false)}
+                                                className="flex items-center justify-center text-[11px] text-white/35 hover:text-white/60 transition-colors py-1.5 rounded hover:bg-white/5"
+                                            >
+                                                Manage subscription
+                                            </Link>
+                                        </div>
                                     </div>
                                 </div>
                             ) : (
@@ -505,6 +508,12 @@ export function UserHeader({ className }: UserHeaderProps) {
                             <div className="max-w-7xl mx-auto px-4 py-8">
                                 <MyPricingPlans2
                                     showHeader={false}
+                                    preloadedActiveSub={
+                                        !subLoading && hasActivePlan
+                                            ? { plan: currentPlan, billing_period: subscriptionBillingPeriod }
+                                            : null
+                                    }
+                                    preloadedSubChecked={!subLoading}
                                 />
                             </div>
                         </div>

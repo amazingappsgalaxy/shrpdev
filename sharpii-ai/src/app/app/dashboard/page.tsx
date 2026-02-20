@@ -46,10 +46,10 @@ function DashboardContent() {
   }
 
   const tabs = [
-    { id: 'credits', label: 'Credits' },
-    { id: 'usage', label: 'Transactions' },
-    { id: 'billing', label: 'Billing' },
-    { id: 'settings', label: 'Account' },
+    { id: 'credits', label: 'Profile' },
+    { id: 'usage', label: 'Activity' },
+    { id: 'billing', label: 'Billings' },
+    { id: 'settings', label: 'Settings' },
   ]
 
   return (
