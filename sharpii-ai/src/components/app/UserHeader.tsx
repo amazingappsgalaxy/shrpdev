@@ -5,8 +5,8 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { useAuth, signOut as simpleSignOut } from '@/lib/auth-client-simple'
-import { UnifiedCreditsService } from '@/lib/unified-credits'
+import { signOut as simpleSignOut } from '@/lib/auth-client-simple'
+import { useAppData } from '@/lib/hooks/use-app-data'
 import { MainLogo } from '@/components/ui/main-logo'
 import {
     Menu,
@@ -24,9 +24,14 @@ import {
     Zap,
     CreditCard,
 } from 'lucide-react'
-import { MyPricingPlans2 } from '@/components/ui/mypricingplans2'
-import { motion, AnimatePresence } from 'framer-motion'
+import dynamic from 'next/dynamic'
 import { CreditIcon } from '@/components/ui/CreditIcon'
+
+// Dynamic import — saves ~50KB from initial bundle
+const MyPricingPlans2 = dynamic(
+    () => import('@/components/ui/mypricingplans2').then(mod => ({ default: mod.MyPricingPlans2 })),
+    { ssr: false }
+)
 
 // Plan display label & next-plan upsell logic
 const PLAN_LABELS: Record<string, string> = {
@@ -56,58 +61,19 @@ export function UserHeader({ className }: UserHeaderProps) {
     const pathname = usePathname()
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const [isPlansPopupOpen, setIsPlansPopupOpen] = useState(false)
-    const { user: currentUser } = useAuth()
 
-    // Credits
-    const [credits, setCredits] = useState(0)
-    const [creditsLoading, setCreditsLoading] = useState(true)
+    // Single SWR call — no duplicate fetches
+    const { user: currentUser, credits: creditsData, subscription: subData, isLoading } = useAppData()
 
-    // Subscription info
-    const [currentPlan, setCurrentPlan] = useState<string>('free')
-    const [subscriptionStatus, setSubscriptionStatus] = useState<string>('free')
-    const [subscriptionBillingPeriod, setSubscriptionBillingPeriod] = useState<string>('monthly')
-    const [subLoading, setSubLoading] = useState(true)
+    const credits = creditsData?.total ?? 0
+    const creditsLoading = isLoading
+    const currentPlan = subData?.current_plan || 'free'
+    const subscriptionBillingPeriod = subData?.subscription?.billing_period || 'monthly'
+    const subLoading = isLoading
 
     // Hover card state (JS-based to avoid CSS group-hover gap)
     const [hoverCardOpen, setHoverCardOpen] = useState(false)
     const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-    useEffect(() => {
-        if (!currentUser?.id) return
-
-        const fetchCredits = async () => {
-            try {
-                setCreditsLoading(true)
-                const balance = await UnifiedCreditsService.getUserCredits(currentUser.id)
-                setCredits(balance.total || 0)
-            } catch {
-                setCredits(0)
-            } finally {
-                setCreditsLoading(false)
-            }
-        }
-
-        const fetchSubscription = async () => {
-            try {
-                const res = await fetch('/api/user/subscription', { credentials: 'include' })
-                if (res.ok) {
-                    const data = await res.json()
-                    setCurrentPlan(data.current_plan || 'free')
-                    setSubscriptionStatus(data.subscription?.status || 'free')
-                    setSubscriptionBillingPeriod(data.subscription?.billing_period || 'monthly')
-                }
-            } catch {
-            } finally {
-                setSubLoading(false)
-            }
-        }
-
-        fetchCredits()
-        fetchSubscription()
-
-        const interval = setInterval(fetchCredits, 30000)
-        return () => clearInterval(interval)
-    }, [currentUser?.id])
 
     // Listen for cross-component "open/close plans popup" events
     useEffect(() => {
@@ -119,31 +85,6 @@ export function UserHeader({ className }: UserHeaderProps) {
             window.removeEventListener('sharpii:open-plans', handleOpenPlans)
             window.removeEventListener('sharpii:close-plans', handleClosePlans)
         }
-    }, [])
-
-    // Sync header credits when CreditsSection polling detects new credits (e.g. after webhook fires)
-    useEffect(() => {
-        const handleCreditsUpdated = (e: Event) => {
-            const balance = (e as CustomEvent).detail
-            if (balance?.total !== undefined) {
-                setCredits(balance.total)
-                setCreditsLoading(false)
-            }
-        }
-        window.addEventListener('sharpii:credits-updated', handleCreditsUpdated)
-        return () => window.removeEventListener('sharpii:credits-updated', handleCreditsUpdated)
-    }, [])
-
-    // Sync header plan badge when upgrade/reactivation changes the plan
-    useEffect(() => {
-        const handleSubUpdated = (e: Event) => {
-            const sub = (e as CustomEvent).detail
-            if (sub?.plan) setCurrentPlan(sub.plan)
-            if (sub?.billing_period) setSubscriptionBillingPeriod(sub.billing_period)
-            if (sub?.status) setSubscriptionStatus(sub.status)
-        }
-        window.addEventListener('sharpii:subscription-updated', handleSubUpdated)
-        return () => window.removeEventListener('sharpii:subscription-updated', handleSubUpdated)
     }, [])
 
     const handleHoverEnter = () => {
@@ -160,7 +101,7 @@ export function UserHeader({ className }: UserHeaderProps) {
     const handleSignOut = async () => {
         try {
             await simpleSignOut()
-            router.push('/')
+            window.location.href = '/'
         } catch { }
     }
 
@@ -199,21 +140,6 @@ export function UserHeader({ className }: UserHeaderProps) {
                 ? 'bg-blue-600 border-blue-600 text-white'
                 : 'bg-[#FFFF00] border-[#FFFF00] text-black'
         : 'bg-white/10 border-white/20 text-white/60'
-
-    const handleCheckout = async (plan: string, billingPeriod: string) => {
-        try {
-            const res = await fetch('/api/payments/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ plan, billingPeriod }),
-            })
-            const data = await res.json()
-            if (data.checkoutUrl) {
-                window.location.href = data.checkoutUrl
-            }
-        } catch { }
-    }
 
     return (
         <>
@@ -275,13 +201,12 @@ export function UserHeader({ className }: UserHeaderProps) {
                                         {planLabel}
                                     </button>
 
-                                    {/* Hover card — JS-controlled to avoid CSS gap bug */}
+                                    {/* Hover card */}
                                     <div
                                         className={`absolute right-0 top-full mt-2 w-64 bg-[#111113] border border-white/8 rounded-md shadow-xl overflow-hidden z-[10001] transition-all duration-150 origin-top-right ${hoverCardOpen ? 'opacity-100 pointer-events-auto scale-100' : 'opacity-0 pointer-events-none scale-98'}`}
                                         onMouseEnter={handleHoverEnter}
                                         onMouseLeave={handleHoverLeave}
                                     >
-                                        {/* Offers — no redundant plan/credits header; that's already in the header bar */}
                                         <div className="p-2 space-y-1">
                                             {upsell && (
                                                 <button
@@ -315,7 +240,6 @@ export function UserHeader({ className }: UserHeaderProps) {
                                             </Link>
                                         </div>
 
-                                        {/* Footer */}
                                         <div className="border-t border-white/6 px-2 py-1.5">
                                             <Link
                                                 href="/app/dashboard?tab=billing"
@@ -327,7 +251,7 @@ export function UserHeader({ className }: UserHeaderProps) {
                                         </div>
                                     </div>
                                 </div>
-                            ) : (
+                            ) : !subLoading ? (
                                 <button
                                     onClick={() => setIsPlansPopupOpen(true)}
                                     className="flex items-center gap-2 bg-[#FFFF00] hover:bg-[#c9c900] text-black px-4 py-1.5 rounded-md text-sm font-bold shadow-sm transition-all duration-300 transform active:scale-95 whitespace-nowrap"
@@ -335,7 +259,7 @@ export function UserHeader({ className }: UserHeaderProps) {
                                     <Crown className="w-3.5 h-3.5 fill-black" />
                                     <span>Upgrade</span>
                                 </button>
-                            )}
+                            ) : null}
                         </div>
 
                         {/* User dropdown */}
@@ -413,113 +337,99 @@ export function UserHeader({ className }: UserHeaderProps) {
                 </nav>
 
                 {/* Mobile menu */}
-                <AnimatePresence>
-                    {isMobileMenuOpen && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                            transition={{ duration: 0.2 }}
-                            className="absolute left-4 right-4 top-full mt-2 z-50 lg:hidden"
-                        >
-                            <div className="rounded-xl border border-white/10 p-4 shadow-2xl bg-[#09090b]">
-                                <div className="space-y-2">
-                                    {mobileNavigationItems.map((item) => {
-                                        const isActiveLink = isActive(item.href)
-                                        return (
-                                            <Link
-                                                key={item.href}
-                                                href={item.href}
-                                                onClick={() => setIsMobileMenuOpen(false)}
-                                                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActiveLink
-                                                    ? 'bg-white/10 text-white border border-white/10 font-medium'
-                                                    : 'bg-white/5 text-white/70 border border-white/5 hover:bg-white/10'
-                                                }`}
-                                            >
-                                                <item.icon className="w-5 h-5" />
-                                                {item.name}
-                                            </Link>
-                                        )
-                                    })}
+                {isMobileMenuOpen && (
+                    <div className="absolute left-4 right-4 top-full mt-2 z-50 lg:hidden">
+                        <div className="rounded-xl border border-white/10 p-4 shadow-2xl bg-[#09090b]">
+                            <div className="space-y-2">
+                                {mobileNavigationItems.map((item) => {
+                                    const isActiveLink = isActive(item.href)
+                                    return (
+                                        <Link
+                                            key={item.href}
+                                            href={item.href}
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActiveLink
+                                                ? 'bg-white/10 text-white border border-white/10 font-medium'
+                                                : 'bg-white/5 text-white/70 border border-white/5 hover:bg-white/10'
+                                            }`}
+                                        >
+                                            <item.icon className="w-5 h-5" />
+                                            {item.name}
+                                        </Link>
+                                    )
+                                })}
 
-                                    <div className="h-px bg-white/10 my-3" />
+                                <div className="h-px bg-white/10 my-3" />
 
-                                    <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
-                                        <div>
-                                            <span className="text-white/60 text-sm">Credits</span>
-                                            {hasActivePlan && (
-                                                <span className={`ml-2 text-xs px-1.5 py-0.5 rounded border ${planBadgeClass}`}>{planLabel}</span>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <CreditIcon className="w-5 h-5 text-[#FFFF00]" iconClassName="w-4 h-4" />
-                                            <span className="font-bold text-white">{creditsLoading ? '...' : credits.toLocaleString()}</span>
-                                        </div>
+                                <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
+                                    <div>
+                                        <span className="text-white/60 text-sm">Credits</span>
+                                        {hasActivePlan && (
+                                            <span className={`ml-2 text-xs px-1.5 py-0.5 rounded border ${planBadgeClass}`}>{planLabel}</span>
+                                        )}
                                     </div>
-
-                                    <button
-                                        onClick={() => { setIsPlansPopupOpen(true); setIsMobileMenuOpen(false) }}
-                                        className="w-full bg-[#FFFF00] text-black font-bold py-3 rounded-lg flex items-center justify-center gap-2 mt-2"
-                                    >
-                                        <Crown className="w-4 h-4 fill-black" />
-                                        {hasActivePlan ? 'Manage / Upgrade Plan' : 'Upgrade Plan'}
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <CreditIcon className="w-5 h-5 text-[#FFFF00]" iconClassName="w-4 h-4" />
+                                        <span className="font-bold text-white">{creditsLoading ? '...' : credits.toLocaleString()}</span>
+                                    </div>
                                 </div>
+
+                                <button
+                                    onClick={() => { setIsPlansPopupOpen(true); setIsMobileMenuOpen(false) }}
+                                    className="w-full bg-[#FFFF00] text-black font-bold py-3 rounded-lg flex items-center justify-center gap-2 mt-2"
+                                >
+                                    <Crown className="w-4 h-4 fill-black" />
+                                    {hasActivePlan ? 'Manage / Upgrade Plan' : 'Upgrade Plan'}
+                                </button>
                             </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                        </div>
+                    </div>
+                )}
             </header>
 
             {/* Plans Popup — full-screen overlay with close button */}
-            <AnimatePresence>
-                {isPlansPopupOpen && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="fixed inset-0 z-[10000] bg-black/98 backdrop-blur-2xl flex flex-col"
-                        onClick={(e) => { if (e.target === e.currentTarget) setIsPlansPopupOpen(false) }}
-                    >
-                        {/* Header bar */}
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 flex-shrink-0">
-                            <div>
-                                <h2 className="text-base font-bold text-white">
-                                    {hasActivePlan ? 'Manage Your Plan' : 'Choose a Plan'}
-                                </h2>
-                                <p className="text-xs text-white/40 mt-0.5">
-                                    {hasActivePlan
-                                        ? `You're on ${planLabel} — upgrade for more credits and features`
-                                        : 'Start with any plan and cancel anytime'}
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setIsPlansPopupOpen(false)}
-                                aria-label="Close"
-                                className="flex items-center gap-2 p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white transition-all"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
+            {isPlansPopupOpen && (
+                <div
+                    className="fixed inset-0 z-[10000] bg-black/98 backdrop-blur-2xl flex flex-col"
+                    onClick={(e) => { if (e.target === e.currentTarget) setIsPlansPopupOpen(false) }}
+                >
+                    {/* Header bar */}
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 flex-shrink-0">
+                        <div>
+                            <h2 className="text-base font-bold text-white">
+                                {hasActivePlan ? 'Manage Your Plan' : 'Choose a Plan'}
+                            </h2>
+                            <p className="text-xs text-white/40 mt-0.5">
+                                {hasActivePlan
+                                    ? `You're on ${planLabel} — upgrade for more credits and features`
+                                    : 'Start with any plan and cancel anytime'}
+                            </p>
                         </div>
+                        <button
+                            onClick={() => setIsPlansPopupOpen(false)}
+                            aria-label="Close"
+                            className="flex items-center gap-2 p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white transition-all"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
 
-                        {/* Content */}
-                        <div className="flex-1 overflow-y-auto">
-                            <div className="max-w-7xl mx-auto px-4 py-8">
-                                <MyPricingPlans2
-                                    showHeader={false}
-                                    preloadedActiveSub={
-                                        !subLoading && hasActivePlan
-                                            ? { plan: currentPlan, billing_period: subscriptionBillingPeriod }
-                                            : null
-                                    }
-                                    preloadedSubChecked={!subLoading}
-                                />
-                            </div>
+                    {/* Content */}
+                    <div className="flex-1 overflow-y-auto">
+                        <div className="max-w-7xl mx-auto px-4 py-8">
+                            <MyPricingPlans2
+                                showHeader={false}
+                                preloadedActiveSub={
+                                    !subLoading && hasActivePlan
+                                        ? { plan: currentPlan, billing_period: subscriptionBillingPeriod }
+                                        : null
+                                }
+                                preloadedSubChecked={!subLoading}
+                            />
                         </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    </div>
+                </div>
+            )}
         </>
     )
 }

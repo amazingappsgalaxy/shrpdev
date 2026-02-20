@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/lib/auth-client-simple'
-import UserHeader from '@/components/app/UserHeader'
 import {
   Coins,
   CreditCard,
@@ -183,7 +182,6 @@ export default function BuyCreditsPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-950 to-black text-white">
-        <UserHeader />
         <main className="container mx-auto px-6 py-24">
           <div className="text-center text-white/70">Loading...</div>
         </main>
@@ -198,8 +196,6 @@ export default function BuyCreditsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-950 to-black text-white">
-      <UserHeader />
-
       <main className="container mx-auto px-6 py-24">
         {/* Header */}
         <div className="text-center mb-12">

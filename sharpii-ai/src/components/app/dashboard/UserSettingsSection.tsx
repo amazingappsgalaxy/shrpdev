@@ -1,23 +1,12 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useAuth } from '@/lib/auth-client-simple'
+import { useAppData } from '@/lib/hooks/use-app-data'
 import { toast } from 'sonner'
 import { Eye, EyeOff, Loader2, Check, Lock, Mail, User } from 'lucide-react'
-import { motion } from 'framer-motion'
-
-interface Profile {
-  id: string
-  name: string
-  email: string
-  createdAt: string
-  hasPassword: boolean
-}
 
 export default function UserSettingsSection() {
-  const { user } = useAuth()
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, profile, isLoading: loading, mutate } = useAppData()
 
   const [name, setName] = useState('')
   const [savingProfile, setSavingProfile] = useState(false)
@@ -29,23 +18,12 @@ export default function UserSettingsSection() {
   const [showNewPw, setShowNewPw] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
 
+  // Sync name from SWR profile
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await fetch('/api/user/profile', { credentials: 'include' })
-        if (res.ok) {
-          const data = await res.json()
-          setProfile(data)
-          setName(data.name || '')
-        }
-      } catch {
-        toast.error('Failed to load profile')
-      } finally {
-        setLoading(false)
-      }
+    if (profile?.name && !name) {
+      setName(profile.name)
     }
-    fetchProfile()
-  }, [])
+  }, [profile?.name])
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -61,7 +39,7 @@ export default function UserSettingsSection() {
       const data = await res.json()
       if (res.ok) {
         toast.success('Profile updated')
-        setProfile(prev => prev ? { ...prev, name: name.trim() } : prev)
+        mutate()
       } else {
         toast.error(data.error || 'Failed to update profile')
       }
@@ -100,7 +78,7 @@ export default function UserSettingsSection() {
         setCurrentPassword('')
         setNewPassword('')
         setConfirmPassword('')
-        setProfile(prev => prev ? { ...prev, hasPassword: true } : prev)
+        mutate()
       } else {
         toast.error(data.error || 'Failed to update password')
       }
@@ -139,11 +117,7 @@ export default function UserSettingsSection() {
   const pwStrengthLabel = pwStrength === 0 ? '' : pwStrength === 1 ? 'Weak' : pwStrength === 2 ? 'Fair' : pwStrength === 3 ? 'Good' : 'Strong'
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-4"
-    >
+    <div className="space-y-4">
       {/* Top: Avatar identity bar */}
       <div className="bg-white/[0.03] border border-white/8 rounded-md px-5 py-4 flex items-center gap-4">
         <div className="w-14 h-14 rounded-md bg-[#FFFF00] flex items-center justify-center flex-shrink-0">
@@ -318,6 +292,6 @@ export default function UserSettingsSection() {
           </form>
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }

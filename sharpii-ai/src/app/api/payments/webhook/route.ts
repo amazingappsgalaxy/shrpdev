@@ -215,6 +215,24 @@ async function handlePaymentSucceeded(payment: any) {
       return
     }
 
+    // For subscription payments, look up the current plan from our DB
+    // (the change-plan route updates the subscription before Dodo fires the webhook)
+    let recordPlan = plan
+    let recordBillingPeriod = billingPeriod
+    if (subscriptionId && admin) {
+      const { data: currentSub } = await admin
+        .from('subscriptions')
+        .select('plan, billing_period')
+        .eq('dodo_subscription_id', subscriptionId)
+        .limit(1)
+        .maybeSingle()
+      if (currentSub?.plan) {
+        recordPlan = currentSub.plan
+        recordBillingPeriod = currentSub.billing_period || billingPeriod
+        console.log(`📋 Using DB plan for payment record: ${recordPlan} (metadata had: ${plan})`)
+      }
+    }
+
     // Record payment in database
     if (admin) {
       const { data: existingPayment } = await admin
@@ -236,8 +254,8 @@ async function handlePaymentSucceeded(payment: any) {
         currency: payment.currency || 'INR',
         status: 'succeeded',
         payment_method: payment.payment_method || 'card',
-        plan,
-        billing_period: billingPeriod,
+        plan: recordPlan,
+        billing_period: recordBillingPeriod,
         paid_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

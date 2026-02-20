@@ -1,47 +1,33 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { useAuth } from '@/lib/auth-client-simple'
+import { useAppData, APP_DATA_KEY } from '@/lib/hooks/use-app-data'
 import { Calendar, Lock, Zap, ArrowRight, RefreshCw, Loader2, Info } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 
 const openPlansPopup = () => window.dispatchEvent(new CustomEvent('sharpii:open-plans'))
 
 export default function CreditsSection() {
-    const { user } = useAuth()
-    const [credits, setCredits] = useState({
+    const { user, credits: creditsData, subscription: subData, isLoading, mutate } = useAppData()
+
+    const credits = creditsData ?? {
         total: 0,
         subscription_credits: 0,
         permanent_credits: 0,
-        subscription_expire_at: null as Date | null
-    })
-    const [subscription, setSubscription] = useState({
+        subscription_expire_at: null as string | null
+    }
+    const subscription = subData ?? {
         has_active_subscription: false,
         current_plan: 'free',
         subscription: null as any
-    })
-    const [loading, setLoading] = useState(true)
+    }
+
     const [activating, setActivating] = useState(false)
     const [activatingSlowMode, setActivatingSlowMode] = useState(false)
     const [loadingTopup, setLoadingTopup] = useState<number | null>(null)
     const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const pollAttemptsRef = useRef(0)
-    const MAX_POLL_ATTEMPTS = 12 // fast phase: 12 × 5s = 60s
-
-    const fetchCredits = async () => {
-        const res = await fetch('/api/credits/balance', { credentials: 'include' })
-        if (!res.ok) return null
-        const data = await res.json()
-        return data.balance
-    }
-
-    const fetchSubscription = async () => {
-        const res = await fetch('/api/user/subscription', { credentials: 'include' })
-        if (!res.ok) return null
-        const data = await res.json()
-        return data
-    }
+    const MAX_POLL_ATTEMPTS = 12
 
     const stopPolling = () => {
         if (pollRef.current) clearTimeout(pollRef.current)
@@ -50,35 +36,15 @@ export default function CreditsSection() {
         setActivatingSlowMode(false)
     }
 
-    const handleCreditsFound = async (balance: { total: number; subscription_credits: number; permanent_credits: number; subscription_expire_at: Date | null }) => {
-        setCredits(balance)
-        window.dispatchEvent(new CustomEvent('sharpii:credits-updated', { detail: balance }))
-        const subData = await fetchSubscription()
-        if (subData) {
-            setSubscription({
-                has_active_subscription: subData.has_active_subscription,
-                current_plan: subData.current_plan,
-                subscription: subData.subscription
-            })
-        }
-        stopPolling()
-    }
-
     const scheduleSlowPoll = () => {
-        // Slow phase: poll every 30s indefinitely until credits appear or page unmounts
         pollRef.current = setTimeout(async () => {
-            const balance = await fetchCredits()
-            if (balance && balance.total > 0) {
-                await handleCreditsFound(balance)
-            } else {
-                scheduleSlowPoll()
-            }
+            await mutate()
+            scheduleSlowPoll()
         }, 30000)
     }
 
     const schedulePoll = () => {
         if (pollAttemptsRef.current >= MAX_POLL_ATTEMPTS) {
-            // Fast phase exhausted — switch to slow background polling
             setActivating(false)
             setActivatingSlowMode(true)
             scheduleSlowPoll()
@@ -86,14 +52,33 @@ export default function CreditsSection() {
         }
         pollRef.current = setTimeout(async () => {
             pollAttemptsRef.current += 1
-            const balance = await fetchCredits()
-            if (balance && balance.total > 0) {
-                await handleCreditsFound(balance)
-            } else {
-                schedulePoll()
-            }
+            await mutate()
+            schedulePoll()
         }, 5000)
     }
+
+    // Start polling if subscription is pending and credits are 0
+    useEffect(() => {
+        if (!user?.id || isLoading) return
+
+        const subStatus = subscription.subscription?.status
+        if (credits.total === 0 && subStatus === 'pending') {
+            setActivating(true)
+            pollAttemptsRef.current = 0
+            schedulePoll()
+        }
+
+        return () => stopPolling()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.id, isLoading])
+
+    // Stop polling once credits appear
+    useEffect(() => {
+        if (credits.total > 0 && (activating || activatingSlowMode)) {
+            stopPolling()
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [credits.total])
 
     const handleTopup = async (creditAmount: number) => {
         setLoadingTopup(creditAmount)
@@ -117,42 +102,7 @@ export default function CreditsSection() {
         }
     }
 
-    useEffect(() => {
-        if (!user?.id) return
-
-        const fetchData = async () => {
-            try {
-                const [balance, subData] = await Promise.all([fetchCredits(), fetchSubscription()])
-                if (balance) setCredits(balance)
-                if (subData) {
-                    setSubscription({
-                        has_active_subscription: subData.has_active_subscription,
-                        current_plan: subData.current_plan,
-                        subscription: subData.subscription
-                    })
-                    // If there's a pending subscription with 0 credits, the webhook hasn't fired yet.
-                    // Start polling until credits appear (webhook processes the payment).
-                    const subStatus = subData.subscription?.status
-                    if (balance?.total === 0 && subStatus === 'pending') {
-                        setActivating(true)
-                        pollAttemptsRef.current = 0
-                        schedulePoll()
-                    }
-                }
-            } catch (error) {
-                console.error('Error fetching dashboard data:', error)
-            } finally {
-                setLoading(false)
-            }
-        }
-
-        fetchData()
-
-        return () => stopPolling()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.id])
-
-    if (loading) {
+    if (isLoading) {
         return (
             <div className="space-y-3">
                 <div className="h-36 bg-white/5 rounded-md animate-pulse" />
@@ -163,17 +113,13 @@ export default function CreditsSection() {
     }
 
     const planLabel = subscription.current_plan.charAt(0).toUpperCase() + subscription.current_plan.slice(1)
-    const subData = subscription.subscription
-    const isPendingCancel = subData?.status === 'pending_cancellation'
+    const sub = subscription.subscription
+    const isPendingCancel = sub?.status === 'pending_cancellation'
 
     return (
         <div className="space-y-3">
             {/* Main credits block */}
-            <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white/5 border border-white/10 rounded-md p-5"
-            >
+            <div className="bg-white/5 border border-white/10 rounded-md p-5">
                 <div className="flex items-start justify-between">
                     <div>
                         <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">Available Credits</p>
@@ -261,23 +207,18 @@ export default function CreditsSection() {
                 {credits.total === 0 && !activating && !activatingSlowMode && (
                     <p className="mt-4 text-sm text-white/30">No credits yet. Subscribe to a plan to get started.</p>
                 )}
-            </motion.div>
+            </div>
 
             {/* Plan status row */}
-            <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 }}
-                className="bg-white/5 border border-white/10 rounded-md px-4 py-3 flex items-center justify-between"
-            >
+            <div className="bg-white/5 border border-white/10 rounded-md px-4 py-3 flex items-center justify-between">
                 <div>
                     <p className="text-sm font-semibold text-white">
                         {subscription.has_active_subscription ? `${planLabel} Plan` : 'Free Tier'}
                     </p>
-                    {subData?.next_billing_date && (
+                    {sub?.next_billing_date && (
                         <p className="text-xs text-white/40 mt-0.5">
                             {isPendingCancel ? 'Expires' : 'Renews'}{' '}
-                            {new Date(subData.next_billing_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                            {new Date(sub.next_billing_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                         </p>
                     )}
                     {!subscription.has_active_subscription && (
@@ -291,15 +232,10 @@ export default function CreditsSection() {
                     {subscription.has_active_subscription ? 'Upgrade' : 'View Plans'}
                     <ArrowRight className="w-3 h-3" />
                 </button>
-            </motion.div>
+            </div>
 
             {/* One-time top-up */}
-            <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="bg-white/5 border border-white/10 rounded-md p-4"
-            >
+            <div className="bg-white/5 border border-white/10 rounded-md p-4">
                 <div className="flex items-center gap-2 mb-3">
                     <RefreshCw className="w-3.5 h-3.5 text-white/40" />
                     <span className="text-xs font-semibold text-white/40 uppercase tracking-wider">One-Time Top-Up</span>
@@ -341,7 +277,7 @@ export default function CreditsSection() {
                         </button>
                     </div>
                 )}
-            </motion.div>
+            </div>
         </div>
     )
 }

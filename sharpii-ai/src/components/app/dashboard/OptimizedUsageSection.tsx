@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useAuth } from '@/lib/auth-client-simple'
+import { useAppData } from '@/lib/hooks/use-app-data'
 import { Search, Plus, Minus, Zap, ChevronDown, X } from 'lucide-react'
 import { motion } from 'framer-motion'
 
@@ -37,7 +37,7 @@ function groupByDate(transactions: Transaction[]) {
 }
 
 export default function OptimizedUsageSection() {
-    const { user } = useAuth()
+    const { user } = useAppData()
     const [allTransactions, setAllTransactions] = useState<Transaction[]>([])
     const [loading, setLoading] = useState(true)
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)

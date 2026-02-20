@@ -24,7 +24,6 @@ import {
 
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/auth-client-simple"
-import UserHeader from "@/components/app/UserHeader"
 import { ElegantLoading } from "@/components/ui/elegant-loading"
 import MyLoadingProcessIndicator from "@/components/ui/MyLoadingProcessIndicator"
 import { ModelPricingEngine } from "@/lib/model-pricing-config"
@@ -578,15 +577,13 @@ function EditorContent() {
   if (!user) {
     // Redirect to login or show message
     if (typeof window !== 'undefined') {
-      window.location.href = '/login'
+      window.location.href = '/app/signin'
     }
     return <ElegantLoading message="Redirecting to login..." />
   }
 
   return (
     <div className="flex flex-col min-h-screen bg-[#09090b] text-white font-sans">
-      <UserHeader />
-
       {/* Hidden file input */}
       <input
         ref={fileInputRef}

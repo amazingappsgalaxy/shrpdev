@@ -5,7 +5,7 @@ import { motion, Transition, HTMLMotionProps } from "framer-motion"
 import { Check, ArrowRight, Star, CheckCircle, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { PRICING_PLANS, PRICING_CONFIG } from "@/lib/pricing-config"
-import { useSession } from "@/lib/auth-client-simple"
+import { useAppData } from "@/lib/hooks/use-app-data"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import UpgradeModal from "@/components/app/dashboard/UpgradeModal"
@@ -292,38 +292,19 @@ export function MyPricingPlans2({
 }: MyPricingPlans2Props) {
   const [frequency, setFrequency] = React.useState<FREQUENCY>('monthly')
   const [isLoading, setIsLoading] = React.useState<string | null>(null)
-  const { data: authData, isLoading: sessionLoading } = useSession()
+  const { user, subscription: subData, isLoading: appLoading } = useAppData()
   const router = useRouter()
 
-  // Check if user has an active subscription — if so, show upgrade flow instead of checkout
-  // If parent already passed pre-loaded data, skip internal fetch
-  const [activeSub, setActiveSub] = React.useState<{ plan: string; billing_period: string } | null>(
-    preloadedActiveSub ?? null
-  )
-  const [subChecked, setSubChecked] = React.useState(preloadedSubChecked)
+  // Derive active subscription from SWR data or preloaded props
+  const activeSub = React.useMemo(() => {
+    if (preloadedSubChecked && preloadedActiveSub) return preloadedActiveSub
+    if (subData?.has_active_subscription && subData.subscription) {
+      return { plan: subData.subscription.plan, billing_period: subData.subscription.billing_period }
+    }
+    return null
+  }, [preloadedSubChecked, preloadedActiveSub, subData])
 
-  React.useEffect(() => {
-    // If parent already provided the answer, no need to fetch
-    if (preloadedSubChecked) {
-      setActiveSub(preloadedActiveSub ?? null)
-      setSubChecked(true)
-      return
-    }
-    if (sessionLoading || !authData?.user) {
-      if (!sessionLoading) setSubChecked(true)
-      return
-    }
-    fetch('/api/user/subscription', { credentials: 'include' })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        const sub = data?.subscription
-        if (sub && ['active', 'trialing', 'pending_cancellation'].includes(sub.status)) {
-          setActiveSub({ plan: sub.plan, billing_period: sub.billing_period })
-        }
-        setSubChecked(true)
-      })
-      .catch(() => setSubChecked(true))
-  }, [authData?.user, sessionLoading, preloadedSubChecked, preloadedActiveSub])
+  const subChecked = preloadedSubChecked || !appLoading
 
   const handlePlanSelect = async (plan: any) => {
     console.log('🎯 Plan selected:', plan.name, 'Billing:', frequency)
@@ -331,7 +312,7 @@ export function MyPricingPlans2({
     setIsLoading(plan.name)
 
     try {
-      if (sessionLoading) {
+      if (appLoading) {
         setTimeout(() => {
           setIsLoading(null)
           handlePlanSelect(plan)
@@ -339,7 +320,7 @@ export function MyPricingPlans2({
         return
       }
 
-      if (!authData?.user) {
+      if (!user) {
         const planData = {
           plan: plan.name.toLowerCase().replace(/\s+/g, '_'),
           billingPeriod: frequency
@@ -423,8 +404,7 @@ export function MyPricingPlans2({
           currentPlan={activeSub.plan}
           currentBillingPeriod={activeSub.billing_period}
           onClose={() => {}}
-          onSuccess={(updatedSub, delta) => {
-            window.dispatchEvent(new CustomEvent('sharpii:subscription-updated', { detail: updatedSub }))
+          onSuccess={() => {
             window.dispatchEvent(new Event('sharpii:close-plans'))
           }}
         />

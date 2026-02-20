@@ -1,9 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useAuth } from '@/lib/auth-client-simple'
+import { useAppData } from '@/lib/hooks/use-app-data'
 import { CreditCard, Download, CheckCircle, XCircle, FileText, AlertTriangle, Loader2, Clock } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 
 const openPlansPopup = () => window.dispatchEvent(new CustomEvent('sharpii:open-plans'))
@@ -21,44 +20,25 @@ interface Payment {
     invoice_url?: string
 }
 
-interface Subscription {
-    id: string
-    plan: string
-    status: string
-    billing_period: string
-    next_billing_date: string
-    billing_name?: string
-    billing_email?: string
-    billing_address?: any
-    currency?: string
-    amount?: number
-}
-
 export default function BillingSection() {
-    const { user } = useAuth()
+    const { user, subscription: subData, isLoading: authLoading, mutate } = useAppData()
     const [payments, setPayments] = useState<Payment[]>([])
-    const [subscription, setSubscription] = useState<Subscription | null>(null)
     const [loading, setLoading] = useState(true)
     const [cancelling, setCancelling] = useState(false)
     const [showCancelConfirm, setShowCancelConfirm] = useState(false)
     const [reactivating, setReactivating] = useState(false)
 
+    const subscription = subData?.subscription || null
+
     useEffect(() => {
         if (!user?.id) return
 
-        const fetchData = async () => {
+        const fetchInvoices = async () => {
             try {
-                const [invoicesRes, subRes] = await Promise.all([
-                    fetch('/api/user/invoices', { credentials: 'include' }),
-                    fetch('/api/user/subscription', { credentials: 'include' })
-                ])
-                if (invoicesRes.ok) {
-                    const data = await invoicesRes.json()
+                const res = await fetch('/api/user/invoices', { credentials: 'include' })
+                if (res.ok) {
+                    const data = await res.json()
                     setPayments(data.invoices || [])
-                }
-                if (subRes.ok) {
-                    const data = await subRes.json()
-                    setSubscription(data.subscription)
                 }
             } catch (error) {
                 console.error('Error fetching billing data:', error)
@@ -67,27 +47,8 @@ export default function BillingSection() {
             }
         }
 
-        fetchData()
+        fetchInvoices()
     }, [user?.id])
-
-    // Refresh subscription state when upgrade completes via the shared popup
-    useEffect(() => {
-        const handleSubUpdated = async (e: Event) => {
-            const updatedSub = (e as CustomEvent).detail
-            if (updatedSub?.id) {
-                setSubscription(updatedSub)
-            } else {
-                // Fallback: re-fetch
-                const subRes = await fetch('/api/user/subscription', { credentials: 'include' })
-                if (subRes.ok) {
-                    const data = await subRes.json()
-                    setSubscription(data.subscription)
-                }
-            }
-        }
-        window.addEventListener('sharpii:subscription-updated', handleSubUpdated)
-        return () => window.removeEventListener('sharpii:subscription-updated', handleSubUpdated)
-    }, [])
 
     const handleCancelSubscription = async () => {
         setCancelling(true)
@@ -101,11 +62,7 @@ export default function BillingSection() {
             if (res.ok) {
                 toast.success(data.message || 'Auto-renew turned off. Your plan stays active until period end.')
                 setShowCancelConfirm(false)
-                const subRes = await fetch('/api/user/subscription', { credentials: 'include' })
-                if (subRes.ok) {
-                    const subData = await subRes.json()
-                    setSubscription(subData.subscription)
-                }
+                mutate()
             } else {
                 toast.error(data.error || 'Failed to cancel subscription')
             }
@@ -126,7 +83,7 @@ export default function BillingSection() {
             const data = await res.json()
             if (res.ok) {
                 toast.success('Auto-renew re-enabled. Your plan will renew normally.')
-                setSubscription(data.subscription)
+                mutate()
             } else {
                 toast.error(data.error || 'Failed to reactivate subscription')
             }
@@ -175,7 +132,7 @@ export default function BillingSection() {
     const isPendingCancellation = subscriptionStatus === 'pending_cancellation'
     const canCancel = isActiveLike && !isPendingCancellation
 
-    if (loading) {
+    if (authLoading || loading) {
         return (
             <div className="space-y-3">
                 <div className="h-28 bg-white/5 rounded-md animate-pulse" />
@@ -187,17 +144,12 @@ export default function BillingSection() {
     return (
         <div className="space-y-3">
             {/* Subscription Card */}
-            <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white/5 border border-white/10 rounded-md p-5"
-            >
+            <div className="bg-white/5 border border-white/10 rounded-md p-5">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                         <CreditCard className="w-4 h-4 text-[#FFFF00]" />
                         <span className="text-sm font-semibold text-white/70 uppercase tracking-wider">Subscription</span>
                     </div>
-                    {/* Status badge */}
                     {subscriptionStatus === 'active' && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-500/10 text-green-400 rounded-full text-xs font-medium">
                             <CheckCircle className="w-3 h-3" /> Active
@@ -227,7 +179,6 @@ export default function BillingSection() {
 
                 {subscription ? (
                     <div className="space-y-4">
-                        {/* Plan details row */}
                         <div className="grid grid-cols-3 gap-3">
                             <div>
                                 <div className="text-xs text-white/40 mb-0.5">Plan</div>
@@ -254,7 +205,6 @@ export default function BillingSection() {
                             </div>
                         </div>
 
-                        {/* Pending cancellation notice */}
                         {isPendingCancellation && (
                             <div className="flex items-start gap-2 bg-yellow-500/8 border border-yellow-500/15 rounded-lg p-3">
                                 <AlertTriangle className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
@@ -269,7 +219,6 @@ export default function BillingSection() {
                             </div>
                         )}
 
-                        {/* Billing details */}
                         {(subscription.billing_name || subscription.billing_email) && (
                             <div className="pt-3 border-t border-white/8">
                                 <div className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">Billing Details</div>
@@ -293,7 +242,6 @@ export default function BillingSection() {
                             </div>
                         )}
 
-                        {/* Action buttons */}
                         <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-white/8">
                             {canCancel && (
                                 <>
@@ -364,15 +312,10 @@ export default function BillingSection() {
                         </button>
                     </div>
                 )}
-            </motion.div>
+            </div>
 
             {/* Payment History */}
-            <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 }}
-                className="bg-white/5 border border-white/10 rounded-md overflow-hidden"
-            >
+            <div className="bg-white/5 border border-white/10 rounded-md overflow-hidden">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
                     <div className="flex items-center gap-2">
                         <FileText className="w-4 h-4 text-[#FFFF00]" />
@@ -456,7 +399,7 @@ export default function BillingSection() {
                         </table>
                     </div>
                 )}
-            </motion.div>
+            </div>
         </div>
     )
 }

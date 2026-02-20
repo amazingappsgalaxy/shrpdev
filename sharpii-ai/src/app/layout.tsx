@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Syne, Manrope, Ubuntu } from "next/font/google";
-import { Toaster } from "sonner"; // Re-enable web notifications for auth feedback
-// Removed SupabaseProvider
+import { Toaster } from "sonner";
+import { SWRProvider } from "@/lib/providers/swr-provider";
 import "./globals.css";
 
 const syne = Syne({
@@ -64,8 +64,9 @@ export default function RootLayout({
         className={`${syne.variable} ${manrope.variable} ${ubuntu.variable} antialiased bg-background text-foreground font-body`}
         suppressHydrationWarning
       >
-        {/* Removed SupabaseProvider wrapper */}
+        <SWRProvider>
         {children}
+        </SWRProvider>
         <Toaster
           position="bottom-right"
           toastOptions={{

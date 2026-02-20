@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useAuth } from "@/lib/auth-client-simple"
-import UserHeader from "@/components/app/UserHeader"
 import { ElegantLoading } from "@/components/ui/elegant-loading"
 import { toast } from "sonner"
 import { HistoryGrid } from "@/components/app/history/HistoryGrid"
@@ -146,14 +145,13 @@ export default function HistoryPage() {
 
   if (!user) {
     if (typeof window !== 'undefined') {
-      window.location.href = '/login'
+      window.location.href = '/app/signin'
     }
     return <ElegantLoading message="Redirecting to login..." />
   }
 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-[#FFFF00] selection:text-black">
-      <UserHeader />
       <main className="pt-28 pb-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto space-y-8">
           <div className="flex items-end justify-between">
