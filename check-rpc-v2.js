@@ -1,7 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 
-const url = 'https://igsyhvrctnqntqujqfif.supabase.co';
-const key = 'REMOVED'; // From .env.local
+const url = process.env.SUPABASE_URL;
+const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const supabase = createClient(url, key);
 
