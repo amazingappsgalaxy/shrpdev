@@ -29,6 +29,7 @@ import { DropdownOption } from "@/components/ui/custom-dropdown"
 import { ExpandViewModal } from "@/components/ui/expand-view-modal"
 import { CreditIcon } from "@/components/ui/CreditIcon"
 import { ComparisonView } from "@/components/ui/ComparisonView"
+import { startSmartProgress, type TaskStatus, type TaskEntry } from "@/lib/task-progress"
 
 // --- TYPES ---
 interface AreaProtectionSettings {
@@ -210,8 +211,6 @@ function EditorContent() {
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: 'loading' | 'success' | 'error' }>>([])
 
   // Multi-task tracking
-  type TaskStatus = 'loading' | 'success' | 'error'
-  type TaskEntry = { id: string; progress: number; status: TaskStatus; message?: string; createdAt: number; inputImage: string }
   const [activeTasks, setActiveTasks] = useState<Map<string, TaskEntry>>(new Map())
   const [dismissedTaskIds, setDismissedTaskIds] = useState<Set<string>>(new Set())
 
@@ -351,19 +350,11 @@ function EditorContent() {
     setTimeout(() => setIsSubmitting(false), 1000)
 
     try {
-      const progressInterval = setInterval(() => {
-        setActiveTasks(prev => {
-          const task = prev.get(taskId)
-          if (!task || task.status !== 'loading') return prev
-          const newMap = new Map(prev)
-          const newProgress = Math.min((task.progress || 0) + 5, 90)
-          newMap.set(taskId, { ...task, progress: newProgress })
-          return newMap
-        })
-      }, 500)
-      taskIntervalsRef.current.set(taskId, progressInterval)
-
       const shouldSmartUpscale = !!modelSettings['smartUpscale']
+      // skin-editor: 70 s without smart upscale, 160 s with it
+      const taskDurationSecs = shouldSmartUpscale ? 160 : 70
+      const progressInterval = startSmartProgress(taskId, taskDurationSecs, setActiveTasks)
+      taskIntervalsRef.current.set(taskId, progressInterval)
       const settingsSnapshot = {
         prompt: 'Enhance skin details, preserve identity, high quality',
         mode: enhancementMode,

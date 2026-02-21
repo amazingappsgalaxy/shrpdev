@@ -15,6 +15,7 @@ import MyLoadingProcessIndicator from "@/components/ui/MyLoadingProcessIndicator
 import { ExpandViewModal } from "@/components/ui/expand-view-modal"
 import { CreditIcon } from "@/components/ui/CreditIcon"
 import { ComparisonView } from "@/components/ui/ComparisonView"
+import { startSmartProgress, type TaskStatus, type TaskEntry } from "@/lib/task-progress"
 
 // --- Demo images ---
 const DEMO_INPUT_URL = 'https://i.postimg.cc/vTtwPDVt/90s-Futuristic-Portrait-3.png'
@@ -52,8 +53,6 @@ function UpscalerContent() {
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: 'loading' | 'success' | 'error' }>>([])
 
   // Multi-task tracking
-  type TaskStatus = 'loading' | 'success' | 'error'
-  type TaskEntry = { id: string; progress: number; status: TaskStatus; message?: string; createdAt: number; inputImage: string }
   const [activeTasks, setActiveTasks] = useState<Map<string, TaskEntry>>(new Map())
   const [dismissedTaskIds, setDismissedTaskIds] = useState<Set<string>>(new Set())
 
@@ -123,15 +122,8 @@ function UpscalerContent() {
     setTimeout(() => setIsSubmitting(false), 1000)
 
     try {
-      const progressInterval = setInterval(() => {
-        setActiveTasks(prev => {
-          const task = prev.get(taskId)
-          if (!task || task.status !== 'loading') return prev
-          const newMap = new Map(prev)
-          newMap.set(taskId, { ...task, progress: Math.min((task.progress || 0) + 5, 90) })
-          return newMap
-        })
-      }, 500)
+      // smart-upscaler approximate task duration: 190 s
+      const progressInterval = startSmartProgress(taskId, 190, setActiveTasks)
       taskIntervalsRef.current.set(taskId, progressInterval)
 
       const response = await fetch('/api/enhance-image', {
