@@ -189,8 +189,25 @@ text-[10px] font-bold text-gray-500 select-none
   {/* Shows image if uploaded, otherwise empty state */}
 </div>
 ```
+- **ALWAYS `aspect-square`** — never use `aspect-video` or fixed pixel height for input images. Every page must use square thumbnails.
+- In the editor, the image occupies the 40% column (`w-full` inside the 40% grid cell). On pages without a side-by-side selector column, use `w-[40%] aspect-square flex-shrink-0` in a flex row alongside an upload hint/button area.
 - `hover:border-[#FFFF00]/50` — always use this for any clickable upload zone.
 - Delete button: `p-2 -mr-2 text-gray-500 hover:text-red-400 hover:bg-white/5 rounded-full transition-all`
+
+**Pattern for pages without a second column (e.g. upscaler):**
+```jsx
+<div className="px-5 pb-4 flex gap-4 items-start">
+  <div className="w-[40%] aspect-square rounded-lg bg-black border border-white/10 overflow-hidden relative cursor-pointer group hover:border-[#FFFF00]/50 transition-colors flex-shrink-0">
+    {/* image or empty state */}
+  </div>
+  <div className="flex flex-col justify-center gap-2 flex-1 min-w-0">
+    <p className="text-[11px] text-gray-500 leading-relaxed">{hint text}</p>
+    <button className="w-full flex items-center justify-center gap-2 h-9 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-xs font-medium transition-all">
+      Upload Image
+    </button>
+  </div>
+</div>
+```
 
 ### Settings scroll area wrapper
 ```jsx
@@ -294,6 +311,27 @@ All settings cards share this base philosophy:
 ```
 - Active segment: `bg-[#FFFF00] text-black shadow-md scale-[1.02]`
 - The track uses `rgb(255_255_255_/_0.04)` for both bg and border — extremely subtle.
+
+### Option cards (e.g. resolution selector cards)
+```jsx
+// upscaler/page.tsx — resolution cards
+<div className="grid grid-cols-2 gap-2">
+  <button
+    onClick={() => setResolution('4k')}
+    className={cn(
+      "rounded-lg border p-3 transition-all text-left",
+      resolution === '4k' ? "border-[#FFFF00] border-2" : "border-white/5"
+    )}
+  >
+    <div className="text-sm font-semibold text-white">4096 × 4096</div>
+    <div className="text-[10px] text-gray-500 mt-1 leading-snug">Balanced quality and speed</div>
+  </button>
+</div>
+```
+- **Selected card**: thick `border-2 border-[#FFFF00]` ONLY — no background color change, no opacity change.
+- **Unselected card**: `border border-white/5` — no background.
+- Do NOT use `bg-[#FFFF00]/5` or `bg-[#FFFF00]/10` for card selection — that is not the design pattern.
+- Cards must contain a primary value + a small caption only. Do not include labels that duplicate the segmented control above (e.g. if the pill already says "4K Crisp", don't also put "4K" inside the card header).
 
 ### Small toggle row (area protection style)
 ```jsx

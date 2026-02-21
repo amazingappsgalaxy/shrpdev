@@ -332,7 +332,7 @@ function UpscalerContent() {
 
           {/* INPUT IMAGE */}
           <div className="border-b border-white/5">
-            <div className="flex items-center justify-between px-5 pt-5 pb-2 h-11">
+            <div className="flex items-center justify-between px-5 pt-5 pb-2 h-9">
               <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Input Image</span>
               {uploadedImage && (
                 <button
@@ -345,73 +345,84 @@ function UpscalerContent() {
               )}
             </div>
 
-            <div className="px-5 pb-4">
+            <div className="px-5 pb-4 flex gap-4 items-start">
+              {/* Square image — matches editor pattern */}
               <div
-                className="w-full aspect-video rounded-lg bg-black border border-white/10 overflow-hidden relative cursor-pointer group hover:border-[#FFFF00]/50 transition-colors"
+                className="w-[40%] aspect-square rounded-lg bg-black border border-white/10 overflow-hidden relative cursor-pointer group hover:border-[#FFFF00]/50 transition-colors flex-shrink-0"
                 onClick={() => fileInputRef.current?.click()}
               >
                 {uploadedImage ? (
                   <>
                     <img src={uploadedImage} className="w-full h-full object-cover" alt="Input" />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                      <IconUpload className="w-6 h-6 text-white" />
+                      <IconUpload className="w-5 h-5 text-white" />
                     </div>
                   </>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full gap-2">
-                    <IconUpload className="w-8 h-8 text-gray-500" />
-                    <span className="text-xs text-gray-600 font-medium">Click to Select Image</span>
+                    <IconUpload className="w-6 h-6 text-gray-500" />
+                    <span className="text-[10px] text-gray-600 font-medium">Select Image</span>
                   </div>
                 )}
               </div>
 
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="mt-3 w-full flex items-center justify-center gap-2 h-9 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-sm font-medium transition-all"
-              >
-                <IconUpload className="w-4 h-4" />
-                Upload Image
-              </button>
+              {/* Upload hint */}
+              <div className="flex flex-col justify-center gap-2 flex-1 min-w-0">
+                <p className="text-[11px] text-gray-500 leading-relaxed">Upload any photo to upscale it to 4K or 8K resolution.</p>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full flex items-center justify-center gap-2 h-9 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-xs font-medium transition-all"
+                >
+                  <IconUpload className="w-3.5 h-3.5" />
+                  Upload Image
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* OUTPUT RESOLUTION */}
+          {/* UPSCALE FACTOR */}
           <div className="border-b border-white/5 px-5 py-5">
-            <span className="text-xs font-black text-gray-500 uppercase tracking-wider block mb-3">Output Resolution</span>
-            <div className="flex items-center p-1 bg-white/5 border border-white/10 rounded-lg h-10">
+            <span className="text-xs font-black text-gray-500 uppercase tracking-wider block mb-3">Upscale Factor</span>
+
+            {/* Cupertino segmented pill — matches editor page style */}
+            <div className="flex bg-[rgb(255_255_255_/_0.04)] p-1 rounded-lg border border-[rgb(255_255_255_/_0.04)]">
               {(['4k', '8k'] as const).map((res) => (
                 <button
                   key={res}
                   onClick={() => setResolution(res)}
                   className={cn(
-                    "flex-1 h-full flex items-center justify-center rounded text-sm font-semibold transition-all duration-200",
+                    "flex-1 py-2 text-[11px] font-black rounded-md transition-all uppercase tracking-wider",
                     resolution === res
-                      ? "bg-white/10 text-white shadow-sm"
-                      : "text-white/50 hover:text-white hover:bg-white/5"
+                      ? "bg-[#FFFF00] text-black shadow-md scale-[1.02]"
+                      : "text-white hover:text-white"
                   )}
                 >
-                  {res.toUpperCase()}
+                  {res === '4k' ? '4K Crisp' : '8K Ultra'}
                 </button>
               ))}
             </div>
 
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <div className={cn(
-                "rounded-lg border p-3 transition-all",
-                resolution === '4k' ? "border-[#FFFF00]/30 bg-[#FFFF00]/5" : "border-white/5 bg-white/2"
-              )}>
-                <div className="text-xs font-black text-gray-500 uppercase tracking-wider mb-1">4K</div>
+              <button
+                onClick={() => setResolution('4k')}
+                className={cn(
+                  "rounded-lg border p-3 transition-all text-left",
+                  resolution === '4k' ? "border-[#FFFF00] border-2" : "border-white/5"
+                )}
+              >
                 <div className="text-sm font-semibold text-white">4096 × 4096</div>
-                <div className="text-xs text-gray-500 mt-0.5">80 credits</div>
-              </div>
-              <div className={cn(
-                "rounded-lg border p-3 transition-all",
-                resolution === '8k' ? "border-[#FFFF00]/30 bg-[#FFFF00]/5" : "border-white/5 bg-white/2"
-              )}>
-                <div className="text-xs font-black text-gray-500 uppercase tracking-wider mb-1">8K</div>
+                <div className="text-[10px] text-gray-500 mt-1 leading-snug">Balanced quality and speed</div>
+              </button>
+              <button
+                onClick={() => setResolution('8k')}
+                className={cn(
+                  "rounded-lg border p-3 transition-all text-left",
+                  resolution === '8k' ? "border-[#FFFF00] border-2" : "border-white/5"
+                )}
+              >
                 <div className="text-sm font-semibold text-white">8192 × 8192</div>
-                <div className="text-xs text-gray-500 mt-0.5">120 credits</div>
-              </div>
+                <div className="text-[10px] text-gray-500 mt-1 leading-snug">Maximum detail and sharpness</div>
+              </button>
             </div>
           </div>
 
@@ -423,7 +434,7 @@ function UpscalerContent() {
                 <span className="text-xs font-bold text-white uppercase tracking-wider">Smart Upscaler</span>
               </div>
               <p className="text-xs text-gray-400 leading-relaxed">
-                Optimized for clarity and detail. Uses a specialized ComfyUI workflow to produce crisp, high-resolution output from any input image.
+                Improves skin quality and overall clarity, then performs Smart Upscale to produce a sharper, high-detail output.
               </p>
               <div className="pt-1 flex flex-wrap gap-2">
                 {['Crisp Detail', 'AI Enhanced', 'Lossless Output'].map(tag => (
@@ -471,7 +482,7 @@ function UpscalerContent() {
 
         {/* RIGHT MAIN CANVAS */}
         <div className="relative flex flex-col px-4 pt-2 pb-4 lg:sticky lg:top-[4.5rem] lg:h-[calc(100vh-4.5rem)] overflow-y-auto custom-scrollbar order-1 lg:order-2">
-          <div className="w-full relative flex items-center justify-center bg-[#050505] custom-checkerboard rounded-2xl border border-white/5 overflow-hidden h-[400px] lg:flex-1 lg:min-h-[400px] flex-shrink-0">
+          <div className="w-full relative flex items-center justify-center bg-[#050505] custom-checkerboard rounded-2xl border border-white/5 overflow-hidden h-[340px] lg:flex-1 lg:min-h-[340px] flex-shrink-0">
             {!uploadedImage ? (
               <div
                 className="text-center cursor-pointer p-12 rounded-2xl border-2 border-dashed border-white/10 hover:border-white/20 hover:bg-white/5 transition-all"
@@ -503,9 +514,9 @@ function UpscalerContent() {
           {/* STATUS BAR */}
           <div className="mt-4 flex justify-between items-center text-[10px] text-gray-600 font-mono uppercase tracking-wider">
             <div>
-              {uploadedImage && <span>Source: {imageMetadata.width}×{imageMetadata.height} • Output: {resolution === '4k' ? '4096×4096' : '8192×8192'}</span>}
+              {uploadedImage && <span>Source: {imageMetadata.width}×{imageMetadata.height} • PNG</span>}
             </div>
-            <div>Sharpii Smart Upscaler v1.0</div>
+            <div>Sharpii Engine v2.0</div>
           </div>
         </div>
 
