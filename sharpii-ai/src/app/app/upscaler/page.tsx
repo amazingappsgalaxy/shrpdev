@@ -399,8 +399,8 @@ function UpscalerContent() {
         </div>
 
         {/* RIGHT MAIN CANVAS */}
-        <div className="relative flex flex-col px-4 pt-2 pb-4 lg:sticky lg:top-[4.5rem] lg:h-[calc(83vh-4.5rem)] overflow-y-auto custom-scrollbar order-1 lg:order-2">
-          <div className="w-full relative flex items-center justify-center bg-[#050505] custom-checkerboard rounded-2xl border border-white/5 overflow-hidden h-[300px] lg:flex-1 lg:min-h-[300px] flex-shrink-0">
+        <div className="relative flex flex-col px-4 pt-2 pb-4 lg:sticky lg:top-[4.5rem] lg:h-[calc(100vh-4.5rem)] overflow-y-auto custom-scrollbar order-1 lg:order-2">
+          <div className="w-full relative flex items-center justify-center bg-[#050505] custom-checkerboard rounded-2xl border border-white/5 overflow-hidden h-[400px] lg:flex-1 lg:min-h-[400px] flex-shrink-0">
             {!uploadedImage ? (
               <div
                 className="text-center cursor-pointer p-12 rounded-2xl border-2 border-dashed border-white/10 hover:border-white/20 hover:bg-white/5 transition-all"

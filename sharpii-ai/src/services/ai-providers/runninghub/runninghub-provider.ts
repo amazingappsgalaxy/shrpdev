@@ -837,10 +837,11 @@ export class RunningHubProvider extends BaseAIProvider {
       let finalNodeInfoList = (settings as any).nodeInfoListOverride || nodeInfoList
 
       // Ensure the processed image URL is used in the final list (especially if override was used)
-      if ((settings as any).nodeInfoListOverride && processedImageUrl !== imageUrl) {
+      // Matches any node with fieldName 'image' — works for all workflows (node '97', '230', etc.)
+      if ((settings as any).nodeInfoListOverride && processedImageUrl !== imageUrl.trim()) {
         console.log('RunningHub: Updating image URL in override list with processed URL')
         finalNodeInfoList = finalNodeInfoList.map((node: any) => {
-          if (node.nodeId === '97' && node.fieldName === 'image') {
+          if (node.fieldName === 'image') {
             return { ...node, fieldValue: processedImageUrl }
           }
           return node
