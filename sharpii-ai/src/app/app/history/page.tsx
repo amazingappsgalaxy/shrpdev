@@ -165,9 +165,13 @@ export default function HistoryPage() {
       <main className="pt-28 pb-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto space-y-8">
           <div className="flex items-end justify-between">
-            <div>
-              <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">History</h1>
-              <p className="text-white/40 text-sm mt-1">Every enhancement. On record.</p>
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold text-white">History</h1>
+              {/* Retention notice */}
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.07] w-fit">
+                <span className="w-1.5 h-1.5 rounded-full bg-white/30 flex-shrink-0" />
+                <p className="text-[11px] text-white/40 tracking-wide">Media outputs expire <span className="text-white/60 font-medium">10 days</span> after creation</p>
+              </div>
             </div>
             <button
               onClick={() => {
@@ -178,12 +182,6 @@ export default function HistoryPage() {
             >
               Refresh
             </button>
-          </div>
-
-          {/* Retention notice */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.07] w-fit">
-            <span className="w-1.5 h-1.5 rounded-full bg-white/30 flex-shrink-0" />
-            <p className="text-[11px] text-white/40 tracking-wide">Media outputs expire <span className="text-white/60 font-medium">10 days</span> from the date of creation</p>
           </div>
 
           {loading ? (
