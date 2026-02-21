@@ -1,13 +1,11 @@
 "use client"
-import React, { useState, useRef, useCallback, useEffect, Suspense } from "react"
+import React, { useState, useRef, useEffect, Suspense } from "react"
 import {
   IconUpload,
-  IconDownload,
   IconLoader2,
-  IconArrowsHorizontal,
-  IconArrowsMaximize,
   IconTrash,
-  IconZoomIn,
+  IconSparkles,
+  IconMaximize,
 } from "@tabler/icons-react"
 
 import { cn } from "@/lib/utils"
@@ -16,6 +14,7 @@ import { ElegantLoading } from "@/components/ui/elegant-loading"
 import MyLoadingProcessIndicator from "@/components/ui/MyLoadingProcessIndicator"
 import { ExpandViewModal } from "@/components/ui/expand-view-modal"
 import { CreditIcon } from "@/components/ui/CreditIcon"
+import { ComparisonView } from "@/components/ui/ComparisonView"
 
 // --- Demo images ---
 const DEMO_INPUT_URL = 'https://i.postimg.cc/vTtwPDVt/90s-Futuristic-Portrait-3.png'
@@ -23,82 +22,6 @@ const DEMO_OUTPUT_URL = 'https://i.postimg.cc/NjJBqyPS/Comfy-UI-00022-psmsy-1770
 
 // --- Credits by resolution ---
 const UPSCALER_CREDITS = { '4k': 80, '8k': 120 } as const
-
-// --- Before/After Comparison ---
-function ComparisonView({
-  original,
-  enhanced,
-  onDownload,
-  onExpand,
-}: {
-  original: string
-  enhanced: string
-  onDownload?: () => void
-  onExpand?: () => void
-}) {
-  const [sliderPos, setSliderPos] = useState(50)
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  const handleMove = useCallback((clientX: number) => {
-    if (!containerRef.current) return
-    const rect = containerRef.current.getBoundingClientRect()
-    const x = Math.min(Math.max(clientX - rect.left, 0), rect.width)
-    setSliderPos((x / rect.width) * 100)
-  }, [])
-
-  return (
-    <div
-      className="relative w-full h-full bg-[#050505] overflow-hidden select-none group"
-      ref={containerRef}
-      onMouseMove={(e) => handleMove(e.clientX)}
-      onTouchMove={(e) => e.touches[0] && handleMove(e.touches[0].clientX)}
-    >
-      <img src={original} className="absolute inset-0 w-full h-full object-contain" alt="Original" draggable={false} />
-      <div
-        className="absolute inset-0 overflow-hidden"
-        style={{ clipPath: `polygon(${sliderPos}% 0, 100% 0, 100% 100%, ${sliderPos}% 100%)` }}
-      >
-        <img src={enhanced} className="absolute inset-0 w-full h-full object-contain" alt="Upscaled" draggable={false} />
-      </div>
-
-      {/* Slider Line */}
-      <div
-        className="absolute inset-y-0 w-0.5 bg-white shadow-[0_0_10px_rgba(0,0,0,0.5)] z-20 cursor-ew-resize"
-        style={{ left: `${sliderPos}%` }}
-      >
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center">
-          <IconArrowsHorizontal className="w-4 h-4 text-black" />
-        </div>
-      </div>
-
-      {/* Labels */}
-      <div className="absolute top-4 left-4 px-3 py-1 bg-black/50 backdrop-blur text-white/80 text-xs font-medium rounded border border-white/10 uppercase tracking-wider">Original</div>
-      <div className="absolute top-4 right-4 px-3 py-1 bg-white/20 backdrop-blur text-white text-xs font-bold rounded border border-white/20 uppercase tracking-wider shadow-lg">Upscaled</div>
-
-      {/* Action Buttons */}
-      <div className="absolute bottom-6 right-6 flex gap-3 z-30">
-        {onExpand && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onExpand() }}
-            className="p-3 bg-white text-black rounded-full shadow-xl hover:scale-105 transition-transform"
-            title="Expand view"
-          >
-            <IconArrowsMaximize className="w-5 h-5" />
-          </button>
-        )}
-        {onDownload && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onDownload() }}
-            className="p-3 bg-white text-black rounded-full shadow-xl hover:scale-105 transition-transform"
-            title="Download"
-          >
-            <IconDownload className="w-5 h-5" />
-          </button>
-        )}
-      </div>
-    </div>
-  )
-}
 
 function UpscalerContent() {
   const { user, isLoading, isDemo } = useAuth()
@@ -325,58 +248,53 @@ function UpscalerContent() {
       />
 
       {/* Main Layout */}
-      <div className="flex-1 pt-16 w-full grid grid-cols-1 lg:grid-cols-[400px_1fr] items-start">
+      <div className="flex-1 pt-16 w-full grid grid-cols-1 lg:grid-cols-[420px_1fr] items-start">
 
         {/* LEFT SIDEBAR */}
         <div className="flex flex-col border-r border-white/5 bg-[#0c0c0e] z-20 relative min-h-[calc(100vh-6rem)] lg:pb-32 order-2 lg:order-1">
 
           {/* INPUT IMAGE */}
           <div className="border-b border-white/5">
-            <div className="flex items-center justify-between px-5 pt-5 pb-2 h-9">
-              <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Input Image</span>
-              {uploadedImage && (
-                <button
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteImage() }}
-                  className="p-2 -mr-2 text-gray-500 hover:text-red-400 hover:bg-white/5 rounded-full transition-all"
-                  title="Delete Image"
-                >
-                  <IconTrash className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-
-            <div className="px-5 pb-4 flex gap-4 items-start">
-              {/* Square image — matches editor pattern */}
-              <div
-                className="w-[40%] aspect-square rounded-lg bg-black border border-white/10 overflow-hidden relative cursor-pointer group hover:border-[#FFFF00]/50 transition-colors flex-shrink-0"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {uploadedImage ? (
-                  <>
-                    <img src={uploadedImage} className="w-full h-full object-cover" alt="Input" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                      <IconUpload className="w-5 h-5 text-white" />
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full gap-2">
-                    <IconUpload className="w-6 h-6 text-gray-500" />
-                    <span className="text-[10px] text-gray-600 font-medium">Select Image</span>
-                  </div>
+            {/* Header row — exactly matches editor: label left, delete icon right */}
+            <div className="grid grid-cols-[40%_60%] gap-4 px-5 pt-5 pb-[0.3rem]">
+              <div className="flex items-center justify-between h-6">
+                <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Input Image</span>
+                {uploadedImage && (
+                  <button
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteImage() }}
+                    className="p-2 -mr-2 text-gray-500 hover:text-red-400 hover:bg-white/5 rounded-full transition-all"
+                    title="Delete Image"
+                  >
+                    <IconTrash className="w-4 h-4" />
+                  </button>
                 )}
               </div>
+              <div className="h-6" />
+            </div>
 
-              {/* Upload hint */}
-              <div className="flex flex-col justify-center gap-2 flex-1 min-w-0">
-                <p className="text-[11px] text-gray-500 leading-relaxed">Upload any photo to upscale it to 4K or 8K resolution.</p>
-                <button
+            {/* Image row — 40% column with square thumbnail, matching editor exactly */}
+            <div className="grid grid-cols-[40%_60%] gap-4 px-5 pt-1 pb-3">
+              <div className="flex flex-col gap-4">
+                <div
+                  className="w-full aspect-square rounded-lg bg-black border border-white/10 overflow-hidden relative cursor-pointer group hover:border-[#FFFF00]/50 transition-colors"
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full flex items-center justify-center gap-2 h-9 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-xs font-medium transition-all"
                 >
-                  <IconUpload className="w-3.5 h-3.5" />
-                  Upload Image
-                </button>
+                  {uploadedImage ? (
+                    <>
+                      <img src={uploadedImage} className="w-full h-full object-cover" alt="Input" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <IconUpload className="w-5 h-5 text-white" />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full gap-2">
+                      <IconUpload className="w-6 h-6 text-gray-500" />
+                      <span className="text-[10px] text-gray-600 font-medium">Select Image</span>
+                    </div>
+                  )}
+                </div>
               </div>
+              <div />
             </div>
           </div>
 
@@ -430,7 +348,7 @@ function UpscalerContent() {
           <div className="px-5 py-4 border-b border-white/5">
             <div className="rounded-xl border border-white/5 bg-white/2 p-4 space-y-2">
               <div className="flex items-center gap-2 mb-3">
-                <IconZoomIn className="w-4 h-4 text-[#FFFF00]" />
+                <IconSparkles className="w-4 h-4 text-[#FFFF00]" />
                 <span className="text-xs font-bold text-white uppercase tracking-wider">Smart Upscaler</span>
               </div>
               <p className="text-xs text-gray-400 leading-relaxed">
@@ -447,7 +365,7 @@ function UpscalerContent() {
           </div>
 
           {/* FOOTER CTA */}
-          <div className="lg:fixed lg:bottom-0 lg:left-0 lg:w-[400px] relative w-full bg-[#0c0c0e] border-t border-white/5 z-40">
+          <div className="lg:fixed lg:bottom-0 lg:left-0 lg:w-[420px] relative w-full bg-[#0c0c0e] border-t border-white/5 z-40">
             <div className="px-5 pt-4 pb-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500 font-medium">Estimated Cost</span>
@@ -470,7 +388,7 @@ function UpscalerContent() {
                   </>
                 ) : (
                   <>
-                    <IconZoomIn className="w-5 h-5" />
+                    <IconMaximize className="w-5 h-5" />
                     <span>Upscale to {resolution.toUpperCase()}</span>
                   </>
                 )}
@@ -481,8 +399,8 @@ function UpscalerContent() {
         </div>
 
         {/* RIGHT MAIN CANVAS */}
-        <div className="relative flex flex-col px-4 pt-2 pb-4 lg:sticky lg:top-[4.5rem] lg:h-[calc(100vh-4.5rem)] overflow-y-auto custom-scrollbar order-1 lg:order-2">
-          <div className="w-full relative flex items-center justify-center bg-[#050505] custom-checkerboard rounded-2xl border border-white/5 overflow-hidden h-[340px] lg:flex-1 lg:min-h-[340px] flex-shrink-0">
+        <div className="relative flex flex-col px-4 pt-2 pb-4 lg:sticky lg:top-[4.5rem] lg:h-[calc(83vh-4.5rem)] overflow-y-auto custom-scrollbar order-1 lg:order-2">
+          <div className="w-full relative flex items-center justify-center bg-[#050505] custom-checkerboard rounded-2xl border border-white/5 overflow-hidden h-[300px] lg:flex-1 lg:min-h-[300px] flex-shrink-0">
             {!uploadedImage ? (
               <div
                 className="text-center cursor-pointer p-12 rounded-2xl border-2 border-dashed border-white/10 hover:border-white/20 hover:bg-white/5 transition-all"
@@ -496,6 +414,7 @@ function UpscalerContent() {
               <ComparisonView
                 original={uploadedImage}
                 enhanced={upscaledImage}
+                enhancedLabel="Upscaled"
                 onDownload={handleDownload}
                 onExpand={() => setIsExpandViewOpen(true)}
               />

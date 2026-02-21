@@ -190,21 +190,35 @@ text-[10px] font-bold text-gray-500 select-none
 </div>
 ```
 - **ALWAYS `aspect-square`** — never use `aspect-video` or fixed pixel height for input images. Every page must use square thumbnails.
-- In the editor, the image occupies the 40% column (`w-full` inside the 40% grid cell). On pages without a side-by-side selector column, use `w-[40%] aspect-square flex-shrink-0` in a flex row alongside an upload hint/button area.
+- **ALWAYS use `grid grid-cols-[40%_60%]`** for the input section, even when the 60% column is empty (use `<div />`). This ensures consistent sizing across all pages.
 - `hover:border-[#FFFF00]/50` — always use this for any clickable upload zone.
-- Delete button: `p-2 -mr-2 text-gray-500 hover:text-red-400 hover:bg-white/5 rounded-full transition-all`
+- **Delete button position**: ALWAYS in the header row, inline next to the section label using `flex items-center justify-between`. NEVER use an overlay on the image. Classes: `p-2 -mr-2 text-gray-500 hover:text-red-400 hover:bg-white/5 rounded-full transition-all`
 
-**Pattern for pages without a second column (e.g. upscaler):**
+**Standard input image section (works for any page — use the same grid even if right column is empty):**
 ```jsx
-<div className="px-5 pb-4 flex gap-4 items-start">
-  <div className="w-[40%] aspect-square rounded-lg bg-black border border-white/10 overflow-hidden relative cursor-pointer group hover:border-[#FFFF00]/50 transition-colors flex-shrink-0">
-    {/* image or empty state */}
+<div className="border-b border-white/5">
+  {/* Header row */}
+  <div className="grid grid-cols-[40%_60%] gap-4 px-5 pt-5 pb-[0.3rem]">
+    <div className="flex items-center justify-between h-6">
+      <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Input Image</span>
+      {uploadedImage && (
+        <button
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteImage() }}
+          className="p-2 -mr-2 text-gray-500 hover:text-red-400 hover:bg-white/5 rounded-full transition-all"
+          title="Delete Image"
+        >
+          <IconTrash className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+    <div className="h-6">{/* right column header — label or empty */}</div>
   </div>
-  <div className="flex flex-col justify-center gap-2 flex-1 min-w-0">
-    <p className="text-[11px] text-gray-500 leading-relaxed">{hint text}</p>
-    <button className="w-full flex items-center justify-center gap-2 h-9 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-xs font-medium transition-all">
-      Upload Image
-    </button>
+  {/* Image row */}
+  <div className="grid grid-cols-[40%_60%] gap-4 px-5 pt-1 pb-4">
+    <div className="w-full aspect-square rounded-lg bg-black border border-white/10 overflow-hidden relative cursor-pointer group hover:border-[#FFFF00]/50 transition-colors">
+      {/* image or empty state */}
+    </div>
+    <div>{/* right column content or empty */}</div>
   </div>
 </div>
 ```
