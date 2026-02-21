@@ -119,7 +119,7 @@ export default function UserSettingsSection() {
   return (
     <div className="space-y-4">
       {/* Top: Avatar identity bar */}
-      <div className="bg-white/[0.03] border border-white/8 rounded-md px-5 py-4 flex items-center gap-4">
+      <div className="bg-white/[0.05] border border-white/8 rounded-md px-5 py-4 flex items-center gap-4">
         <div className="w-14 h-14 rounded-md bg-[#FFFF00] flex items-center justify-center flex-shrink-0">
           <span className="text-2xl font-black text-black">{avatar}</span>
         </div>
@@ -138,7 +138,7 @@ export default function UserSettingsSection() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         {/* LEFT — Profile */}
-        <div className="bg-white/[0.03] border border-white/8 rounded-md p-5">
+        <div className="bg-white/[0.05] border border-white/8 rounded-md p-5">
           <p className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-4">Profile</p>
           <form onSubmit={handleSaveProfile} className="space-y-3">
             <div>
@@ -185,7 +185,7 @@ export default function UserSettingsSection() {
         </div>
 
         {/* RIGHT — Security */}
-        <div className="bg-white/[0.03] border border-white/8 rounded-md p-5">
+        <div className="bg-white/[0.05] border border-white/8 rounded-md p-5">
           <div className="flex items-center justify-between mb-4">
             <p className="text-[11px] font-semibold text-white/40 uppercase tracking-wider">
               {profile?.hasPassword ? 'Change Password' : 'Set Password'}

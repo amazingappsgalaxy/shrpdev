@@ -326,7 +326,7 @@ export default function SimpleUsageSection({ className }: SimpleUsageSectionProp
                 <div
                   key={index}
                   className={`
-                    relative bg-white/[0.03] border rounded-2xl p-5 cursor-pointer transition-all duration-200 hover:scale-[1.02]
+                    relative bg-white/[0.05] border rounded-2xl p-5 cursor-pointer transition-all duration-200 hover:scale-[1.02]
                     ${pkg.popular
                       ? 'border-blue-500/40 bg-blue-500/10 shadow-lg shadow-blue-500/20'
                       : 'border-white/10 hover:border-white/20 hover:bg-white/[0.05]'

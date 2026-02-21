@@ -17,20 +17,21 @@ type Item = {
 interface HistoryGridProps {
     items: Item[];
     onSelect: (id: string) => void;
-    onDelete?: (id: string) => void; // Optional for now
+    onDelete?: (id: string) => void;
+    loadingItemId?: string | null;
 }
 
-export function HistoryGrid({ items, onSelect, onDelete }: HistoryGridProps) {
+export function HistoryGrid({ items, onSelect, onDelete, loadingItemId }: HistoryGridProps) {
     return (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {items.map((item, idx) => (
-                <HistoryCard key={item.id} item={item} onSelect={onSelect} index={idx} />
+                <HistoryCard key={item.id} item={item} onSelect={onSelect} index={idx} isLoading={loadingItemId === item.id} />
             ))}
         </div>
     );
 }
 
-function HistoryCard({ item, onSelect, index }: { item: Item; onSelect: (id: string) => void; index: number }) {
+function HistoryCard({ item, onSelect, index, isLoading }: { item: Item; onSelect: (id: string) => void; index: number; isLoading?: boolean }) {
     const primary = item.outputUrls?.find((o) => o.type === "image")?.url || item.outputUrls?.[0]?.url;
     const isVideo = item.outputUrls?.some((o) => o.type === "video");
     const isProcessing = item.status === "processing";
@@ -42,7 +43,7 @@ function HistoryCard({ item, onSelect, index }: { item: Item; onSelect: (id: str
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3, delay: index * 0.05 }}
             className={cn(
-                "group relative aspect-[4/5] rounded-xl overflow-hidden bg-white/[0.03] transition-all duration-300",
+                "group relative aspect-[4/5] rounded-xl overflow-hidden bg-white/[0.05] transition-all duration-300",
                 isProcessing ? "cursor-default" : "cursor-pointer"
             )}
             onClick={() => !isProcessing && onSelect(item.id)}
@@ -60,7 +61,7 @@ function HistoryCard({ item, onSelect, index }: { item: Item; onSelect: (id: str
 
                 </div>
             ) : (
-                <div className="absolute inset-0 bg-white/[0.03] flex items-center justify-center text-white/20">
+                <div className="absolute inset-0 bg-white/[0.05] flex items-center justify-center text-white/20">
                     {isFailed ? (
                         <AlertCircle className="w-8 h-8 text-white/[0.05]" strokeWidth={1.5} />
                     ) : (
@@ -82,6 +83,13 @@ function HistoryCard({ item, onSelect, index }: { item: Item; onSelect: (id: str
 
 
 
+
+            {/* Loading overlay (while detail is fetching) */}
+            {isLoading && (
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center z-30 rounded-xl">
+                    <div className="w-5 h-5 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+                </div>
+            )}
 
             {/* Footer Badge (Bottom) */}
             {!isProcessing && (

@@ -42,6 +42,7 @@ export default function HistoryPage() {
   const [hasMore, setHasMore] = useState(true)
   const [selected, setSelected] = useState<HistoryDetail | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
+  const [loadingItemId, setLoadingItemId] = useState<string | null>(null)
 
   const loadHistory = async (reset = false) => {
     if (!reset) setLoadingMore(true)
@@ -105,6 +106,12 @@ export default function HistoryPage() {
     }
   }
 
+  const TWELVE_DAYS_MS = 12 * 24 * 60 * 60 * 1000
+  const displayedItems = useMemo(
+    () => items.filter(item => Date.now() - new Date(item.createdAt).getTime() < TWELVE_DAYS_MS),
+    [items]
+  )
+
   const refreshIfProcessing = useMemo(
     () => items.some(item => item.status === 'processing'),
     [items]
@@ -124,6 +131,7 @@ export default function HistoryPage() {
   }, [refreshIfProcessing])
 
   const openDetail = async (id: string) => {
+    setLoadingItemId(id)
     try {
       const res = await fetch(`/api/history/item?id=${id}`, { cache: 'no-store' })
       if (!res.ok) {
@@ -136,6 +144,8 @@ export default function HistoryPage() {
     } catch (error) {
       console.error('Failed to open detail:', error)
       toast.error('Connection error')
+    } finally {
+      setLoadingItemId(null)
     }
   }
 
@@ -157,7 +167,7 @@ export default function HistoryPage() {
           <div className="flex items-end justify-between">
             <div>
               <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">History</h1>
-              <p className="text-white/60 text-sm mt-1">Your creative journey, preserved.</p>
+              <p className="text-white/40 text-sm mt-1">Every enhancement. On record.</p>
             </div>
             <button
               onClick={() => {
@@ -170,11 +180,17 @@ export default function HistoryPage() {
             </button>
           </div>
 
+          {/* Retention notice */}
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.07] w-fit">
+            <span className="w-1.5 h-1.5 rounded-full bg-white/30 flex-shrink-0" />
+            <p className="text-[11px] text-white/40 tracking-wide">Media outputs expire <span className="text-white/60 font-medium">10 days</span> from the date of creation</p>
+          </div>
+
           {loading ? (
             <div className="flex items-center justify-center py-24">
               <ElegantLoading message="Loading history..." />
             </div>
-          ) : items.length === 0 ? (
+          ) : displayedItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-32 text-center space-y-4">
               <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-2">
                 <span className="text-2xl">📜</span>
@@ -183,7 +199,7 @@ export default function HistoryPage() {
               <button onClick={() => window.location.href = '/app/editor'} className="text-[#FFFF00] text-sm hover:underline">Start Creating</button>
             </div>
           ) : (
-            <HistoryGrid items={items} onSelect={openDetail} />
+            <HistoryGrid items={displayedItems} onSelect={openDetail} loadingItemId={loadingItemId} />
           )}
 
           {hasMore && !loading && (
