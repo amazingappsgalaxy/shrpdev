@@ -120,6 +120,32 @@ export class RunningHubProvider extends BaseAIProvider {
   private initializeModels(): void {
     this.models = [
       {
+        id: 'smart-upscaler',
+        name: 'Smart Upscaler',
+        displayName: 'Smart Upscaler',
+        description: 'High-quality image upscaling with crisp detail enhancement. Output in 4K (80 credits) or 8K (120 credits) resolution.',
+        provider: {
+          name: ProviderType.RUNNINGHUB,
+          displayName: 'RunningHub.ai',
+          description: 'ComfyUI cloud platform for advanced image processing',
+          supportedFeatures: ['upscaling', '4k', '8k', 'crisp-detail']
+        },
+        version: '1.0',
+        capabilities: ['upscaling', '4k-output', '8k-output'],
+        parameters: {
+          resolution: {
+            type: 'select',
+            default: '4k',
+            options: ['4k', '8k'],
+            description: 'Output resolution (4K or 8K)'
+          }
+        },
+        pricing: {
+          costPerImage: 0.008,
+          currency: 'USD'
+        }
+      },
+      {
         id: 'skin-editor',
         name: 'Skin Editor',
         displayName: 'Skin Editor',
@@ -198,6 +224,10 @@ export class RunningHubProvider extends BaseAIProvider {
       if (!model) {
         console.error(`❌ RunningHub: Model ${modelId} not found via getModel()`)
         return this.createErrorResponse(`Model ${modelId} not found`)
+      }
+
+      if (modelId === 'smart-upscaler') {
+        return this.handleSmartUpscalerRequest(request, model)
       }
 
       if (modelId === 'skin-editor') {
@@ -291,6 +321,86 @@ export class RunningHubProvider extends BaseAIProvider {
       return this.createErrorResponse(
         formatErrorMessage(error)
       )
+    }
+  }
+
+  private async handleSmartUpscalerRequest(
+    request: EnhancementRequest,
+    model: ModelInfo
+  ): Promise<EnhancementResponse> {
+    const settings = request.settings as RunningHubSettings
+    const { SMART_UPSCALER_WORKFLOW_ID, SMART_UPSCALER_NODES, SMART_UPSCALER_RESOLUTION_SETTINGS } = await import('../../../models/smart-upscaler/config')
+
+    const resolution = ((settings as any).resolution as '4k' | '8k') || '4k'
+    const resSettings = SMART_UPSCALER_RESOLUTION_SETTINGS[resolution] || SMART_UPSCALER_RESOLUTION_SETTINGS['4k']
+
+    console.log(`🚀 RunningHub: Processing Smart Upscaler request`, {
+      resolution,
+      scaleBy: resSettings.scaleBy,
+      width: resSettings.width,
+      height: resSettings.height,
+      workflowId: SMART_UPSCALER_WORKFLOW_ID
+    })
+
+    const nodeInfoListOverride = [
+      {
+        nodeId: SMART_UPSCALER_NODES.LOAD_IMAGE,
+        fieldName: 'image',
+        fieldValue: request.imageUrl.trim()
+      },
+      {
+        nodeId: SMART_UPSCALER_NODES.SCALE_BY,
+        fieldName: 'scale_by',
+        fieldValue: resSettings.scaleBy
+      },
+      {
+        nodeId: SMART_UPSCALER_NODES.RESIZE,
+        fieldName: 'width',
+        fieldValue: resSettings.width
+      },
+      {
+        nodeId: SMART_UPSCALER_NODES.RESIZE,
+        fieldName: 'height',
+        fieldValue: resSettings.height
+      }
+    ]
+
+    const taskResponse = await this.createTask(request.imageUrl, {
+      workflowId: SMART_UPSCALER_WORKFLOW_ID,
+      nodeInfoListOverride
+    } as any)
+
+    if (!taskResponse.success) {
+      return this.createErrorResponse(taskResponse.error || 'Failed to create Smart Upscaler task')
+    }
+
+    const result = await this.pollTaskCompletion(taskResponse.taskId!, [SMART_UPSCALER_NODES.SAVE_IMAGE])
+
+    if (!result.success) {
+      return this.createErrorResponse(result.error || 'Smart Upscaler task failed')
+    }
+
+    console.log(`✅ RunningHub: Smart Upscaler completed successfully`)
+
+    return {
+      success: true,
+      enhancedUrl: result.outputUrl,
+      metadata: {
+        modelVersion: model.version,
+        processingTime: result.processingTime,
+        settings: settings as EnhancementSettings,
+        userId: request.userId,
+        imageId: request.imageId,
+        outputFormat: 'png',
+        provider: this.getProviderName(),
+        model: model.id,
+        timestamp: Date.now(),
+        details: {
+          taskId: taskResponse.taskId,
+          workflowId: SMART_UPSCALER_WORKFLOW_ID,
+          resolution
+        }
+      }
     }
   }
 

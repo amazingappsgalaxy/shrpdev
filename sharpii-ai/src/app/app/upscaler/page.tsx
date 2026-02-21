@@ -1,0 +1,561 @@
+"use client"
+import React, { useState, useRef, useCallback, useEffect, Suspense } from "react"
+import {
+  IconUpload,
+  IconDownload,
+  IconLoader2,
+  IconArrowsHorizontal,
+  IconArrowsMaximize,
+  IconTrash,
+  IconZoomIn,
+} from "@tabler/icons-react"
+
+import { cn } from "@/lib/utils"
+import { useAuth } from "@/lib/auth-client-simple"
+import { ElegantLoading } from "@/components/ui/elegant-loading"
+import MyLoadingProcessIndicator from "@/components/ui/MyLoadingProcessIndicator"
+import { ExpandViewModal } from "@/components/ui/expand-view-modal"
+import { CreditIcon } from "@/components/ui/CreditIcon"
+
+// --- Demo images ---
+const DEMO_INPUT_URL = 'https://i.postimg.cc/vTtwPDVt/90s-Futuristic-Portrait-3.png'
+const DEMO_OUTPUT_URL = 'https://i.postimg.cc/NjJBqyPS/Comfy-UI-00022-psmsy-1770811094.png'
+
+// --- Credits by resolution ---
+const UPSCALER_CREDITS = { '4k': 80, '8k': 120 } as const
+
+// --- Before/After Comparison ---
+function ComparisonView({
+  original,
+  enhanced,
+  onDownload,
+  onExpand,
+}: {
+  original: string
+  enhanced: string
+  onDownload?: () => void
+  onExpand?: () => void
+}) {
+  const [sliderPos, setSliderPos] = useState(50)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const handleMove = useCallback((clientX: number) => {
+    if (!containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const x = Math.min(Math.max(clientX - rect.left, 0), rect.width)
+    setSliderPos((x / rect.width) * 100)
+  }, [])
+
+  return (
+    <div
+      className="relative w-full h-full bg-[#050505] overflow-hidden select-none group"
+      ref={containerRef}
+      onMouseMove={(e) => handleMove(e.clientX)}
+      onTouchMove={(e) => e.touches[0] && handleMove(e.touches[0].clientX)}
+    >
+      <img src={original} className="absolute inset-0 w-full h-full object-contain" alt="Original" draggable={false} />
+      <div
+        className="absolute inset-0 overflow-hidden"
+        style={{ clipPath: `polygon(${sliderPos}% 0, 100% 0, 100% 100%, ${sliderPos}% 100%)` }}
+      >
+        <img src={enhanced} className="absolute inset-0 w-full h-full object-contain" alt="Upscaled" draggable={false} />
+      </div>
+
+      {/* Slider Line */}
+      <div
+        className="absolute inset-y-0 w-0.5 bg-white shadow-[0_0_10px_rgba(0,0,0,0.5)] z-20 cursor-ew-resize"
+        style={{ left: `${sliderPos}%` }}
+      >
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center">
+          <IconArrowsHorizontal className="w-4 h-4 text-black" />
+        </div>
+      </div>
+
+      {/* Labels */}
+      <div className="absolute top-4 left-4 px-3 py-1 bg-black/50 backdrop-blur text-white/80 text-xs font-medium rounded border border-white/10 uppercase tracking-wider">Original</div>
+      <div className="absolute top-4 right-4 px-3 py-1 bg-white/20 backdrop-blur text-white text-xs font-bold rounded border border-white/20 uppercase tracking-wider shadow-lg">Upscaled</div>
+
+      {/* Action Buttons */}
+      <div className="absolute bottom-6 right-6 flex gap-3 z-30">
+        {onExpand && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onExpand() }}
+            className="p-3 bg-white text-black rounded-full shadow-xl hover:scale-105 transition-transform"
+            title="Expand view"
+          >
+            <IconArrowsMaximize className="w-5 h-5" />
+          </button>
+        )}
+        {onDownload && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDownload() }}
+            className="p-3 bg-white text-black rounded-full shadow-xl hover:scale-105 transition-transform"
+            title="Download"
+          >
+            <IconDownload className="w-5 h-5" />
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function UpscalerContent() {
+  const { user, isLoading, isDemo } = useAuth()
+
+  // Image state
+  const [uploadedImage, setUploadedImage] = useState<string | null>(DEMO_INPUT_URL)
+  const [upscaledImage, setUpscaledImage] = useState<string | null>(DEMO_OUTPUT_URL)
+  const [imageMetadata, setImageMetadata] = useState({ width: 1024, height: 1024 })
+
+  // Settings
+  const [resolution, setResolution] = useState<'4k' | '8k'>('4k')
+
+  // Credit balance
+  const [creditBalance, setCreditBalance] = useState<number | null>(null)
+  useEffect(() => {
+    fetch('/api/credits/balance')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.balance !== undefined) setCreditBalance(d.balance) })
+      .catch(() => {})
+  }, [])
+
+  // Credit cost (flat pricing)
+  const creditCost = UPSCALER_CREDITS[resolution]
+
+  // UI state
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isExpandViewOpen, setIsExpandViewOpen] = useState(false)
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: 'loading' | 'success' | 'error' }>>([])
+
+  // Multi-task tracking
+  type TaskStatus = 'loading' | 'success' | 'error'
+  type TaskEntry = { id: string; progress: number; status: TaskStatus; message?: string; createdAt: number; inputImage: string }
+  const [activeTasks, setActiveTasks] = useState<Map<string, TaskEntry>>(new Map())
+  const [dismissedTaskIds, setDismissedTaskIds] = useState<Set<string>>(new Set())
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const latestImageRef = useRef(uploadedImage)
+  latestImageRef.current = uploadedImage
+  const latestTaskIdRef = useRef<string | null>(null)
+  const taskIntervalsRef = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map())
+
+  const visibleTasks = React.useMemo(() => {
+    const items = Array.from(activeTasks.values()).filter(task => !dismissedTaskIds.has(task.id))
+    return items.sort((a, b) => b.createdAt - a.createdAt)
+  }, [activeTasks, dismissedTaskIds])
+
+  const openPlansPopup = () => window.dispatchEvent(new CustomEvent('sharpii:open-plans'))
+
+  const handleUpload = (files: FileList | null) => {
+    if (!files || !files[0]) return
+    const file = files[0]
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        setImageMetadata({ width: img.width, height: img.height })
+        setUploadedImage(e.target?.result as string)
+        setUpscaledImage(null)
+      }
+      img.src = e.target?.result as string
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleDeleteImage = () => {
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    setUploadedImage(null)
+    setUpscaledImage(null)
+    setImageMetadata({ width: 1024, height: 1024 })
+  }
+
+  const handleUpscale = async () => {
+    if (!uploadedImage) return
+
+    if (creditBalance === null || creditBalance <= 0) {
+      openPlansPopup()
+      return
+    }
+    if (creditBalance < creditCost) {
+      const toastId = `${Date.now()}-topup`
+      setToasts(prev => [...prev, { id: toastId, message: 'Not enough credits. Top up your account from the dashboard.', type: 'error' }])
+      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 5000)
+      return
+    }
+
+    setIsSubmitting(true)
+    const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const createdAt = Date.now()
+    const inputImage = uploadedImage
+    latestTaskIdRef.current = taskId
+
+    setDismissedTaskIds(prev => { const next = new Set(prev); next.delete(taskId); return next })
+    setActiveTasks(prev => {
+      const newMap = new Map(prev)
+      newMap.set(taskId, { id: taskId, progress: 0, status: 'loading', message: 'Upscaling...', createdAt, inputImage })
+      return newMap
+    })
+
+    setTimeout(() => setIsSubmitting(false), 1000)
+
+    try {
+      const progressInterval = setInterval(() => {
+        setActiveTasks(prev => {
+          const task = prev.get(taskId)
+          if (!task || task.status !== 'loading') return prev
+          const newMap = new Map(prev)
+          newMap.set(taskId, { ...task, progress: Math.min((task.progress || 0) + 5, 90) })
+          return newMap
+        })
+      }, 500)
+      taskIntervalsRef.current.set(taskId, progressInterval)
+
+      const response = await fetch('/api/enhance-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageUrl: inputImage,
+          modelId: 'smart-upscaler',
+          settings: {
+            resolution,
+            imageWidth: imageMetadata.width,
+            imageHeight: imageMetadata.height,
+            pageName: 'app/upscaler',
+          }
+        })
+      })
+
+      const interval = taskIntervalsRef.current.get(taskId)
+      if (interval) { clearInterval(interval); taskIntervalsRef.current.delete(taskId) }
+
+      const data = await response.json()
+
+      if (response.status === 402) {
+        openPlansPopup()
+        setActiveTasks(prev => { const m = new Map(prev); m.delete(taskId); return m })
+        return
+      }
+
+      if (!response.ok) throw new Error(data?.error || 'Upscaling failed')
+
+      if (data.success && (data.outputs || data.enhancedUrl)) {
+        const outputUrl = Array.isArray(data.outputs) && data.outputs[0]?.url
+          ? data.outputs[0].url
+          : typeof data.enhancedUrl === 'string'
+            ? data.enhancedUrl
+            : Array.isArray(data.enhancedUrl)
+              ? data.enhancedUrl[0]
+              : null
+
+        if (latestTaskIdRef.current === taskId && latestImageRef.current === inputImage) {
+          setUpscaledImage(outputUrl)
+        }
+
+        setActiveTasks(prev => {
+          const newMap = new Map(prev)
+          const task = newMap.get(taskId)
+          if (task) newMap.set(taskId, { ...task, progress: 100, status: 'success', message: 'Done!' })
+          return newMap
+        })
+      } else {
+        setActiveTasks(prev => {
+          const newMap = new Map(prev)
+          const task = newMap.get(taskId)
+          if (task) newMap.set(taskId, { ...task, progress: 100, status: 'error', message: data.error || 'Upscaling failed' })
+          return newMap
+        })
+      }
+
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Connection error'
+      setActiveTasks(prev => {
+        const newMap = new Map(prev)
+        const task = newMap.get(taskId)
+        if (task) newMap.set(taskId, { ...task, progress: 100, status: 'error', message: errorMsg })
+        return newMap
+      })
+    } finally {
+      const interval = taskIntervalsRef.current.get(taskId)
+      if (interval) { clearInterval(interval); taskIntervalsRef.current.delete(taskId) }
+      setTimeout(() => {
+        setActiveTasks(prev => { const m = new Map(prev); m.delete(taskId); return m })
+        setDismissedTaskIds(prev => { const next = new Set(prev); next.delete(taskId); return next })
+      }, 4000)
+    }
+  }
+
+  const handleDownload = async () => {
+    if (!upscaledImage) return
+    try {
+      const response = await fetch(upscaledImage)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `upscaled-${resolution}-${Date.now()}.png`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch {
+      const a = document.createElement('a')
+      a.href = upscaledImage
+      a.download = `upscaled-${resolution}-${Date.now()}.png`
+      a.click()
+    }
+  }
+
+  if (isLoading) return <ElegantLoading message="Initializing Upscaler..." />
+
+  if (!user && !isDemo) {
+    if (typeof window !== 'undefined') window.location.href = '/app/signin'
+    return <ElegantLoading message="Redirecting to login..." />
+  }
+
+  return (
+    <div className="flex flex-col min-h-screen bg-[#09090b] text-white font-sans">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => handleUpload(e.target.files)}
+      />
+
+      {/* Main Layout */}
+      <div className="flex-1 pt-16 w-full grid grid-cols-1 lg:grid-cols-[400px_1fr] items-start">
+
+        {/* LEFT SIDEBAR */}
+        <div className="flex flex-col border-r border-white/5 bg-[#0c0c0e] z-20 relative min-h-[calc(100vh-6rem)] lg:pb-32 order-2 lg:order-1">
+
+          {/* INPUT IMAGE */}
+          <div className="border-b border-white/5">
+            <div className="flex items-center justify-between px-5 pt-5 pb-2 h-11">
+              <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Input Image</span>
+              {uploadedImage && (
+                <button
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteImage() }}
+                  className="p-2 -mr-2 text-gray-500 hover:text-red-400 hover:bg-white/5 rounded-full transition-all"
+                  title="Delete Image"
+                >
+                  <IconTrash className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            <div className="px-5 pb-4">
+              <div
+                className="w-full aspect-video rounded-lg bg-black border border-white/10 overflow-hidden relative cursor-pointer group hover:border-[#FFFF00]/50 transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {uploadedImage ? (
+                  <>
+                    <img src={uploadedImage} className="w-full h-full object-cover" alt="Input" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                      <IconUpload className="w-6 h-6 text-white" />
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full gap-2">
+                    <IconUpload className="w-8 h-8 text-gray-500" />
+                    <span className="text-xs text-gray-600 font-medium">Click to Select Image</span>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="mt-3 w-full flex items-center justify-center gap-2 h-9 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-sm font-medium transition-all"
+              >
+                <IconUpload className="w-4 h-4" />
+                Upload Image
+              </button>
+            </div>
+          </div>
+
+          {/* OUTPUT RESOLUTION */}
+          <div className="border-b border-white/5 px-5 py-5">
+            <span className="text-xs font-black text-gray-500 uppercase tracking-wider block mb-3">Output Resolution</span>
+            <div className="flex items-center p-1 bg-white/5 border border-white/10 rounded-lg h-10">
+              {(['4k', '8k'] as const).map((res) => (
+                <button
+                  key={res}
+                  onClick={() => setResolution(res)}
+                  className={cn(
+                    "flex-1 h-full flex items-center justify-center rounded text-sm font-semibold transition-all duration-200",
+                    resolution === res
+                      ? "bg-white/10 text-white shadow-sm"
+                      : "text-white/50 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  {res.toUpperCase()}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className={cn(
+                "rounded-lg border p-3 transition-all",
+                resolution === '4k' ? "border-[#FFFF00]/30 bg-[#FFFF00]/5" : "border-white/5 bg-white/2"
+              )}>
+                <div className="text-xs font-black text-gray-500 uppercase tracking-wider mb-1">4K</div>
+                <div className="text-sm font-semibold text-white">4096 × 4096</div>
+                <div className="text-xs text-gray-500 mt-0.5">80 credits</div>
+              </div>
+              <div className={cn(
+                "rounded-lg border p-3 transition-all",
+                resolution === '8k' ? "border-[#FFFF00]/30 bg-[#FFFF00]/5" : "border-white/5 bg-white/2"
+              )}>
+                <div className="text-xs font-black text-gray-500 uppercase tracking-wider mb-1">8K</div>
+                <div className="text-sm font-semibold text-white">8192 × 8192</div>
+                <div className="text-xs text-gray-500 mt-0.5">120 credits</div>
+              </div>
+            </div>
+          </div>
+
+          {/* INFO */}
+          <div className="px-5 py-4 border-b border-white/5">
+            <div className="rounded-xl border border-white/5 bg-white/2 p-4 space-y-2">
+              <div className="flex items-center gap-2 mb-3">
+                <IconZoomIn className="w-4 h-4 text-[#FFFF00]" />
+                <span className="text-xs font-bold text-white uppercase tracking-wider">Smart Upscaler</span>
+              </div>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Optimized for clarity and detail. Uses a specialized ComfyUI workflow to produce crisp, high-resolution output from any input image.
+              </p>
+              <div className="pt-1 flex flex-wrap gap-2">
+                {['Crisp Detail', 'AI Enhanced', 'Lossless Output'].map(tag => (
+                  <span key={tag} className="px-2 py-0.5 bg-white/5 border border-white/10 rounded text-[10px] text-gray-500 uppercase tracking-wider font-medium">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* FOOTER CTA */}
+          <div className="lg:fixed lg:bottom-0 lg:left-0 lg:w-[400px] relative w-full bg-[#0c0c0e] border-t border-white/5 z-40">
+            <div className="px-5 pt-4 pb-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-500 font-medium">Estimated Cost</span>
+                <div className="flex items-center gap-2">
+                  <CreditIcon className="w-6 h-6 rounded-md" iconClassName="w-3 h-3" />
+                  <span className="font-mono font-medium text-white/90">{creditCost}</span>
+                </div>
+              </div>
+            </div>
+            <div className="p-5 pt-0">
+              <button
+                onClick={handleUpscale}
+                disabled={!uploadedImage || isSubmitting}
+                className="w-full bg-[#FFFF00] hover:bg-[#e6e600] text-black font-bold h-14 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(255,255,0,0.1)] hover:shadow-[0_0_30px_rgba(255,255,0,0.3)] text-base uppercase tracking-wider"
+              >
+                {isSubmitting ? (
+                  <>
+                    <IconLoader2 className="w-5 h-5 animate-spin" />
+                    <span>Starting...</span>
+                  </>
+                ) : (
+                  <>
+                    <IconZoomIn className="w-5 h-5" />
+                    <span>Upscale to {resolution.toUpperCase()}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        {/* RIGHT MAIN CANVAS */}
+        <div className="relative flex flex-col px-4 pt-2 pb-4 lg:sticky lg:top-[4.5rem] lg:h-[calc(100vh-4.5rem)] overflow-y-auto custom-scrollbar order-1 lg:order-2">
+          <div className="w-full relative flex items-center justify-center bg-[#050505] custom-checkerboard rounded-2xl border border-white/5 overflow-hidden h-[400px] lg:flex-1 lg:min-h-[400px] flex-shrink-0">
+            {!uploadedImage ? (
+              <div
+                className="text-center cursor-pointer p-12 rounded-2xl border-2 border-dashed border-white/10 hover:border-white/20 hover:bg-white/5 transition-all"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <IconUpload className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-300">No Image Selected</h3>
+                <p className="text-sm text-gray-500 mt-2">Upload an image to start upscaling</p>
+              </div>
+            ) : upscaledImage ? (
+              <ComparisonView
+                original={uploadedImage}
+                enhanced={upscaledImage}
+                onDownload={handleDownload}
+                onExpand={() => setIsExpandViewOpen(true)}
+              />
+            ) : (
+              <div className="relative w-full h-full">
+                <img src={uploadedImage} className="w-full h-full object-contain opacity-50 blur-sm" alt="Preview" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="bg-black/80 backdrop-blur px-6 py-3 rounded-full border border-white/10 text-gray-300 text-sm">
+                    Click Upscale to process
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* STATUS BAR */}
+          <div className="mt-4 flex justify-between items-center text-[10px] text-gray-600 font-mono uppercase tracking-wider">
+            <div>
+              {uploadedImage && <span>Source: {imageMetadata.width}×{imageMetadata.height} • Output: {resolution === '4k' ? '4096×4096' : '8192×8192'}</span>}
+            </div>
+            <div>Sharpii Smart Upscaler v1.0</div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Toast Notifications */}
+      {toasts.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 items-center">
+          {toasts.map(toast => (
+            <div
+              key={toast.id}
+              className={cn(
+                "px-5 py-3 rounded-xl text-sm font-medium shadow-xl border backdrop-blur",
+                toast.type === 'error' ? "bg-red-900/90 border-red-500/30 text-red-100" : "bg-white/10 border-white/10 text-white"
+              )}
+            >
+              {toast.message}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Task Status Indicator */}
+      <MyLoadingProcessIndicator
+        isVisible={visibleTasks.length > 0}
+        tasks={visibleTasks}
+        onCloseTask={(taskId) => {
+          setDismissedTaskIds(prev => { const next = new Set(prev); next.add(taskId); return next })
+        }}
+      />
+
+      {/* Expand View Modal */}
+      {upscaledImage && uploadedImage && (
+        <ExpandViewModal
+          isOpen={isExpandViewOpen}
+          onClose={() => setIsExpandViewOpen(false)}
+          originalImage={uploadedImage}
+          enhancedImage={upscaledImage}
+          onDownload={handleDownload}
+        />
+      )}
+
+    </div>
+  )
+}
+
+export default function UpscalerPage() {
+  return (
+    <Suspense fallback={<ElegantLoading message="Initializing Upscaler..." />}>
+      <UpscalerContent />
+    </Suspense>
+  )
+}

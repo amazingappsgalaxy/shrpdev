@@ -115,6 +115,7 @@ export function UserHeader({ className }: UserHeaderProps) {
     const navigationItems = [
         { name: 'Dashboard', href: '/app/dashboard' },
         { name: 'Editor', href: '/app/editor' },
+        { name: 'Upscaler', href: '/app/upscaler' },
         { name: 'History', href: '/app/history' },
         { name: 'Image Editor', href: '/app/image-editor' },
         { name: 'Generate', href: '/app/generate-image' },
@@ -123,6 +124,7 @@ export function UserHeader({ className }: UserHeaderProps) {
     const mobileNavigationItems = [
         { name: 'Dashboard', href: '/app/dashboard', icon: LayoutDashboard },
         { name: 'Editor', href: '/app/editor', icon: Palette },
+        { name: 'Upscaler', href: '/app/upscaler', icon: Sparkles },
         { name: 'History', href: '/app/history', icon: BarChart3 },
         { name: 'Image Editor', href: '/app/image-editor', icon: Wand2 },
         { name: 'Generate', href: '/app/generate-image', icon: ImageIcon },

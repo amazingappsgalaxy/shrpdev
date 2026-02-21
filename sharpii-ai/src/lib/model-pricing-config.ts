@@ -166,6 +166,42 @@ export const MODEL_PRICING_CONFIGS: Record<string, ModelPricingConfiguration> = 
       }
     ],
     lastUpdated: Date.now()
+  },
+
+  // Smart Upscaler Model Pricing (flat pricing based on output resolution)
+  'smart-upscaler': {
+    modelId: 'smart-upscaler',
+    modelName: 'Smart Upscaler',
+    enabled: true,
+    globalMultiplier: 1.0,
+    flatFee: 0,
+    resolutionPricing: [
+      {
+        resolution: 'Any Input',
+        width: 99999,
+        height: 99999,
+        megapixels: 9999,
+        baseCredits: 80,
+        description: '4K Output Base (80 credits)'
+      }
+    ],
+    settingIncrements: [
+      {
+        settingKey: 'resolution',
+        settingName: 'Output Resolution',
+        incrementType: 'conditional',
+        defaultIncrement: 0,
+        enabled: true,
+        defaultValue: 0,
+        conditions: [
+          { when: (val: string) => val === '4k' || !val, increment: 0, description: '4K Output (80 credits)' },
+          { when: (val: string) => val === '8k', increment: 40, description: '+40 credits for 8K Output (120 total)' }
+        ],
+        description: 'Output resolution: 4K (80 credits) or 8K (120 credits)'
+      }
+    ],
+    lastUpdated: Date.now(),
+    description: 'Flat pricing based on output resolution. 4K = 80 credits, 8K = 120 credits.'
   }
 };
 
